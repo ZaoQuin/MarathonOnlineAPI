@@ -4,6 +4,7 @@ plugins {
 	id("org.springframework.boot") version "3.3.4"
 	id("io.spring.dependency-management") version "1.1.6"
 	kotlin("plugin.jpa") version "1.9.25"
+	id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
 }
 
 group = "com.university"
@@ -33,6 +34,18 @@ dependencies {
 
 	//JWT
 	implementation("io.jsonwebtoken:jjwt:0.9.1")
+
+	//Mapper
+	implementation("org.modelmapper:modelmapper:3.1.0")
+
+	//Mapper - Test
+
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.mockito:mockito-core:5.0.0")
+	testImplementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
+	testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
+	testImplementation("io.mockk:mockk:1.12.0")
+	testImplementation ("org.modelmapper:modelmapper:2.4.4")
 }
 
 kotlin {
@@ -43,4 +56,8 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+noArg {
+	annotation("javax.persistence.Entity")
 }

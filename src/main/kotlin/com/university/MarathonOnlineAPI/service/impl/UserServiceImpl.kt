@@ -5,21 +5,27 @@ import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.service.UserService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.lang.IllegalArgumentException
 
 @Service
 class UserServiceImpl(
     private val userRepos: UserRepository,
     private val userMapper: UserMapper
 ): UserService {
-    override fun addUser(userDTO: UserDTO): UserDTO {
-        if(userDTO.id != (-1).toLong())
-            throw UserException("Id must be null or -1.")
 
-        val user = userMapper.toEntity(userDTO)
-        userRepos.save(user)
-        return userMapper.toDTO(user)
+    private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
+
+    override fun addUser(userDTO: UserDTO): UserDTO {
+        logger.info("Received UserDTO: $userDTO")
+        try {
+            val user = userMapper.toEntity(userDTO)
+            logger.info("Mapper to Entity: $user")
+            userRepos.save(user)
+            return userMapper.toDto(user)
+        } catch (e: Exception){
+            throw UserException(e.message)
+        }
     }
 
 }

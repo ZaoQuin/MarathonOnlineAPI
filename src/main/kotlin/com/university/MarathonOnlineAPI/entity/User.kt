@@ -1,22 +1,23 @@
 package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
-import java.util.Date
+import java.time.LocalDate
 
 @Entity
+@Table(name = "user")
 data class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
-    val fullName: String,
-    val email: String,
-    val phoneNumber: String,
-    val gender: EGender,
-    val birthday: Date,
-    val username: String,
-    val password: String,
-    val role: ERole,
-    val isVerified: Boolean
+    var id: Long? = null,
+    var fullName: String? = null,
+    var email: String? = null,
+    var phoneNumber: String? = null,
+    var gender: EGender? = null,
+    var birthday: LocalDate? = null,
+    var username: String? = null,
+    var password: String? = null,
+    var role: ERole? = null,
+    var isVerified: Boolean = false
 )
 
 enum class ERole {
