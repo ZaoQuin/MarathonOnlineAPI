@@ -1,7 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
-import java.util.Date
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "rule")
@@ -12,7 +12,7 @@ data class Rule (
     val icon: String? = null,
     val name: String? = null,
     val desc: String? = null,
-    val updateDate: Date? = null,
+    val updateDate: LocalDateTime? = null,
 
     @ManyToOne
     @JoinColumn(name = "contest_id")

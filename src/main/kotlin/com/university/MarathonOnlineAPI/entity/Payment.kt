@@ -2,7 +2,7 @@ package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
 import java.math.BigDecimal
-import java.util.Date
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "payment")
@@ -11,7 +11,7 @@ data class Payment(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
     val amount: BigDecimal? = null,
-    val paymentDate: Date? = null,
+    val paymentDate: LocalDateTime? = null,
     val status: EPaymentStatus? = null
 )
 

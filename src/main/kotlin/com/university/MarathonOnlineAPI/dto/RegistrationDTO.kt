@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.dto
 
 import com.university.MarathonOnlineAPI.entity.*
 import java.time.LocalDateTime
-import java.util.*
 
 data class RegistrationDTO (
     val id: Long? = null,

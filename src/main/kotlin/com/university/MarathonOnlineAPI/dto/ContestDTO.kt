@@ -3,7 +3,6 @@ package com.university.MarathonOnlineAPI.dto
 import com.university.MarathonOnlineAPI.entity.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.util.*
 
 data class ContestDTO(
     val id: Long? = null,

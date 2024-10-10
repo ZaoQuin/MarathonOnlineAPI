@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
-import java.util.Date
 
 @Entity
 @Table(name = "registration")

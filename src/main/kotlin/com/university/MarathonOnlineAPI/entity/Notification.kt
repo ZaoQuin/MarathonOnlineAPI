@@ -1,7 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
-import java.util.*
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "notification")
@@ -18,7 +18,7 @@ data class Notification(
     val contest: Contest? = null,
     val title: String? = null,
     val content: String? = null,
-    val createAt: Date? = null,
+    val createAt: LocalDateTime? = null,
     val isRead: Boolean? = null,
     val type: ENotificationType? = null
 )
