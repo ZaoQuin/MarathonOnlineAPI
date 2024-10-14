@@ -43,7 +43,6 @@ class UserServiceTest {
             gender = EGender.MALE,
             birthday = LocalDate.of(1990, 1, 1),
             username = "johndoe",
-            password = "password123",
             role = ERole.RUNNER,
             isVerified = true
         )
@@ -78,7 +77,6 @@ class UserServiceTest {
         assertEquals(user.gender, result.gender)
         assertEquals(user.birthday, result.birthday)
         assertEquals(user.username, result.username)
-        assertEquals(user.password, result.password)
         assertEquals(user.role, result.role)
         assertEquals(user.isVerified, result.isVerified)
 
@@ -100,7 +98,6 @@ class UserServiceTest {
             gender = EGender.MALE,
             birthday = LocalDate.of(1990, 1, 1),
             username = "johndoe",
-            password = "password123",
             role = ERole.RUNNER,
             isVerified = true
         )

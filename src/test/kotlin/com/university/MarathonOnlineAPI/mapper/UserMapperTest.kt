@@ -50,7 +50,6 @@ class UserMapperTest {
             gender = EGender.MALE,
             birthday = LocalDate.now(),
             username = "nguyenvana",
-            password = "password",
             role = ERole.RUNNER,
             isVerified = true
         )
@@ -68,7 +67,6 @@ class UserMapperTest {
         assertEquals(user.phoneNumber, result.phoneNumber)
         assertEquals(user.gender, result.gender)
         assertEquals(user.username, result.username)
-        assertEquals(user.password, result.password)
         assertEquals(user.role, result.role)
         assertEquals(user.isVerified, result.isVerified)
     }
@@ -85,7 +83,6 @@ class UserMapperTest {
         assertEquals(userDTO.phoneNumber, result.phoneNumber)
         assertEquals(userDTO.gender, result.gender)
         assertEquals(userDTO.username, result.username)
-        assertEquals(userDTO.password, result.password)
         assertEquals(userDTO.role, result.role)
         assertEquals(userDTO.isVerified, result.isVerified)
     }

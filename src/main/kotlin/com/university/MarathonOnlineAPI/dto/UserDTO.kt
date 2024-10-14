@@ -12,7 +12,6 @@ data class UserDTO(
     var gender: EGender? = null,
     var birthday: LocalDate? = null,
     var username: String? = null,
-    var password: String? = null,
     var role: ERole? = null,
     var isVerified: Boolean = false
 )
