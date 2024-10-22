@@ -1,12 +1,12 @@
 package com.university.MarathonOnlineAPI.resource
 
 import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.request.CreateUserRequest
 import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Repository
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -16,9 +16,13 @@ class UserResource(private val userService: UserService) {
     private val logger = LoggerFactory.getLogger(UserResource::class.java)
 
     @PostMapping("/add")
-    fun addUser(@RequestBody @Valid userDTO: UserDTO): ResponseEntity<UserDTO>{
-        val addedUser = userService.addUser(userDTO)
-        return ResponseEntity(addedUser, HttpStatus.CREATED)
+    fun addUser(@RequestBody @Valid newUser: CreateUserRequest): ResponseEntity<Any> {
+        return try {
+            val addedUser = userService.addUser(newUser)
+            ResponseEntity(addedUser, HttpStatus.CREATED)
+        } catch (e: Exception) {
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
     }
 
     @DeleteMapping("/delete/{id}")

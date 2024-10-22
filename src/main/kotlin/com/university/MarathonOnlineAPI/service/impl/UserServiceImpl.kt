@@ -1,9 +1,11 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.entity.User
 import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
+import com.university.MarathonOnlineAPI.request.CreateUserRequest
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -16,10 +18,20 @@ class UserServiceImpl(
 
     private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
 
-    override fun addUser(userDTO: UserDTO): UserDTO {
-        logger.info("Received UserDTO: $userDTO")
+    override fun addUser(newUser: CreateUserRequest): UserDTO {
+        logger.info("Received UserDTO: $newUser")
         try {
-            val user = userMapper.toEntity(userDTO)
+            val user = User()
+            user.fullName = newUser.fullName
+            user.email = newUser.email
+            user.phoneNumber = newUser.phoneNumber
+            user.gender = newUser.gender
+            user.birthday = newUser.birthday
+            user.username = newUser.username
+            user.password = newUser.password
+            user.role = newUser.role
+            user.isVerified = newUser.isVerified
+
             logger.info("Mapper to Entity: $user")
             userRepos.save(user)
             return userMapper.toDto(user)
