@@ -1,6 +1,5 @@
 package com.university.MarathonOnlineAPI.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDate
 
@@ -18,7 +17,8 @@ data class User(
     var username: String? = null,
     var password: String? = null,
     var role: ERole? = null,
-    var isVerified: Boolean = false
+    var isVerified: Boolean = false,
+    var tokenRefresh: String? = null
 )
 
 enum class ERole {

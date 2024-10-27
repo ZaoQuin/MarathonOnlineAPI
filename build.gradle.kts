@@ -32,9 +32,6 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 
-	//JWT
-	implementation("io.jsonwebtoken:jjwt:0.9.1")
-
 	//Mapper
 	implementation("org.modelmapper:modelmapper:3.1.0")
 
@@ -47,6 +44,15 @@ dependencies {
 	testImplementation("io.mockk:mockk:1.12.0")
 	testImplementation ("org.modelmapper:modelmapper:2.4.4")
 
+	// JWT
+	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+	implementation("io.jsonwebtoken:jjwt-impl:0.12.6")
+	implementation("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
+	// Spring Security
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.security:spring-security-test")
 }
 
 kotlin {

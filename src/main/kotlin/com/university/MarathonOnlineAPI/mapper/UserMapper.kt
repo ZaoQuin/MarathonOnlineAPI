@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.mapper
 
 import com.university.MarathonOnlineAPI.entity.User
 import com.university.MarathonOnlineAPI.dto.UserDTO
-import com.university.MarathonOnlineAPI.request.CreateUserRequest
 import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
 
