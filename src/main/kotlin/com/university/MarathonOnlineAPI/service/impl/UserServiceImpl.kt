@@ -5,15 +5,17 @@ import com.university.MarathonOnlineAPI.entity.User
 import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
-import com.university.MarathonOnlineAPI.request.CreateUserRequest
+import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class UserServiceImpl(
     private val userRepos: UserRepository,
-    private val userMapper: UserMapper
+    private val userMapper: UserMapper,
+    private val encoder: PasswordEncoder
 ): UserService {
 
     private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
@@ -21,6 +23,7 @@ class UserServiceImpl(
     override fun addUser(newUser: CreateUserRequest): UserDTO {
         logger.info("Received UserDTO: $newUser")
         try {
+            newUser.password = encoder.encode(newUser.password)
             val user = User()
             user.fullName = newUser.fullName
             user.email = newUser.email
@@ -79,6 +82,7 @@ class UserServiceImpl(
             throw UserException("Error updating user: ${e.message}")
         }
     }
+
 
     override fun getUsers(): List<UserDTO> {
         return try {

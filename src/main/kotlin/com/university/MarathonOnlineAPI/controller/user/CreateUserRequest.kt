@@ -1,4 +1,4 @@
-package com.university.MarathonOnlineAPI.request
+package com.university.MarathonOnlineAPI.controller.user
 
 import com.university.MarathonOnlineAPI.entity.EGender
 import com.university.MarathonOnlineAPI.entity.ERole

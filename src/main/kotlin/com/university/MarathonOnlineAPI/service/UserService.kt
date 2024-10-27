@@ -1,7 +1,7 @@
 package com.university.MarathonOnlineAPI.service
 
 import com.university.MarathonOnlineAPI.dto.UserDTO
-import com.university.MarathonOnlineAPI.request.CreateUserRequest
+import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
 
 interface UserService {
     fun addUser(newUser: CreateUserRequest): UserDTO
