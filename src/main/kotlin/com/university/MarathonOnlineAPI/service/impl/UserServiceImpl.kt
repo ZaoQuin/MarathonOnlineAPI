@@ -6,6 +6,7 @@ import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
+import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -80,6 +81,7 @@ class UserServiceImpl(
             user.phoneNumber = userDTO.phoneNumber
             user.role = userDTO.role
             user.username = userDTO.username
+            user.tokenRefresh = userDTO.tokenRefresh
 
             userRepos.save(user)
 
