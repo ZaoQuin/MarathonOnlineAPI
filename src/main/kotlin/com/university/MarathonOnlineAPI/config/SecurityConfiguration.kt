@@ -27,6 +27,8 @@ class SecurityConfiguration (
                 it
                     .requestMatchers("/api/v1/auth", "/api/v1/auth/refresh", "/error")
                     .permitAll()
+                    .requestMatchers("/api/v1/auth/logout")
+                    .authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/v1/user")
                     .permitAll()
                     .requestMatchers("/api/v1/user**")

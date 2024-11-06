@@ -9,4 +9,6 @@ interface UserService {
     fun updateUser(userDTO: UserDTO): UserDTO
     fun getUsers(): List<UserDTO>
     fun getById(id: Long): UserDTO
+    fun findByEmail(jwt: String): UserDTO
+    fun removeRefreshTokenByEmail(email: String): Boolean
 }

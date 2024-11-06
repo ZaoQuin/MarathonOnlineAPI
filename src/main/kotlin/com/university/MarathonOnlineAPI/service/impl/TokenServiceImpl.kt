@@ -4,6 +4,7 @@ import com.university.MarathonOnlineAPI.config.JwtProperties
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.service.TokenService
 import io.jsonwebtoken.Claims
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.security.core.userdetails.UserDetails
@@ -52,6 +53,26 @@ class TokenServiceImpl(
             ?: throw AuthenticationException("Token is invalid: email not found.")
 
         return userDetails.username == email && !isExpired(token)
+    }
+
+    override fun validateToken(token: String): Boolean {
+        return try {
+            getAllClaims(token)
+            true
+        } catch (e: JwtException) {
+            false
+        }
+    }
+
+    override fun invalidateToken(token: String) {
+        val claims = getAllClaims(token)
+        val expirationDate = Date(System.currentTimeMillis() - 1000)
+
+        val newToken = Jwts.builder()
+            .setClaims(claims)
+            .setExpiration(expirationDate)
+            .signWith(secretKey)
+            .compact()
     }
 
     private fun getAllClaims(token: String): Claims {
