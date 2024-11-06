@@ -35,7 +35,7 @@ class UserServiceImpl(
             user.password = newUser.password
             user.role = newUser.role
             user.isVerified = newUser.isVerified
-
+2
             logger.info("Mapper to Entity: $user")
             userRepos.save(user)
             return userMapper.toDto(user)
