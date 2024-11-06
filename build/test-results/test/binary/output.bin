@@ -1,7 +1,0 @@
-«00:34:48.595 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Received UserDTO: UserDTO(id=1, fullName=John Doe Updated, email=john.doe.updated@example.com, phoneNumber=0987654321, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)
-‡00:34:48.634 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Attempting to delete user with ID: 1
-«00:34:48.658 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Received UserDTO: UserDTO(id=1, fullName=John Doe Updated, email=john.doe.updated@example.com, phoneNumber=0987654321, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)
-’00:34:48.658 [Test worker] ERROR com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Error updating user: User not found with ID: 1
-‡00:34:48.663 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Attempting to delete user with ID: 1
-†00:34:48.663 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- User with ID 1 deleted successfully
-	š00:34:48.670 [Test worker] ERROR com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Error retrieving user by ID: User not found with ID: 1
