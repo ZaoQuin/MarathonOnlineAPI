@@ -6,6 +6,7 @@ import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
+import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -69,10 +70,12 @@ class UserServiceImpl(
             user.email = userDTO.email
             user.gender = userDTO.gender
             user.birthday = userDTO.birthday
+            user.address = userDTO.address
             user.isVerified = userDTO.isVerified
             user.phoneNumber = userDTO.phoneNumber
             user.role = userDTO.role
             user.username = userDTO.username
+            user.tokenRefresh = userDTO.tokenRefresh
 
             userRepos.save(user)
 
@@ -107,4 +110,31 @@ class UserServiceImpl(
         }
     }
 
+    override fun findByEmail(email: String): UserDTO {
+        return try {
+            val user = userRepos.findByEmail(email)
+                .orElseThrow {
+                    throw UserException("User not found with Email: $email")
+                }
+            userMapper.toDto(user)
+        } catch (e: Exception) {
+            logger.error("Error retrieving user by Email: ${e.message}")
+            throw UserException("Unable to retrieve user with Email: $email")
+        }
+    }
+
+    override fun removeRefreshTokenByEmail(email: String): Boolean {
+        return try {
+            val user = userRepos.findByEmail(email)
+                .orElseThrow {
+                    throw UserException("User not found with Email: $email")
+                }
+            user.tokenRefresh = null
+            userRepos.save(user)
+            true
+        } catch (e: Exception) {
+            logger.error("Error removing refresh token: ${e.message}")
+            throw UserException("Error removing refresh token: ${e.message}")
+        }
+    }
 }

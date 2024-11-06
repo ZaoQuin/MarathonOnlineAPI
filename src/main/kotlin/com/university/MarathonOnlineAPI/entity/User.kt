@@ -14,6 +14,7 @@ data class User(
     var phoneNumber: String? = null,
     var gender: EGender? = null,
     var birthday: LocalDate? = null,
+    var address: String? = null,
     var username: String? = null,
     var password: String? = null,
     var role: ERole? = null,

@@ -3,10 +3,12 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.config.JwtProperties
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationRequest
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationResponse
+import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.service.AuthenticationService
 import com.university.MarathonOnlineAPI.service.RefreshTokenService
 import com.university.MarathonOnlineAPI.service.TokenService
+import com.university.MarathonOnlineAPI.service.UserService
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.userdetails.UserDetails
@@ -19,7 +21,8 @@ class AuthenticationServiceImpl(
     private val userDetailsService: CustomUserDetailsService,
     private val tokenService: TokenService,
     private val jwtProperties: JwtProperties,
-    private val refreshTokenService: RefreshTokenService
+    private val refreshTokenService: RefreshTokenService,
+    private val userService: UserService
 ) : AuthenticationService {
 
     override fun authentication(authRequest: AuthenticationRequest): AuthenticationResponse {
@@ -59,6 +62,33 @@ class AuthenticationServiceImpl(
             } else {
                 throw AuthenticationException("Invalid refresh token")
             }
+        }
+    }
+
+    override fun getUserByToken(jwt: String): UserDTO {
+        return if(tokenService.validateToken(jwt)) {
+            tokenService.extractEmail(jwt)?.let {
+                email -> userService.findByEmail(email)
+            }?: throw AuthenticationException("Email not found in the token")
+        } else {
+            throw AuthenticationException("Invalid or expired token")
+        }
+    }
+
+    override fun logout(jwt: String) {
+        try {
+            val email = tokenService.extractEmail(jwt) ?: throw AuthenticationException("Invalid token")
+
+            if (!userService.removeRefreshTokenByEmail(email)) {
+                throw AuthenticationException("Failed to remove refresh token")
+            }
+
+            tokenService.invalidateToken(jwt)
+
+        } catch (e: AuthenticationException) {
+            throw AuthenticationException("Logout failed: ${e.message}")
+        } catch (e: Exception) {
+            throw RuntimeException("An unexpected error occurred during logout: ${e.message}", e)
         }
     }
 
