@@ -1,13 +1,12 @@
 package com.university.MarathonOnlineAPI.controller.auth
 
+import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
+import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.service.AuthenticationService
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.server.ResponseStatusException
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -15,27 +14,59 @@ class AuthController(
     private val authenticationService: AuthenticationService
 ) {
 
-    @PostMapping
-    fun authenticate(@RequestBody authRequest: AuthenticationRequest): AuthenticationResponse {
+    @GetMapping
+    fun getMe(@RequestHeader("Authorization") token: String): ResponseEntity<UserDTO> {
         return try {
-            authenticationService.authentication(authRequest)
-        } catch (e: AuthenticationException) {
-            throw ResponseStatusException(HttpStatus.UNAUTHORIZED, e.message)
+            val jwt = token.replace("Bearer ", "")
+            val foundUser = authenticationService.getUserByToken(jwt)
+            ResponseEntity(foundUser, HttpStatus.OK)
+        } catch (e: UserException) {
+            ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during authentication.")
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping
+    fun authenticate(@RequestBody authRequest: AuthenticationRequest): ResponseEntity<AuthenticationResponse> {
+        return try {
+            val response = authenticationService.authentication(authRequest)
+            ResponseEntity.ok(response)
+        } catch (e: AuthenticationException) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 
     @PostMapping("/refresh")
-    fun refreshAccessToken(@RequestBody request: RefreshTokenRequest): TokenResponse {
+    fun refreshAccessToken(@RequestBody request: RefreshTokenRequest): ResponseEntity<TokenResponse> {
         return try {
-            authenticationService.refreshAccessToken(request.token)
+            val token = authenticationService.refreshAccessToken(request.token)
                 ?.mapToTokenResponse()
-                ?: throw ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid refresh token")
+
+            token?.let {
+                ResponseEntity.ok(it)
+            } ?: run {
+                ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            }
         } catch (e: AuthenticationException) {
-            throw ResponseStatusException(HttpStatus.UNAUTHORIZED, e.message)
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         } catch (e: Exception) {
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during token refresh.")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+    @PostMapping("/logout")
+    fun logout(@RequestHeader("Authorization") token: String): ResponseEntity<String> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            authenticationService.logout(jwt)
+            ResponseEntity.ok("Successfully logged out")
+        } catch (e: AuthenticationException) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: ${e.message}")
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to logout due to unexpected error: ${e.message}")
         }
     }
 

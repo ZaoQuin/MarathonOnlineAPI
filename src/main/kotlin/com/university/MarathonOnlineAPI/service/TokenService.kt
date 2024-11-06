@@ -1,6 +1,5 @@
 package com.university.MarathonOnlineAPI.service
 
-import io.jsonwebtoken.Claims
 import org.springframework.security.core.userdetails.UserDetails
 import java.util.*
 
@@ -14,4 +13,6 @@ interface TokenService {
     fun extractEmail(token: String): String?
     fun isExpired(token: String): Boolean
     fun isValid(token: String, userDetails: UserDetails): Boolean
+    fun validateToken(token: String): Boolean
+    fun invalidateToken(token: String)
 }
