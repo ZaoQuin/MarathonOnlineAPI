@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="UserServiceTest" tests="8" skipped="0" failures="2" errors="0" timestamp="2024-11-04T17:34:47" hostname="BLOW" time="1.242">
+  <properties/>
+  <testcase name="should return user DTO when user exists()" classname="UserServiceTest" time="1.138"/>
+  <testcase name="should update user successfully()" classname="UserServiceTest" time="0.038"/>
+  <testcase name="should throw UserException when an error occurs()" classname="UserServiceTest" time="0.016">
+    <failure message="org.opentest4j.AssertionFailedError: Expected com.university.MarathonOnlineAPI.exception.UserException to be thrown, but nothing was thrown." type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: Expected com.university.MarathonOnlineAPI.exception.UserException to be thrown, but nothing was thrown.
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3115)
+	at UserServiceTest.should throw UserException when an error occurs(UserServiceTest.kt:293)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+</failure>
+  </testcase>
+  <testcase name="should throw UserException when user not found()" classname="UserServiceTest" time="0.009"/>
+  <testcase name="should add user successfully()" classname="UserServiceTest" time="0.016">
+    <failure message="Wanted but not invoked:&#10;userMapper.toEntity(&#10;    UserDTO(id=1, fullName=John Doe, email=john.doe@example.com, phoneNumber=1234567890, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)&#10;);&#10;-&gt; at com.university.MarathonOnlineAPI.mapper.UserMapper.toEntity(UserMapper.kt:15)&#10;Actually, there were zero interactions with this mock.&#10;" type="org.mockito.exceptions.verification.WantedButNotInvoked">Wanted but not invoked:
+userMapper.toEntity(
+    UserDTO(id=1, fullName=John Doe, email=john.doe@example.com, phoneNumber=1234567890, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)
+);
+-&gt; at com.university.MarathonOnlineAPI.mapper.UserMapper.toEntity(UserMapper.kt:15)
+Actually, there were zero interactions with this mock.
+
+	at app//com.university.MarathonOnlineAPI.mapper.UserMapper.toEntity(UserMapper.kt:15)
+	at app//UserServiceTest.should add user successfully(UserServiceTest.kt:85)
+	at java.base@17.0.11/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base@17.0.11/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base@17.0.11/java.util.ArrayList.forEach(ArrayList.java:1511)
+</failure>
+  </testcase>
+  <testcase name="should throw UserException when user not found (update)()" classname="UserServiceTest" time="0.004"/>
+  <testcase name="should delete user successfully()" classname="UserServiceTest" time="0.004"/>
+  <testcase name="should throw UserException when user does not exist()" classname="UserServiceTest" time="0.007"/>
+  <system-out><![CDATA[00:34:48.595 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Received UserDTO: UserDTO(id=1, fullName=John Doe Updated, email=john.doe.updated@example.com, phoneNumber=0987654321, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)
+00:34:48.634 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Attempting to delete user with ID: 1
+00:34:48.658 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Received UserDTO: UserDTO(id=1, fullName=John Doe Updated, email=john.doe.updated@example.com, phoneNumber=0987654321, gender=MALE, birthday=1990-01-01, username=johndoe, role=RUNNER, isVerified=true)
+00:34:48.658 [Test worker] ERROR com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Error updating user: User not found with ID: 1
+00:34:48.663 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Attempting to delete user with ID: 1
+00:34:48.663 [Test worker] INFO com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- User with ID 1 deleted successfully
+00:34:48.670 [Test worker] ERROR com.university.MarathonOnlineAPI.service.impl.UserServiceImpl -- Error retrieving user by ID: User not found with ID: 1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
