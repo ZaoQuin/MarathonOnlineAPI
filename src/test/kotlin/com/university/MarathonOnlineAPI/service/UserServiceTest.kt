@@ -14,6 +14,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.LocalDate
 import java.util.*
 
@@ -24,6 +25,9 @@ class UserServiceTest {
 
     @Mock
     private lateinit var userMapper: UserMapper
+
+    @Mock
+    private lateinit var encoder: PasswordEncoder
 
     @InjectMocks
     private lateinit var userService: UserServiceImpl
