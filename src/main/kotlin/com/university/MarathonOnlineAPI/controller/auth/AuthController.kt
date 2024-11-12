@@ -4,6 +4,7 @@ import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.service.AuthenticationService
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -14,6 +15,8 @@ class AuthController(
     private val authenticationService: AuthenticationService
 ) {
 
+    private val logger = LoggerFactory.getLogger(AuthController::class.java)
+
     @GetMapping
     fun getMe(@RequestHeader("Authorization") token: String): ResponseEntity<UserDTO> {
         return try {
@@ -23,6 +26,21 @@ class AuthController(
         } catch (e: UserException) {
             ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PatchMapping
+    fun verifyAccount(@RequestHeader("Authorization") token: String): ResponseEntity<UserDTO> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val foundUser = authenticationService.verifyAccount(jwt)
+            ResponseEntity(foundUser, HttpStatus.OK)
+        } catch (e: AuthenticationException) {
+            logger.error("Authentication failed: ${e.message}", e)
+            ResponseEntity(HttpStatus.UNAUTHORIZED)
+        } catch (e: Exception) {
+            logger.error("Error while verifying account: ${e.message}", e)
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }

@@ -6,7 +6,6 @@ import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
-import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -32,6 +31,7 @@ class UserServiceImpl(
             user.gender = newUser.gender
             user.birthday = newUser.birthday
             user.username = newUser.username
+            user.address = newUser.address
             user.password = newUser.password
             user.role = newUser.role
             user.isVerified = newUser.isVerified
@@ -60,11 +60,16 @@ class UserServiceImpl(
     override fun updateUser(userDTO: UserDTO): UserDTO {
         logger.info("Received UserDTO: $userDTO")
         try {
-            val id: Long = userDTO.id?: throw UserException("User ID cannot be null");
+            val id: Long = userDTO.id ?: throw UserException("User ID cannot be null")
             val user = userRepos.findById(id)
-                .orElseThrow {
-                    throw UserException("User not found with ID: $id")
-                }
+                .orElseThrow { throw UserException("User not found with ID: $id") }
+
+            if (userDTO.fullName.isNullOrBlank()) {
+                throw UserException("Full name cannot be empty")
+            }
+            if (userDTO.email.isNullOrBlank()) {
+                throw UserException("Email cannot be empty")
+            }
 
             user.fullName = userDTO.fullName
             user.email = userDTO.email
@@ -80,12 +85,14 @@ class UserServiceImpl(
             userRepos.save(user)
 
             return userMapper.toDto(user)
-        } catch (e: Exception) {
-            logger.error("Error updating user: ${e.message}")
+        } catch (e: UserException) {
+            logger.error("Error updating user: ${e.message}", e)
             throw UserException("Error updating user: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error: ${e.message}", e)
+            throw RuntimeException("Unexpected error occurred while updating user: ${e.message}")
         }
     }
-
 
     override fun getUsers(): List<UserDTO> {
         return try {
