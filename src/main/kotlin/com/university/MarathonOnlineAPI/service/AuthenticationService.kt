@@ -9,4 +9,5 @@ interface AuthenticationService {
     fun refreshAccessToken(token: String): String?
     fun getUserByToken(jwt: String): UserDTO
     fun logout(jwt: String)
+    fun verifyAccount(jwt: String): UserDTO
 }

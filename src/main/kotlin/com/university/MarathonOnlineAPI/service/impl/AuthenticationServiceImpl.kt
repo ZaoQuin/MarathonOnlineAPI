@@ -1,14 +1,17 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.config.JwtProperties
+import com.university.MarathonOnlineAPI.controller.auth.AuthController
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationRequest
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationResponse
 import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.entity.ERole
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.service.AuthenticationService
 import com.university.MarathonOnlineAPI.service.RefreshTokenService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
+import org.slf4j.LoggerFactory
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.userdetails.UserDetails
@@ -25,6 +28,9 @@ class AuthenticationServiceImpl(
     private val userService: UserService
 ) : AuthenticationService {
 
+
+    private val logger = LoggerFactory.getLogger(AuthenticationService::class.java)
+
     override fun authentication(authRequest: AuthenticationRequest): AuthenticationResponse {
         return try {
             authManager.authenticate(
@@ -39,11 +45,13 @@ class AuthenticationServiceImpl(
             val accessToken = generateAccessToken(user)
             val refreshToken = generateRefreshToken(user)
 
-            refreshTokenService.save(refreshToken, user)
+            val userDTO = refreshTokenService.save(refreshToken, user)
 
             AuthenticationResponse(
                 accessToken = accessToken,
-                refreshToken = refreshToken
+                refreshToken = refreshToken,
+                role = userDTO.role?:ERole.RUNNER,
+                isVerified = userDTO.isVerified
             )
         } catch (e: Exception) {
             throw AuthenticationException("Authentication failed: ${e.message}")
@@ -66,10 +74,10 @@ class AuthenticationServiceImpl(
     }
 
     override fun getUserByToken(jwt: String): UserDTO {
-        return if(tokenService.validateToken(jwt)) {
-            tokenService.extractEmail(jwt)?.let {
-                email -> userService.findByEmail(email)
-            }?: throw AuthenticationException("Email not found in the token")
+        return if (tokenService.validateToken(jwt)) {
+            tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
         } else {
             throw AuthenticationException("Invalid or expired token")
         }
@@ -91,6 +99,21 @@ class AuthenticationServiceImpl(
             throw RuntimeException("An unexpected error occurred during logout: ${e.message}", e)
         }
     }
+
+    override fun verifyAccount(jwt: String): UserDTO {
+        return try {
+            val user = getUserByToken(jwt)
+            user.isVerified = true
+            userService.updateUser(user)
+        } catch (e: AuthenticationException) {
+            logger.error("Authentication failed: ${e.message}", e)
+            throw AuthenticationException("Authentication failed: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error while verifying account: ${e.message}", e)
+            throw RuntimeException("Error while verifying account: ${e.message}", e)
+        }
+    }
+
 
     private fun generateRefreshToken(user: UserDetails) = tokenService.generate(
         userDetails = user,
