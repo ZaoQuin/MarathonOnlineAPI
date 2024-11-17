@@ -11,4 +11,6 @@ interface UserService {
     fun getById(id: Long): UserDTO
     fun findByEmail(jwt: String): UserDTO
     fun removeRefreshTokenByEmail(email: String): Boolean
+    fun checkEmailExists(email: String): Boolean
+    fun updatePassword(email: String, password: String): Boolean
 }

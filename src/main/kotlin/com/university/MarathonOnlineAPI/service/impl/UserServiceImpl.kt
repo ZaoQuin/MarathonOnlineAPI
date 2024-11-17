@@ -144,4 +144,28 @@ class UserServiceImpl(
             throw UserException("Error removing refresh token: ${e.message}")
         }
     }
+
+    override fun checkEmailExists(email: String): Boolean {
+        return try {
+            !userRepos.findByEmail(email).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking email: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
+    }
+
+    override fun updatePassword(email: String, password: String): Boolean {
+        return try {
+            val user = userRepos.findByEmail(email)
+                .orElseThrow {
+                    throw UserException("User not found with Email: $email")
+                }
+            user.password = encoder.encode(password)
+            userRepos.save(user)
+            true
+        } catch (e: Exception) {
+            logger.error("Error updating password: ${e.message}")
+            throw UserException("Error updating password: ${e.message}")
+        }
+    }
 }
