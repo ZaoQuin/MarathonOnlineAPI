@@ -91,4 +91,24 @@ class UserController(
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
+
+    @PostMapping("/check-email")
+    fun checkMail(@RequestBody request: CheckEmailRequest): ResponseEntity<CheckEmailResponse> {
+        val emailExists = userService.checkEmailExists(request.email)
+        return if (emailExists) {
+            ResponseEntity(CheckEmailResponse(true), HttpStatus.OK)
+        } else {
+            ResponseEntity(CheckEmailResponse(false, "Email not found"), HttpStatus.OK)
+        }
+    }
+
+    @PostMapping("/update-password")
+    fun checkMail(@RequestBody request: UpdatePasswordRequest): ResponseEntity<UpdatePasswordResponse> {
+        val updated = userService.updatePassword(request.email, request.password)
+        return if (updated) {
+            ResponseEntity(UpdatePasswordResponse(true), HttpStatus.OK)
+        } else {
+            ResponseEntity(UpdatePasswordResponse(false, "Email not found"), HttpStatus.NOT_FOUND)
+        }
+    }
 }
