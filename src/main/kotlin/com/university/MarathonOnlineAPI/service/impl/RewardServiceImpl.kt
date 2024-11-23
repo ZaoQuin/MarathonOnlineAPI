@@ -1,6 +1,8 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.dto.CreateRewardRequest
 import com.university.MarathonOnlineAPI.dto.RewardDTO
+import com.university.MarathonOnlineAPI.entity.Reward
 import com.university.MarathonOnlineAPI.exception.RewardException
 import com.university.MarathonOnlineAPI.mapper.RewardMapper
 import com.university.MarathonOnlineAPI.repos.RewardRepository
@@ -12,17 +14,32 @@ import org.springframework.stereotype.Service
 @Service
 class RewardServiceImpl(
     private val rewardRepository: RewardRepository,
-    private val rewardMapper: RewardMapper
+    private val rewardMapper: RewardMapper,
+    private val paymentServiceImpl: PaymentServiceImpl
 ) : RewardService {
 
     private val logger = LoggerFactory.getLogger(RewardServiceImpl::class.java)
 
-    override fun addReward(newReward: RewardDTO): RewardDTO {
+    override fun addReward(newReward: CreateRewardRequest): RewardDTO {
         logger.info("Received RewardDTO: $newReward")
-        return try {
-            val rewardEntity = rewardMapper.toEntity(newReward)
-            val savedReward = rewardRepository.save(rewardEntity)
-            rewardMapper.toDto(savedReward)
+        try {
+            val reward = Reward()
+            reward.name = newReward.name
+            reward.description = newReward.description
+            reward.rewardRank = newReward.rewardRank
+            reward.type = newReward.type
+            reward.isClaim = newReward.isClaim
+
+            logger.info("Map to entity: $reward")
+            val savedReward = rewardRepository.save(reward)
+            return RewardDTO(
+                id = savedReward.id,
+                name = savedReward.name,
+                description = savedReward.description,
+                rewardRank = savedReward.rewardRank,
+                type = savedReward.type,
+                isClaim = savedReward.isClaim
+            )
         } catch (e: DataAccessException) {
             logger.error("Error saving reward: ${e.message}")
             throw RewardException("Database error occurred while saving reward: ${e.message}")
@@ -53,7 +70,16 @@ class RewardServiceImpl(
     override fun getRewards(): List<RewardDTO> {
         return try {
             val rewards = rewardRepository.findAll()
-            rewards.map { rewardMapper.toDto(it) }
+            rewards.map { reward ->
+                RewardDTO(
+                    id = reward.id,
+                    name= reward.name,
+                    description = reward.description,
+                    rewardRank = reward.rewardRank,
+                    type= reward.type,
+                    isClaim = reward.isClaim
+                )
+            }
         } catch (e: DataAccessException) {
             logger.error("Error retrieving rewards: ${e.message}")
             throw RewardException("Database error occurred while retrieving rewards: ${e.message}")

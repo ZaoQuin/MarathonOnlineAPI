@@ -35,7 +35,7 @@ class RuleMapperTest {
             id = 1L,
             icon = "icon.png",
             name = "Rule 1",
-            desc = "Description of Rule 1",
+            description = "Description of Rule 1",
             updateDate = LocalDateTime.now(),
             contest = contest
         )
@@ -44,7 +44,7 @@ class RuleMapperTest {
             id = 1L,
             icon = "icon.png",
             name = "Rule 1",
-            desc = "Description of Rule 1",
+            description = "Description of Rule 1",
             updateDate = LocalDateTime.now()
         )
     }
@@ -58,7 +58,7 @@ class RuleMapperTest {
         assertEquals(rule.id, result.id)
         assertEquals(rule.icon, result.icon)
         assertEquals(rule.name, result.name)
-        assertEquals(rule.desc, result.desc)
+        assertEquals(rule.description, result.description)
         assertEquals(rule.updateDate, result.updateDate)
     }
 
@@ -71,7 +71,7 @@ class RuleMapperTest {
         assertEquals(ruleDTO.id, result.id)
         assertEquals(ruleDTO.icon, result.icon)
         assertEquals(ruleDTO.name, result.name)
-        assertEquals(ruleDTO.desc, result.desc)
+        assertEquals(ruleDTO.description, result.description)
         assertEquals(ruleDTO.updateDate, result.updateDate)
     }
 }

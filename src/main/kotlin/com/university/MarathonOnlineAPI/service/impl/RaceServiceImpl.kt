@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.dto.CreateRaceRequest
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.entity.Race
 import com.university.MarathonOnlineAPI.exception.RaceException
@@ -18,12 +19,25 @@ class RaceServiceImpl(
 
     private val logger = LoggerFactory.getLogger(RaceServiceImpl::class.java)
 
-    override fun addRace(newRace: RaceDTO): RaceDTO {
+    override fun addRace(newRace: CreateRaceRequest): RaceDTO {
         logger.info("Received RaceDTO: $newRace")
-        return try {
-            val race = raceMapper.toEntity(newRace)
-            raceRepository.save(race)
-            raceMapper.toDto(race)
+        try {
+            val race = Race()
+            race.distance = newRace.distance
+            race.timeTaken = newRace.timeTaken
+            race.avgSpeed = newRace.avgSpeed
+            race.timestamp = newRace.timestamp
+
+            logger.info("Map to Entity: $race")
+
+            val savedRace = raceRepository.save(race)
+            return RaceDTO(
+                id = savedRace.id,
+                distance = savedRace.distance,
+                timeTaken = savedRace.timeTaken,
+                avgSpeed = savedRace.avgSpeed,
+                timestamp = savedRace.timestamp
+            )
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
@@ -59,7 +73,16 @@ class RaceServiceImpl(
     override fun getRaces(): List<RaceDTO> {
         return try {
             val races = raceRepository.findAll()
-            races.map { raceMapper.toDto(it) }
+            val raceDTOs = races.map { race ->
+                RaceDTO(
+                    id = race.id,
+                    distance = race.distance,
+                    timeTaken = race.timeTaken,
+                    avgSpeed = race.avgSpeed,
+                    timestamp = race.timestamp
+                )
+            }
+            raceDTOs
         } catch (e: DataAccessException) {
             logger.error("Error fetching races: ${e.message}")
             throw RaceException("Database error occurred while fetching races: ${e.message}")
@@ -70,7 +93,14 @@ class RaceServiceImpl(
         return try {
             val race = raceRepository.findById(id)
                 .orElseThrow { RaceException("Race with ID $id not found") }
-            raceMapper.toDto(race)
+
+            RaceDTO(
+                id = race.id,
+                distance = race.distance,
+                timeTaken = race.timeTaken,
+                avgSpeed = race.avgSpeed,
+                timestamp = race.timestamp
+            )
         } catch (e: DataAccessException) {
             logger.error("Error fetching race with ID $id: ${e.message}")
             throw RaceException("Database error occurred while fetching race: ${e.message}")

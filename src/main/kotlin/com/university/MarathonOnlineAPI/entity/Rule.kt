@@ -1,5 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -9,12 +11,13 @@ data class Rule (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
-    val icon: String? = null,
-    val name: String? = null,
-    val desc: String? = null,
-    val updateDate: LocalDateTime? = null,
+    var icon: String? = null,
+    var name: String? = null,
+    var description: String? = null,
+    var updateDate: LocalDateTime? = null,
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")
-    val contest: Contest? = null,
+    @JsonBackReference
+    var contest: Contest? = null,
 )

@@ -37,8 +37,8 @@ class RewardMapperTest {
         reward = Reward(
             id = 1L,
             name = "Gold Medal",
-            desc = "First place reward",
-            rank = 1,
+            description = "First place reward",
+            rewardRank = 1,
             type = ERewardType.PHYSICAL,
             isClaim = true,
             contest = contest,
@@ -48,8 +48,8 @@ class RewardMapperTest {
         rewardDTO = RewardDTO(
             id = 1L,
             name = "Gold Medal",
-            desc = "First place reward",
-            rank = 1,
+            description = "First place reward",
+            rewardRank = 1,
             type = ERewardType.PHYSICAL,
             isClaim = true
         )
@@ -63,8 +63,8 @@ class RewardMapperTest {
 
         assertEquals(reward.id, result.id)
         assertEquals(reward.name, result.name)
-        assertEquals(reward.desc, result.desc)
-        assertEquals(reward.rank, result.rank)
+        assertEquals(reward.description, result.description)
+        assertEquals(reward.rewardRank, result.rewardRank)
         assertEquals(reward.type, result.type)
         assertEquals(reward.isClaim, result.isClaim)
     }
@@ -77,8 +77,8 @@ class RewardMapperTest {
 
         assertEquals(rewardDTO.id, result.id)
         assertEquals(rewardDTO.name, result.name)
-        assertEquals(rewardDTO.desc, result.desc)
-        assertEquals(rewardDTO.rank, result.rank)
+        assertEquals(rewardDTO.description, result.description)
+        assertEquals(rewardDTO.rewardRank, result.rewardRank)
         assertEquals(rewardDTO.type, result.type)
         assertEquals(rewardDTO.isClaim, result.isClaim)
     }

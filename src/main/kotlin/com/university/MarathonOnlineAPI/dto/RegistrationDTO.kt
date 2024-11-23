@@ -9,7 +9,7 @@ data class RegistrationDTO (
     val payment: PaymentDTO? = null,
     val registrationDate: LocalDateTime? = null,
     val completedDate: LocalDateTime? = null,
-    val rank: Int? = null,
+    val registrationRank: Int? = null,
     val raceResults: List<RaceDTO>? = null,
     val rewards: List<RewardDTO>? = null,
     val status: ERegistrationStatus? = null

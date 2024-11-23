@@ -1,10 +1,15 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.RuleDTO
+import com.university.MarathonOnlineAPI.entity.Contest
+import com.university.MarathonOnlineAPI.entity.Rule
+import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RuleException
 import com.university.MarathonOnlineAPI.mapper.RuleMapper
+import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.RuleRepository
 import com.university.MarathonOnlineAPI.service.RuleService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -12,21 +17,27 @@ import org.springframework.stereotype.Service
 @Service
 class RuleServiceImpl(
     private val ruleRepository: RuleRepository,
-    private val ruleMapper: RuleMapper
+    private val ruleMapper: RuleMapper,
+    private val contestRepository: ContestRepository
 ) : RuleService {
 
     private val logger = LoggerFactory.getLogger(RuleServiceImpl::class.java)
 
-    override fun addRule(newRule: RuleDTO): RuleDTO {
-        logger.info("Received RuleDTO: $newRule")
-        return try {
-            val ruleEntity = ruleMapper.toEntity(newRule)
-            val savedRule = ruleRepository.save(ruleEntity)
-            ruleMapper.toDto(savedRule)
-        } catch (e: DataAccessException) {
-            logger.error("Error saving rule: ${e.message}")
-            throw RuleException("Database error occurred while saving rule: ${e.message}")
-        }
+    override fun addRule(newRule: RuleDTO): Rule {
+        val contest = Contest(32L) //change to current Contest
+
+        logger.debug("Contest found: $contest")
+
+        val rule = Rule(
+            icon = newRule.icon,
+            name = newRule.name,
+            description = newRule.description,
+            updateDate = newRule.updateDate,
+            contest = contest
+        )
+
+        logger.debug("Saving rule: $rule")
+        return ruleRepository.save(rule)
     }
 
     override fun deleteRuleById(id: Long) {
@@ -41,9 +52,30 @@ class RuleServiceImpl(
 
     override fun updateRule(ruleDTO: RuleDTO): RuleDTO {
         return try {
-            val ruleEntity = ruleMapper.toEntity(ruleDTO)
-            val updatedRule = ruleRepository.save(ruleEntity)
-            ruleMapper.toDto(updatedRule)
+            // Tìm quy tắc hiện tại trong cơ sở dữ liệu
+            val existingRule = ruleRepository.findById(ruleDTO.id ?: throw RuleException("Rule ID must not be null"))
+                .orElseThrow { RuleException("Rule with ID ${ruleDTO.id} not found") }
+
+            // Cập nhật các thuộc tính của existingRule
+            existingRule.icon = ruleDTO.icon
+            existingRule.name = ruleDTO.name
+            existingRule.description = ruleDTO.description
+            existingRule.updateDate = ruleDTO.updateDate
+            existingRule.contest = Contest(32) // change when update
+
+
+            // Lưu quy tắc đã cập nhật
+            val updatedRule = ruleRepository.save(existingRule)
+
+            // Chuyển đổi lại thành DTO để trả về
+            RuleDTO(
+                id = updatedRule.id,
+                icon = updatedRule.icon,
+                name = updatedRule.name,
+                description = updatedRule.description,
+                updateDate = updatedRule.updateDate,
+                contestId = updatedRule.contest?.id
+            )
         } catch (e: DataAccessException) {
             logger.error("Error updating rule: ${e.message}")
             throw RuleException("Database error occurred while updating rule: ${e.message}")
@@ -53,7 +85,15 @@ class RuleServiceImpl(
     override fun getRules(): List<RuleDTO> {
         return try {
             val rules = ruleRepository.findAll()
-            rules.map { ruleMapper.toDto(it) }
+            rules.map { payment ->
+                RuleDTO(
+                    id = payment.id,
+                    name = payment.name,
+                    icon = payment.icon,
+                    description = payment.description,
+                    updateDate = payment.updateDate
+                )
+            }
         } catch (e: DataAccessException) {
             logger.error("Error retrieving rules: ${e.message}")
             throw RuleException("Database error occurred while retrieving rules: ${e.message}")
@@ -62,12 +102,21 @@ class RuleServiceImpl(
 
     override fun getById(id: Long): RuleDTO {
         return try {
+            // Fetch the Rule entity from the repository
             val rule = ruleRepository.findById(id)
                 .orElseThrow { RuleException("Rule with ID $id not found") }
-            ruleMapper.toDto(rule)
+
+            // Map the Rule entity to RuleDTO
+            RuleDTO(
+                id = rule.id,
+                icon = rule.icon,
+                name = rule.name,
+                description = rule.description,
+                updateDate = rule.updateDate
+            )
         } catch (e: DataAccessException) {
-            logger.error("Error retrieving rule with ID $id: ${e.message}")
-            throw RuleException("Database error occurred while retrieving rule: ${e.message}")
+            logger.error("Error fetching rule with ID $id: ${e.message}")
+            throw RuleException("Database error occurred while fetching rule: ${e.message}")
         }
     }
 }

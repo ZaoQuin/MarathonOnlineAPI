@@ -18,7 +18,7 @@ data class Registration(
 
     val registrationDate: LocalDateTime? = null,
     val completedDate: LocalDateTime? = null,
-    val rank: Int? = null,
+    val registrationRank: Int? = null,
 
     @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val raceResults: List<Race>? = null,
@@ -30,7 +30,7 @@ data class Registration(
 
     @ManyToOne
     @JoinColumn(name = "contest_id")
-    val contest: Contest? = null,
+    val contest: Contest? = null
 )
 
 enum class ERegistrationStatus {

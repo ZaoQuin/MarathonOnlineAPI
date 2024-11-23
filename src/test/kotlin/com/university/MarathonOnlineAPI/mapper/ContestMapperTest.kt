@@ -44,7 +44,7 @@ class ContestMapperTest {
             payment = Payment(/* thông tin payment */),
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
-            rank = 1,
+            registrationRank = 1,
             raceResults = emptyList(),
             rewards = emptyList(),
             status = ERegistrationStatus.COMPLETED,
@@ -57,7 +57,7 @@ class ContestMapperTest {
             payment = PaymentDTO(/* thông tin payment */),
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
-            rank = 1,
+            registrationRank = 1,
             raceResults = emptyList(),
             rewards = emptyList(),
             status = ERegistrationStatus.COMPLETED
@@ -67,7 +67,7 @@ class ContestMapperTest {
             id = 1L,
             organizer = User(id = 1L, fullName = "Nguyễn Văn B"),
             name = "Marathon 2024",
-            desc = "A great marathon event.",
+            description = "A great marathon event.",
             distance = 42.195,
             startDate = LocalDateTime.now(),
             endDate = LocalDateTime.now(),
@@ -85,7 +85,7 @@ class ContestMapperTest {
             id = 1L,
             organizer = UserDTO(id = 1L, fullName = "Nguyễn Văn B"),
             name = "Marathon 2024",
-            desc = "A great marathon event.",
+            description = "A great marathon event.",
             distance = 42.195,
             startDate = LocalDateTime.now(),
             endDate = LocalDateTime.now(),
@@ -110,12 +110,14 @@ class ContestMapperTest {
     fun `should map Contest to ContestDTO`() {
         `when`(modelMapper.map(contest, ContestDTO::class.java)).thenReturn(contestDTO)
 
+        println("Before mapping to DTO: $contest")
         val result = contestMapper.toDto(contest)
+        println("After mapping to DTO: $result")
 
         assertEquals(contest.id, result.id)
         assertEquals(contest.organizer?.id, result.organizer?.id)
         assertEquals(contest.name, result.name)
-        assertEquals(contest.desc, result.desc)
+        assertEquals(contest.description, result.description)
         assertEquals(contest.distance, result.distance)
         assertEquals(contest.fee, result.fee)
         assertEquals(contest.maxMembers, result.maxMembers)
@@ -136,7 +138,7 @@ class ContestMapperTest {
             assertEquals(registration.id, result.registrations!![index].id)
             assertEquals(registration.runner?.id, result.registrations!![index].runner?.id)
             assertEquals(registration.runner?.fullName, result.registrations!![index].runner?.fullName)
-            assertEquals(registration.rank, result.registrations!![index].rank)
+            assertEquals(registration.registrationRank, result.registrations!![index].registrationRank)
             assertEquals(registration.raceResults, result.registrations!![index].raceResults)
             assertEquals(registration.rewards, result.registrations!![index].rewards)
             assertEquals(registration.status, result.registrations!![index].status)
@@ -147,12 +149,14 @@ class ContestMapperTest {
     fun `should map ContestDTO to Contest`() {
         `when`(modelMapper.map(contestDTO, Contest::class.java)).thenReturn(contest)
 
+        println("Before mapping to Entity: $contestDTO")
         val result = contestMapper.toEntity(contestDTO)
+        println("After mapping to Entity: $result")
 
         assertEquals(contestDTO.id, result.id)
         assertEquals(contestDTO.organizer?.id, result.organizer?.id)
         assertEquals(contestDTO.name, result.name)
-        assertEquals(contestDTO.desc, result.desc)
+        assertEquals(contestDTO.description, result.description)
         assertEquals(contestDTO.distance, result.distance)
         assertEquals(contestDTO.fee, result.fee)
         assertEquals(contestDTO.maxMembers, result.maxMembers)
@@ -160,7 +164,6 @@ class ContestMapperTest {
 
         assertEquals(contestDTO.rules?.size, result.rules?.size)
         contestDTO.rules?.forEachIndexed { index, rule ->
-            assertEquals(rule.id, result.rules!![index].id)
             assertEquals(rule.id, result.rules!![index].id)
         }
 
@@ -173,7 +176,7 @@ class ContestMapperTest {
             assertEquals(registration.id, result.registrations!![index].id)
             assertEquals(registration.runner?.id, result.registrations!![index].runner?.id)
             assertEquals(registration.runner?.fullName, result.registrations!![index].runner?.fullName)
-            assertEquals(registration.rank, result.registrations!![index].rank)
+            assertEquals(registration.registrationRank, result.registrations!![index].registrationRank)
             assertEquals(registration.raceResults, result.registrations!![index].raceResults)
             assertEquals(registration.rewards, result.registrations!![index].rewards)
             assertEquals(registration.status, result.registrations!![index].status)
