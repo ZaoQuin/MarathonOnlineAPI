@@ -10,8 +10,6 @@ import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
-import java.math.BigDecimal
-import java.time.LocalDateTime
 
 @Service
 class ContestServiceImpl(
@@ -25,7 +23,7 @@ class ContestServiceImpl(
 
     private val logger = LoggerFactory.getLogger(ContestServiceImpl::class.java)
 
-    override fun addContest(contestDTO: ContestDTO): ContestDTO {
+    override fun addContest(newContest: ContestDTO): ContestDTO {
         try {
             val contest = Contest(
                 organizer = newContest.organizer?.let { userMapper.toEntity(it) },
