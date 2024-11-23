@@ -9,7 +9,6 @@ import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import kotlin.math.log
 
 @RestController
 @RequestMapping("/api/v1/contest")
@@ -21,7 +20,6 @@ class ContestController(private val contestService: ContestService) {
     fun addContest(@RequestBody @Valid newContest: ContestDTO): ResponseEntity<Any> {
         return try {
             val addedContest = contestService.addContest(newContest)
-            //logger.info("Show newContest: $addedContest")
             ResponseEntity(addedContest, HttpStatus.CREATED)
         } catch (e: ContestException) {
             logger.error("Error adding contest: ${e.message}")
@@ -70,6 +68,7 @@ class ContestController(private val contestService: ContestService) {
     fun getContests(): ResponseEntity<List<ContestDTO>> {
         return try {
             val contests = contestService.getContests()
+
             ResponseEntity(contests, HttpStatus.OK)
         } catch (e: Exception) {
             logger.error("Error in getContests: ${e.message}")

@@ -13,7 +13,7 @@ data class Contest(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "organizer_id")
     var organizer: User? = null,
     var name: String? = null,
@@ -25,11 +25,14 @@ data class Contest(
     var maxMembers: Int? = null,
     var status: EContestStatus? = null,
     var createDate: LocalDateTime? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
     var rules: List<Rule>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
     var rewards: List<Reward>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
     var registrations: List<Registration>? = null,
     var registrationDeadline: LocalDateTime? = null
 )

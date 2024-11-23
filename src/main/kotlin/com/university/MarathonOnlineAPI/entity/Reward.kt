@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
 import jakarta.persistence.*
 import org.springframework.context.annotation.Description
 
@@ -15,9 +16,10 @@ data class Reward (
     var type: ERewardType? = null,
     var isClaim: Boolean? = null,
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")
-    val contest: Contest? = null,
+    @JsonBackReference
+    var contest: Contest? = null,
 
     @ManyToOne
     @JoinColumn(name = "registration_id")

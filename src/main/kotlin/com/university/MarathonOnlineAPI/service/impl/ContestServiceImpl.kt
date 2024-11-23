@@ -6,48 +6,43 @@ import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.mapper.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.ContestService
-import com.university.MarathonOnlineAPI.service.RegistrationService
-import com.university.MarathonOnlineAPI.service.RuleService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
-import java.math.BigDecimal
-import java.time.LocalDateTime
 
 @Service
 class ContestServiceImpl(
     private val contestRepository: ContestRepository,
     private val contestMapper: ContestMapper,
     private val userRepository: UserRepository,
+    private val userMapper: UserMapper,
+    private val ruleMapper: RuleMapper,
+    private val rewardMapper: RewardMapper,
 ) : ContestService {
 
     private val logger = LoggerFactory.getLogger(ContestServiceImpl::class.java)
 
-    override fun addContest(contestDTO: ContestDTO): ContestDTO {
+    override fun addContest(newContest: ContestDTO): ContestDTO {
         try {
-            val user = userRepository.findById(1L).orElseThrow {
-                ContestException("Organizer not found")
-            }
-            logger.info("User found: $user")
-
-            // Tiếp tục với việc tạo contest
             val contest = Contest(
-                id = 1L,
-                organizer = User(id = 1L), //change to current user
-                name = "Marathon 2024",
-                description = "A great marathon event.",
-                distance = 42.195,
-                startDate = LocalDateTime.now(),
-                endDate = LocalDateTime.now(),
-                fee = BigDecimal("50.00"),
-                maxMembers = 100,
-                status = EContestStatus.ONGOING,
-                createDate = LocalDateTime.now(),
-                rules = emptyList(),
-                rewards = emptyList(),
-                registrations = emptyList(),
-                registrationDeadline = LocalDateTime.now()
+                organizer = newContest.organizer?.let { userMapper.toEntity(it) },
+                name = newContest.name,
+                description = newContest.description,
+                distance = newContest.distance,
+                startDate = newContest.startDate,
+                endDate = newContest.endDate,
+                fee = newContest.fee,
+                maxMembers = newContest.maxMembers,
+                status = newContest.status,
+                rules = newContest.rules?.map { ruleMapper.toEntity(it) } ?: emptyList(),
+                rewards = newContest.rewards?.map { rewardMapper.toEntity(it) } ?: emptyList(),
+                createDate = newContest.createDate,
+                registrationDeadline = newContest.registrationDeadline
             )
+
+            contest.rules?.forEach { it.contest = contest }
+            contest.rewards?.forEach { it.contest = contest }
 
             val savedContest = contestRepository.save(contest)
             return contestMapper.toDto(savedContest)
@@ -82,6 +77,7 @@ class ContestServiceImpl(
         }
     }
 
+    @Transactional
     override fun getContests(): List<ContestDTO> {
         return try {
             val contests = contestRepository.findAll()
