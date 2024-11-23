@@ -80,7 +80,6 @@ class UserServiceImpl(
             user.phoneNumber = userDTO.phoneNumber
             user.role = userDTO.role
             user.username = userDTO.username
-            user.tokenRefresh = userDTO.tokenRefresh
 
             userRepos.save(user)
 
