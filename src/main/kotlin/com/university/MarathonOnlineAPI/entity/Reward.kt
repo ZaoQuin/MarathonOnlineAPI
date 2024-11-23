@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
+import org.springframework.context.annotation.Description
 
 @Entity
 @Table(name = "reward")
@@ -8,11 +9,11 @@ data class Reward (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
-    val name: String? = null,
-    val desc: String? = null,
-    val rank: Int? = null,
-    val type: ERewardType? = null,
-    val isClaim: Boolean? = null,
+    var name: String? = null,
+    var description: String? = null,
+    var rewardRank: Int? = null,
+    var type: ERewardType? = null,
+    var isClaim: Boolean? = null,
 
     @ManyToOne
     @JoinColumn(name = "contest_id")

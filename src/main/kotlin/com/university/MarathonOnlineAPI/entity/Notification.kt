@@ -11,16 +11,15 @@ data class Notification(
     val id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
-    val receiver: User? = null,
-
+    var receiver: User? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")
-    val contest: Contest? = null,
-    val title: String? = null,
-    val content: String? = null,
-    val createAt: LocalDateTime? = null,
-    val isRead: Boolean? = null,
-    val type: ENotificationType? = null
+    var contest: Contest? = null,
+    var title: String? = null,
+    var content: String? = null,
+    var createAt: LocalDateTime? = null,
+    var isRead: Boolean? = null,
+    var type: ENotificationType? = null
 )
 
 enum class ENotificationType {

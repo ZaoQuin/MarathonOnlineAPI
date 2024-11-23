@@ -1,31 +1,42 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.dto.CreatePaymentRequest
 import com.university.MarathonOnlineAPI.dto.PaymentDTO
+import com.university.MarathonOnlineAPI.entity.Payment
 import com.university.MarathonOnlineAPI.exception.PaymentException
+import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.PaymentMapper
 import com.university.MarathonOnlineAPI.repos.PaymentRepository
 import com.university.MarathonOnlineAPI.service.PaymentService
+import org.modelmapper.ModelMapper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import kotlin.math.log
+
 
 @Service
 class PaymentServiceImpl(
     private val paymentRepository: PaymentRepository,
-    private val paymentMapper: PaymentMapper
+    private val paymentMapper: PaymentMapper,
+
 ) : PaymentService {
 
     private val logger = LoggerFactory.getLogger(PaymentServiceImpl::class.java)
 
-    override fun addPayment(newPayment: PaymentDTO): PaymentDTO {
+    override fun addPayment(newPayment: CreatePaymentRequest): PaymentDTO {
         logger.info("Received PaymentDTO: $newPayment")
-        return try {
-            val paymentEntity = paymentMapper.toEntity(newPayment)
-            val savedPayment = paymentRepository.save(paymentEntity)
-            paymentMapper.toDto(savedPayment)
-        } catch (e: DataAccessException) {
-            logger.error("Error saving payment: ${e.message}")
-            throw PaymentException("Database error occurred while saving payment: ${e.message}")
+        try {
+            val payment = Payment()
+            payment.amount = newPayment.amount
+            payment.paymentDate = newPayment.paymentDate
+            payment.status = newPayment.status
+
+            logger.info("Map to Entity: $payment")
+            paymentRepository.save(payment)
+            return paymentMapper.toDto(payment)
+        } catch (e: Exception){
+            throw PaymentException("Error adding payment: ${e.message}")
         }
     }
 
@@ -53,7 +64,21 @@ class PaymentServiceImpl(
     override fun getPayments(): List<PaymentDTO> {
         return try {
             val payments = paymentRepository.findAll()
-            payments.map { paymentMapper.toDto(it) }
+
+            logger.info("Retrieved payments from database: $payments")
+
+            val paymentDTOs = payments.map { payment ->
+                PaymentDTO(
+                    id = payment.id,
+                    amount = payment.amount,
+                    paymentDate = payment.paymentDate,
+                    status = payment.status
+                )
+            }
+
+            logger.info("Mapped PaymentDTOs: $paymentDTOs")
+
+            paymentDTOs
         } catch (e: DataAccessException) {
             logger.error("Error retrieving payments: ${e.message}")
             throw PaymentException("Database error occurred while retrieving payments: ${e.message}")

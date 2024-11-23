@@ -44,8 +44,8 @@ class RegistrationMapperTest {
         payment = Payment(id = 1L, amount = (1000000).toBigDecimal())
         paymentDTO = PaymentDTO(id = 1L, amount = (1000000).toBigDecimal())
 
-        reward = Reward(id = 1L, name = "Gold Medal", desc = "First Place", rank = 1, type = ERewardType.PHYSICAL, isClaim = true)
-        rewardDTO = RewardDTO(id = 1L, name = "Gold Medal", desc = "First Place", rank = 1, type = ERewardType.PHYSICAL, isClaim = true)
+        reward = Reward(id = 1L, name = "Gold Medal", description = "First Place", rewardRank = 1, type = ERewardType.PHYSICAL, isClaim = true)
+        rewardDTO = RewardDTO(id = 1L, name = "Gold Medal", description = "First Place", rewardRank = 1, type = ERewardType.PHYSICAL, isClaim = true)
 
         race = Race(id = 1L, distance = 42.195, timeTaken = 1000)
         raceDTO = RaceDTO(id = 1L, distance = 42.195, timeTaken = 1000)
@@ -56,7 +56,7 @@ class RegistrationMapperTest {
             payment = payment,
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
-            rank = 1,
+            registrationRank = 1,
             raceResults = listOf(race),
             rewards = listOf(reward),
             status = ERegistrationStatus.COMPLETED,
@@ -69,7 +69,7 @@ class RegistrationMapperTest {
             payment = paymentDTO,
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
-            rank = 1,
+            registrationrank = 1,
             raceResults = listOf(raceDTO),
             rewards = listOf(rewardDTO),
             status = ERegistrationStatus.COMPLETED
@@ -87,7 +87,7 @@ class RegistrationMapperTest {
         assertEquals(registration.payment?.id, result.payment?.id)
         assertEquals(registration.registrationDate, result.registrationDate)
         assertEquals(registration.completedDate, result.completedDate)
-        assertEquals(registration.rank, result.rank)
+        assertEquals(registration.registrationRank, result.registrationrank)
         assertEquals(registration.raceResults?.size, result.raceResults?.size)
         assertEquals(registration.rewards?.size, result.rewards?.size)
         assertEquals(registration.status, result.status)
@@ -104,7 +104,7 @@ class RegistrationMapperTest {
         assertEquals(registrationDTO.payment?.id, result.payment?.id)
         assertEquals(registrationDTO.registrationDate?.second, result.registrationDate?.second)
         assertEquals(registrationDTO.completedDate?.second, result.completedDate?.second)
-        assertEquals(registrationDTO.rank, result.rank)
+        assertEquals(registrationDTO.registrationrank, result.registrationRank)
         assertEquals(registrationDTO.raceResults?.size, result.raceResults?.size)
         assertEquals(registrationDTO.rewards?.size, result.rewards?.size)
         assertEquals(registrationDTO.status, result.status)

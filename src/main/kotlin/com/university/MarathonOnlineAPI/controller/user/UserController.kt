@@ -22,7 +22,9 @@ class UserController(
     fun addUser(@RequestBody @Valid newUser: CreateUserRequest): ResponseEntity<Any> {
         return try {
             val addedUser = userService.addUser(newUser)
+            logger.error("Show addedUser: $addedUser")
             ResponseEntity(addedUser, HttpStatus.CREATED)
+
         } catch (e: UserException) {
             logger.error("Error adding user: ${e.message}")
             ResponseEntity("User error occurred: ${e.message}", HttpStatus.BAD_REQUEST)

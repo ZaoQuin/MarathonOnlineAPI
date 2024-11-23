@@ -8,7 +8,7 @@ data class ContestDTO(
     val id: Long? = null,
     val organizer: UserDTO? = null,
     val name: String? = null,
-    val desc: String? = null,
+    val description: String? = null,
     val distance: Double? = null,
     val startDate: LocalDateTime? = null,
     val endDate: LocalDateTime? = null,

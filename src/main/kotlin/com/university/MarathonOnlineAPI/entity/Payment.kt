@@ -10,9 +10,9 @@ data class Payment(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
-    val amount: BigDecimal? = null,
-    val paymentDate: LocalDateTime? = null,
-    val status: EPaymentStatus? = null
+    var amount: BigDecimal? = null,
+    var paymentDate: LocalDateTime? = null,
+    var status: EPaymentStatus? = null
 )
 
 enum class EPaymentStatus {

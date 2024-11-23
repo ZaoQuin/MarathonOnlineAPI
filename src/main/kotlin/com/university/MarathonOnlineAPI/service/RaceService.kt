@@ -1,9 +1,10 @@
 package com.university.MarathonOnlineAPI.service
 
+import com.university.MarathonOnlineAPI.dto.CreateRaceRequest
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 
 interface RaceService {
-    fun addRace(newRule: RaceDTO): RaceDTO
+    fun addRace(newRace: CreateRaceRequest): RaceDTO
     fun deleteRaceById(id: Long)
     fun updateRace(raceDTO: RaceDTO): RaceDTO
     fun getRaces(): List<RaceDTO>
