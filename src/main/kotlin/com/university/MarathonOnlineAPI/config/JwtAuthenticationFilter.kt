@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.config
 
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.impl.CustomUserDetailsService
-import com.university.MarathonOnlineAPI.service.impl.TokenServiceImpl
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
