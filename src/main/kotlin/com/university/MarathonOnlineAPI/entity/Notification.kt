@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 data class Notification(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
     var receiver: User? = null,

@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 data class Rule (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
     var icon: String? = null,
     var name: String? = null,
     var description: String? = null,

@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 data class Payment(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
     var amount: BigDecimal? = null,
     var paymentDate: LocalDateTime? = null,
     var status: EPaymentStatus? = null

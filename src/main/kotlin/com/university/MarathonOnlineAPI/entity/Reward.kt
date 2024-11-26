@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Description
 data class Reward (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
     var name: String? = null,
     var description: String? = null,
     var rewardRank: Int? = null,
@@ -23,7 +23,7 @@ data class Reward (
 
     @ManyToOne
     @JoinColumn(name = "registration_id")
-    val registration: Registration? = null
+    var registration: Registration? = null
 )
 
 enum class ERewardType {

@@ -4,12 +4,12 @@ import com.university.MarathonOnlineAPI.entity.ENotificationType
 import java.time.LocalDateTime
 
 data class NotificationDTO(
-    val id: Long? = null,
-    val receiver: UserDTO? = null,
-    val contest: ContestDTO? = null,
-    val title: String? = null,
-    val content: String? = null,
-    val createAt: LocalDateTime? = null,
-    val isRead: Boolean? = null,
-    val type: ENotificationType? = null
+    var id: Long? = null,
+    var receiver: UserDTO? = null,
+    var contest: ContestDTO? = null,
+    var title: String? = null,
+    var content: String? = null,
+    var createAt: LocalDateTime? = null,
+    var isRead: Boolean? = null,
+    var type: ENotificationType? = null
 )

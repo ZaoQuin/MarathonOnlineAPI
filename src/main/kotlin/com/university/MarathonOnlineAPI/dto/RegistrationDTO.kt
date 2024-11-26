@@ -4,13 +4,13 @@ import com.university.MarathonOnlineAPI.entity.*
 import java.time.LocalDateTime
 
 data class RegistrationDTO (
-    val id: Long? = null,
-    val runner: UserDTO? = null,
-    val payment: PaymentDTO? = null,
-    val registrationDate: LocalDateTime? = null,
-    val completedDate: LocalDateTime? = null,
-    val registrationRank: Int? = null,
-    val raceResults: List<RaceDTO>? = null,
-    val rewards: List<RewardDTO>? = null,
-    val status: ERegistrationStatus? = null
+    var id: Long? = null,
+    var runner: UserDTO? = null,
+    var payment: PaymentDTO? = null,
+    var registrationDate: LocalDateTime? = null,
+    var completedDate: LocalDateTime? = null,
+    var registrationRank: Int? = null,
+    var raceResults: List<RaceDTO>? = null,
+    var rewards: List<RewardDTO>? = null,
+    var status: ERegistrationStatus? = null
 )

@@ -3,10 +3,10 @@ package com.university.MarathonOnlineAPI.dto
 import com.university.MarathonOnlineAPI.entity.ERewardType
 
 data class RewardDTO (
-    val id: Long? = null,
-    val name: String? = null,
-    val description: String? = null,
-    val rewardRank: Int? = null,
-    val type: ERewardType? = null,
-    val isClaim: Boolean? = null
+    var id: Long? = null,
+    var name: String? = null,
+    var description: String? = null,
+    var rewardRank: Int? = null,
+    var type: ERewardType? = null,
+    var isClaim: Boolean? = null
 )

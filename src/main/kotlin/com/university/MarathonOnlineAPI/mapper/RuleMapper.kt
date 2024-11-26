@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component
 @Component
 class RuleMapper (private val modelMapper: ModelMapper): Mapper<RuleDTO, Rule> {
     override fun toDto(entity: Rule): RuleDTO {
-        return modelMapper.map(entity, RuleDTO::class.java)
+        val ruleDTO = modelMapper.map(entity, RuleDTO::class.java)
+        return ruleDTO
     }
     override fun toEntity(dto: RuleDTO): Rule {
-        return modelMapper.map(dto, Rule::class.java)
+        val rule = modelMapper.map(dto, Rule::class.java)
+        return rule
     }
 }

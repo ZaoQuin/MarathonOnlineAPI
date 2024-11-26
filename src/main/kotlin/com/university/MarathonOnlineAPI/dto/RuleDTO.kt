@@ -3,10 +3,10 @@ package com.university.MarathonOnlineAPI.dto
 import java.time.LocalDateTime
 
 data class RuleDTO (
-    val id: Long? = null,
-    val icon: String? = null,
-    val name: String? = null,
-    val description: String? = null,
-    val updateDate: LocalDateTime? = null,
-    val contestId: Long? = null
+    var id: Long? = null,
+    var icon: String? = null,
+    var name: String? = null,
+    var description: String? = null,
+    var updateDate: LocalDateTime? = null,
+    var contestId: Long? = null
 )

@@ -9,25 +9,25 @@ import java.time.LocalDateTime
 data class Registration(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    val runner: User? = null,
+    var runner: User? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
-    val payment: Payment? = null,
+    var payment: Payment? = null,
 
-    val registrationDate: LocalDateTime? = null,
-    val completedDate: LocalDateTime? = null,
-    val registrationRank: Int? = null,
-
-    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val raceResults: List<Race>? = null,
+    var registrationDate: LocalDateTime? = null,
+    var completedDate: LocalDateTime? = null,
+    var registrationRank: Int? = null,
 
     @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val rewards: List<Reward>? = null,
+    var raceResults: List<Race>? = null,
 
-    val status: ERegistrationStatus? = null,
+    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    var rewards: List<Reward>? = null,
+
+    var status: ERegistrationStatus? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")

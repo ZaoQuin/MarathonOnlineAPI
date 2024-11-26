@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component
 class UserMapper(private val modelMapper: ModelMapper): Mapper<UserDTO, User> {
 
     override fun toDto(entity: User): UserDTO {
-        return modelMapper.map(entity, UserDTO::class.java)
+        val userDTO = modelMapper.map(entity, UserDTO::class.java)
+        return userDTO
     }
     override fun toEntity(dto: UserDTO): User {
-        return modelMapper.map(dto, User::class.java)
+        val user = modelMapper.map(dto, User::class.java)
+        return user
     }
 }
