@@ -19,6 +19,7 @@ data class User(
     var password: String? = null,
     var role: ERole? = null,
     var isVerified: Boolean = false,
+    var isDeleted: Boolean = false,
     var tokenRefresh: String? = null
 )
 

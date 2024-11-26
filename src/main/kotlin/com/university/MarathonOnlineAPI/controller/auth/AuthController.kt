@@ -88,6 +88,19 @@ class AuthController(
         }
     }
 
+    @DeleteMapping("")
+    fun deleteAccount(@RequestHeader("Authorization") token: String): ResponseEntity<UserDTO> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val userDTO = authenticationService.deleteAccount(jwt)
+            ResponseEntity.ok(userDTO)
+        } catch (e: AuthenticationException) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
     private fun String.mapToTokenResponse(): TokenResponse =
         TokenResponse(
             token = this

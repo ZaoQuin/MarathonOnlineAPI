@@ -48,10 +48,12 @@ class AuthenticationServiceImpl(
             val userDTO = refreshTokenService.save(refreshToken, user)
 
             AuthenticationResponse(
+                fullName = userDTO.fullName?:"",
                 accessToken = accessToken,
                 refreshToken = refreshToken,
                 role = userDTO.role?:ERole.RUNNER,
-                isVerified = userDTO.isVerified
+                isVerified = userDTO.isVerified,
+                isDeleted = userDTO.isDeleted
             )
         } catch (e: Exception) {
             throw AuthenticationException("Authentication failed: ${e.message}")
@@ -85,7 +87,7 @@ class AuthenticationServiceImpl(
 
     override fun logout(jwt: String) {
         try {
-            val email = tokenService.extractEmail(jwt) ?: throw AuthenticationException("Invalid token")
+                val email = tokenService.extractEmail(jwt) ?: throw AuthenticationException("Invalid token")
 
             if (!userService.removeRefreshTokenByEmail(email)) {
                 throw AuthenticationException("Failed to remove refresh token")
@@ -111,6 +113,19 @@ class AuthenticationServiceImpl(
         } catch (e: Exception) {
             logger.error("Error while verifying account: ${e.message}", e)
             throw RuntimeException("Error while verifying account: ${e.message}", e)
+        }
+    }
+
+    override fun deleteAccount(jwt: String): UserDTO {
+        return if (tokenService.validateToken(jwt)) {
+            tokenService.extractEmail(jwt)?.let { email ->
+                val userDTO = userService.findByEmail(email)
+                userDTO.isDeleted = true
+                userService.updateUser(userDTO)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+        } else {
+            throw AuthenticationException("Invalid or expired token")
         }
     }
 
