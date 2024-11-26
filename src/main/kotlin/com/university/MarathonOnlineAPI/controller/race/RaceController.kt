@@ -17,11 +17,11 @@ class RaceController(private val raceService: RaceService) {
 
     private val logger = LoggerFactory.getLogger(RaceController::class.java)
 
-    // Tạo mới một Race
     @PostMapping
-    fun addRace(@RequestBody @Valid newRace: CreateRaceRequest): ResponseEntity<Any> {
+    fun addRace(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRace: CreateRaceRequest): ResponseEntity<Any> {
         return try {
-            val addedRace = raceService.addRace(newRace)
+            val jwt = token.replace("Bearer ", "")
+            val addedRace = raceService.addRace(newRace, jwt)
             logger.error("Show addedRace: $addedRace")
             ResponseEntity(addedRace, HttpStatus.CREATED)
         } catch (e: RaceException) {
@@ -33,7 +33,6 @@ class RaceController(private val raceService: RaceService) {
         }
     }
 
-    // Xóa một Race theo ID
     @DeleteMapping("/{id}")
     fun deleteRace(@PathVariable id: Long): ResponseEntity<String> {
         return try {
