@@ -4,7 +4,7 @@ import com.university.MarathonOnlineAPI.dto.CreateRaceRequest
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 
 interface RaceService {
-    fun addRace(newRace: CreateRaceRequest): RaceDTO
+    fun addRace(newRace: CreateRaceRequest, jwt: String): RaceDTO
     fun deleteRaceById(id: Long)
     fun updateRace(raceDTO: RaceDTO): RaceDTO
     fun getRaces(): List<RaceDTO>

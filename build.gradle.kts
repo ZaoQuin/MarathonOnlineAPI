@@ -29,9 +29,11 @@ dependencies {
 	runtimeOnly("com.h2database:h2")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	implementation("org.jetbrains.kotlin:kotlin-stdlib")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	//Mapper
 	implementation("org.modelmapper:modelmapper:3.1.0")
+	annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
 
 	//Mapper - Test
 

@@ -6,11 +6,17 @@ import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
 
 @Component
-class RaceMapper(private val modelMapper: ModelMapper): Mapper<RaceDTO, Race>{
+class RaceMapper(private val modelMapper: ModelMapper, private val userMapper: UserMapper) : Mapper<RaceDTO, Race> {
+
     override fun toDto(entity: Race): RaceDTO {
-        return modelMapper.map(entity, RaceDTO::class.java)
+        val raceDTO = modelMapper.map(entity, RaceDTO::class.java)
+        raceDTO.user = entity.user?.let { userMapper.toDto(it) } // Ánh xạ User sang UserDTO
+        return raceDTO
     }
+
     override fun toEntity(dto: RaceDTO): Race {
-        return modelMapper.map(dto, Race::class.java)
+        val race = modelMapper.map(dto, Race::class.java)
+        race.user = dto.user?.let { userMapper.toEntity(it) } // Ánh xạ UserDTO sang User
+        return race
     }
 }

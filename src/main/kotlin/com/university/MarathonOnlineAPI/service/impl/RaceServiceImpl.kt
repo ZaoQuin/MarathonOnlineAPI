@@ -3,41 +3,58 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.CreateRaceRequest
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.entity.Race
+import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.RaceException
 import com.university.MarathonOnlineAPI.mapper.RaceMapper
+import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.RaceRepository
 import com.university.MarathonOnlineAPI.service.RaceService
+import com.university.MarathonOnlineAPI.service.TokenService
+import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
 
 @Service
-class RaceServiceImpl(
+class RaceServiceImpl @Autowired constructor(
     private val raceRepository: RaceRepository,
-    private val raceMapper: RaceMapper
+    private val tokenService: TokenService,
+    private val userService: UserService,
+    private val raceMapper: RaceMapper,
+    private val userMapper: UserMapper
 ) : RaceService {
 
     private val logger = LoggerFactory.getLogger(RaceServiceImpl::class.java)
 
-    override fun addRace(newRace: CreateRaceRequest): RaceDTO {
+    override fun addRace(newRace: CreateRaceRequest, jwt: String): RaceDTO {
         logger.info("Received RaceDTO: $newRace")
         try {
-            val race = Race()
-            race.distance = newRace.distance
-            race.timeTaken = newRace.timeTaken
-            race.avgSpeed = newRace.avgSpeed
-            race.timestamp = newRace.timestamp
+            val userDTO =
+                tokenService.extractEmail(jwt)?.let { email ->
+                    userService.findByEmail(email)
+                } ?: throw AuthenticationException("Email not found in the token")
+
+            val race = Race(
+                distance = newRace.distance,
+                timeTaken = newRace.timeTaken,
+                avgSpeed = newRace.avgSpeed,
+                timestamp = newRace.timestamp,
+                user = userMapper.toEntity(userDTO)
+            )
 
             logger.info("Map to Entity: $race")
 
             val savedRace = raceRepository.save(race)
-            return RaceDTO(
-                id = savedRace.id,
-                distance = savedRace.distance,
-                timeTaken = savedRace.timeTaken,
-                avgSpeed = savedRace.avgSpeed,
-                timestamp = savedRace.timestamp
-            )
+//            return RaceDTO(
+//                id = savedRace.id,
+//                distance = savedRace.distance,
+//                timeTaken = savedRace.timeTaken,
+//                avgSpeed = savedRace.avgSpeed,
+//                timestamp = savedRace.timestamp,
+//                user = savedRace.user?.let { userMapper.toDto(it) }
+//            )
+            return raceMapper.toDto(savedRace)
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
