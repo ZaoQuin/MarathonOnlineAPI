@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 data class Race(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    var id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "runner_id")
     var user: User? = null,
@@ -19,5 +19,5 @@ data class Race(
 
     @ManyToOne
     @JoinColumn(name = "registration_id")
-    val registration: Registration? = null
+    var registration: Registration? = null
 )
