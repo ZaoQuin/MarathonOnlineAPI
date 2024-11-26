@@ -10,4 +10,5 @@ interface AuthenticationService {
     fun getUserByToken(jwt: String): UserDTO
     fun logout(jwt: String)
     fun verifyAccount(jwt: String): UserDTO
+    fun deleteAccount(jwt: String): UserDTO
 }

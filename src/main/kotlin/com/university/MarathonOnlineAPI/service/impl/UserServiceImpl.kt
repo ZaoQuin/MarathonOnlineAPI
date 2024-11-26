@@ -80,6 +80,8 @@ class UserServiceImpl(
             user.phoneNumber = userDTO.phoneNumber
             user.role = userDTO.role
             user.username = userDTO.username
+            user.isVerified = userDTO.isVerified
+            user.isDeleted = userDTO.isDeleted
 
             userRepos.save(user)
 

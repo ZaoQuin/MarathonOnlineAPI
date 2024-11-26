@@ -15,5 +15,6 @@ data class UserDTO(
     var username: String? = null,
     var role: ERole? = null,
     var isVerified: Boolean = false,
+    var isDeleted: Boolean = false,
     var tokenRefresh: String? = null
 )
