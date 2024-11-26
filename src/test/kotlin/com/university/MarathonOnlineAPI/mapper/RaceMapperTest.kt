@@ -35,7 +35,7 @@ class RaceMapperTest {
             payment = null,
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
-            rank = 1,
+            registrationRank = 1,
             raceResults = null,
             rewards = null,
             status = null,

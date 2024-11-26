@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -18,7 +19,7 @@ data class Registration(
 
     val registrationDate: LocalDateTime? = null,
     val completedDate: LocalDateTime? = null,
-    val rank: Int? = null,
+    val registrationRank: Int? = null,
 
     @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val raceResults: List<Race>? = null,
@@ -28,9 +29,10 @@ data class Registration(
 
     val status: ERegistrationStatus? = null,
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")
-    val contest: Contest? = null,
+    @JsonBackReference
+    var contest: Contest? = null,
 )
 
 enum class ERegistrationStatus {

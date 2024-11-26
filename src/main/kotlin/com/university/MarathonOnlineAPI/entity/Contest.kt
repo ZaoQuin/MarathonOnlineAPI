@@ -1,5 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -10,26 +12,29 @@ import java.util.*
 data class Contest(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
-    @ManyToOne(fetch = FetchType.LAZY)
+    var id: Long? = null,
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "organizer_id")
-    val organizer: User? = null,
-    val name: String? = null,
-    val desc: String? = null,
-    val distance: Double? = null,
-    val startDate: LocalDateTime? = null,
-    val endDate: LocalDateTime? = null,
-    val fee: BigDecimal? = null,
-    val maxMembers: Int? = null,
-    val status: EContestStatus? = null,
-    val createDate: LocalDateTime? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val rules: List<Rule>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val rewards: List<Reward>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val registrations: List<Registration>? = null,
-    val registrationDeadline: LocalDateTime? = null
+    var organizer: User? = null,
+    var name: String? = null,
+    var description: String? = null,
+    var distance: Double? = null,
+    var startDate: LocalDateTime? = null,
+    var endDate: LocalDateTime? = null,
+    var fee: BigDecimal? = null,
+    var maxMembers: Int? = null,
+    var status: EContestStatus? = null,
+    var createDate: LocalDateTime? = null,
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
+    var rules: List<Rule>? = null,
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
+    var rewards: List<Reward>? = null,
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @JsonManagedReference
+    var registrations: List<Registration>? = null,
+    var registrationDeadline: LocalDateTime? = null
 )
 
 enum class EContestStatus {
