@@ -1,11 +1,14 @@
 package com.university.MarathonOnlineAPI.service
 
+import com.university.MarathonOnlineAPI.dto.ContestDTO
+import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 
 interface RegistrationService {
-    fun addRegistration(newRegistration: RegistrationDTO): RegistrationDTO
+    fun registerForContest(contest: ContestDTO, jwt: String): RegistrationDTO
     fun deleteRegistrationById(id: Long)
     fun updateRegistration(registrationDTO: RegistrationDTO): RegistrationDTO
     fun getRegistrations(): List<RegistrationDTO>
     fun getById(id: Long): RegistrationDTO
+    fun saveRaceIntoRegistration(race: RaceDTO, jwt: String): List<RegistrationDTO>
 }

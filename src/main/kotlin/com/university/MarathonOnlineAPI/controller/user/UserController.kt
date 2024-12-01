@@ -105,7 +105,7 @@ class UserController(
     }
 
     @PostMapping("/update-password")
-    fun checkMail(@RequestBody request: UpdatePasswordRequest): ResponseEntity<UpdatePasswordResponse> {
+    fun updatePassword(@RequestBody request: UpdatePasswordRequest): ResponseEntity<UpdatePasswordResponse> {
         val updated = userService.updatePassword(request.email, request.password)
         return if (updated) {
             ResponseEntity(UpdatePasswordResponse(true), HttpStatus.OK)

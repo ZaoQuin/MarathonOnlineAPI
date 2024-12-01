@@ -21,8 +21,13 @@ data class Registration(
     var completedDate: LocalDateTime? = null,
     var registrationRank: Int? = null,
 
-    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    var raceResults: List<Race>? = null,
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "race_registration",
+        joinColumns = [JoinColumn(name = "registration_id")],
+        inverseJoinColumns = [JoinColumn(name = "race_id")]
+    )
+    var races: List<Race>? = null,
 
     @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     var rewards: List<Reward>? = null,

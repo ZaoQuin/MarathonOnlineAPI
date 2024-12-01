@@ -36,6 +36,7 @@ class RaceServiceImpl @Autowired constructor(
                 } ?: throw AuthenticationException("Email not found in the token")
 
             val race = Race(
+                steps = newRace.steps,
                 distance = newRace.distance,
                 timeTaken = newRace.timeTaken,
                 avgSpeed = newRace.avgSpeed,
@@ -46,14 +47,6 @@ class RaceServiceImpl @Autowired constructor(
             logger.info("Map to Entity: $race")
 
             val savedRace = raceRepository.save(race)
-//            return RaceDTO(
-//                id = savedRace.id,
-//                distance = savedRace.distance,
-//                timeTaken = savedRace.timeTaken,
-//                avgSpeed = savedRace.avgSpeed,
-//                timestamp = savedRace.timestamp,
-//                user = savedRace.user?.let { userMapper.toDto(it) }
-//            )
             return raceMapper.toDto(savedRace)
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")

@@ -99,4 +99,14 @@ class ContestServiceImpl(
         }
         return TODO("Provide the return value")
     }
+
+    override fun getHomeContests(): List<ContestDTO> {
+        return try {
+            val contests = contestRepository.getHomeContests()
+            contests.map { contestMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error retrieving contests: ${e.message}", e)
+            throw ContestException("Database error occurred while retrieving contests: ${e.message}")
+        }
+    }
 }
