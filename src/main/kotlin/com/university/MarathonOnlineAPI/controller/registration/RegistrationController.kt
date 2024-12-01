@@ -1,5 +1,8 @@
 package com.university.MarathonOnlineAPI.controller.registration
 
+import com.university.MarathonOnlineAPI.controller.contest.RegistrationsResponse
+import com.university.MarathonOnlineAPI.dto.ContestDTO
+import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.service.RegistrationService
@@ -17,9 +20,10 @@ class RegistrationController(private val registrationService: RegistrationServic
     private val logger = LoggerFactory.getLogger(RegistrationController::class.java)
 
     @PostMapping
-    fun registerForContest(@RequestBody @Valid registrationDTO: RegistrationDTO): ResponseEntity<Any> {
+    fun registerForContest(@RequestHeader("Authorization") token: String, @RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
         return try {
-            val newRegistration = registrationService.addRegistration(registrationDTO)
+            val jwt = token.replace("Bearer ", "")
+            val newRegistration = registrationService.registerForContest(contestDTO, jwt)
             ResponseEntity(newRegistration, HttpStatus.CREATED)
         } catch (e: RegistrationException) {
             logger.error("Error registering for contest: ${e.message}")
@@ -85,6 +89,21 @@ class RegistrationController(private val registrationService: RegistrationServic
             ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
             logger.error("Error getting registration by ID $id: ${e.message}")
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping("/race")
+    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid race: RaceDTO): ResponseEntity<RegistrationsResponse> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val registrations = registrationService.saveRaceIntoRegistration(race, jwt)
+            ResponseEntity.ok(RegistrationsResponse(registrations))
+        } catch (e: RegistrationException) {
+            logger.error("Error getting registration by Race ${race.id}: ${e.message}")
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        } catch (e: Exception) {
+            logger.error("Error getting registration by ID ${race.id}: ${e.message}")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }

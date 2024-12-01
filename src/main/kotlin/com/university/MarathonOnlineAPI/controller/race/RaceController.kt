@@ -18,7 +18,7 @@ class RaceController(private val raceService: RaceService) {
     private val logger = LoggerFactory.getLogger(RaceController::class.java)
 
     @PostMapping
-    fun addRace(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRace: CreateRaceRequest): ResponseEntity<Any> {
+    fun addRaceAndSaveIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRace: CreateRaceRequest): ResponseEntity<Any> {
         return try {
             val jwt = token.replace("Bearer ", "")
             val addedRace = raceService.addRace(newRace, jwt)

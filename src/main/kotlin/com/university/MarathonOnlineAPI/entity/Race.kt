@@ -12,12 +12,12 @@ data class Race(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "runner_id")
     var user: User? = null,
+    var steps: Int? = null,
     var distance: Double? = null,
     var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
     var timestamp: LocalDateTime? = null,
 
-    @ManyToOne
-    @JoinColumn(name = "registration_id")
-    var registration: Registration? = null
+    @ManyToMany(mappedBy = "races")
+    var registrations: List<Registration>? = null
 )

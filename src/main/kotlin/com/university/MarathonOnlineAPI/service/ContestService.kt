@@ -10,4 +10,5 @@ interface ContestService {
     fun updateContest(contestDTO: ContestDTO): ContestDTO
     fun getContests(): List<ContestDTO>
     fun getById(id: Long): ContestDTO
+    fun getHomeContests(): List<ContestDTO>
 }

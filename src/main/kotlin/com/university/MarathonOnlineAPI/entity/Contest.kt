@@ -1,11 +1,9 @@
 package com.university.MarathonOnlineAPI.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.util.*
 
 @Entity
 @Table(name = "contest")
@@ -38,5 +36,5 @@ data class Contest(
 )
 
 enum class EContestStatus {
-    PENDING, ONGOING, FINISHED, CANCELLED, NOT_APPROVAL, DELETED
+    PENDING, ACTIVE, FINISHED, CANCELLED, NOT_APPROVAL, DELETED
 }

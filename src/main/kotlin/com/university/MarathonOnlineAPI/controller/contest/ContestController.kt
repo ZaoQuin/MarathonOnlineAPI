@@ -65,14 +65,40 @@ class ContestController(private val contestService: ContestService) {
     }
 
     @GetMapping
-    fun getContests(): ResponseEntity<List<ContestDTO>> {
+    fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
-
-            ResponseEntity(contests, HttpStatus.OK)
+            when {
+                contests.isEmpty() -> ResponseEntity.noContent().build()
+                else -> ResponseEntity.ok(GetContestsResponse(contests))
+            }
+        } catch (e: ContestException) {
+            logger.error("Contest retrieval error", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to e.message))
         } catch (e: Exception) {
-            logger.error("Error in getContests: ${e.message}")
-            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            logger.error("Unexpected error in getContests", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "An unexpected error occurred"))
+        }
+    }
+
+    @GetMapping("/home")
+    fun getHomeContests(): ResponseEntity<*> {
+        return try {
+            val contests = contestService.getHomeContests()
+            when {
+                contests.isEmpty() -> ResponseEntity.noContent().build()
+                else -> ResponseEntity.ok(GetContestsResponse(contests))
+            }
+        } catch (e: ContestException) {
+            logger.error("Contest retrieval error", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to e.message))
+        } catch (e: Exception) {
+            logger.error("Unexpected error in getContests", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "An unexpected error occurred"))
         }
     }
 

@@ -73,7 +73,7 @@ class ContestMapperTest {
             endDate = LocalDateTime.now(),
             fee = BigDecimal("50.00"),
             maxMembers = 100,
-            status = EContestStatus.ONGOING,
+            status = EContestStatus.ACTIVE,
             createDate = LocalDateTime.now(),
             rules = rules,
             rewards = rewards,
@@ -91,7 +91,7 @@ class ContestMapperTest {
             endDate = LocalDateTime.now(),
             fee = BigDecimal("50.00"),
             maxMembers = 100,
-            status = EContestStatus.ONGOING,
+            status = EContestStatus.ACTIVE,
             createDate = LocalDateTime.now(),
             rules = listOf(
                 RuleDTO(1L, "Rule 1"),
