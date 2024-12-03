@@ -68,14 +68,29 @@ class RegistrationController(private val registrationService: RegistrationServic
         }
     }
 
+//    @GetMapping
+//    fun getRegistrations(): ResponseEntity<List<RegistrationDTO>> {
+//        return try {
+//            val registrations = registrationService.getRegistrations()
+//            ResponseEntity(registrations, HttpStatus.OK)
+//        } catch (e: Exception) {
+//            logger.error("Error in getRegistrations: ${e.message}")
+//            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+//        }
+//    }
+
     @GetMapping
-    fun getRegistrations(): ResponseEntity<List<RegistrationDTO>> {
+    fun getRegistrationByJwt(@RequestHeader("Authorization") token: String): ResponseEntity<Any> {
         return try {
-            val registrations = registrationService.getRegistrations()
+            val jwt = token.replace("Bearer ", "")
+            val registrations = registrationService.getRegistrationByJwt(jwt)
             ResponseEntity(registrations, HttpStatus.OK)
+        } catch (e: RegistrationException) {
+            logger.error("Error registering for contest: ${e.message}")
+            ResponseEntity("Registration error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         } catch (e: Exception) {
-            logger.error("Error in getRegistrations: ${e.message}")
-            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         }
     }
 

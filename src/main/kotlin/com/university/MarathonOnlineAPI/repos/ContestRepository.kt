@@ -29,4 +29,11 @@ interface ContestRepository : JpaRepository<Contest, Long> {
         @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
         @Param("pendingStatus") pendingStatus: EContestStatus = EContestStatus.PENDING
     ): List<Contest>
+
+    @Query("""
+        SELECT c FROM Contest c 
+        LEFT JOIN c.registrations r 
+        WHERE c.organizer.id = :userId OR r.runner.id = :userId
+    """)
+    fun findByOrganizerOrRegistrant(@Param("userId") userId: Long): List<Contest>
 }

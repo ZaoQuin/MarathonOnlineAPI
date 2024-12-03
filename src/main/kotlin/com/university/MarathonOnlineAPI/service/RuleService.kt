@@ -5,7 +5,7 @@ import com.university.MarathonOnlineAPI.dto.RuleDTO
 import com.university.MarathonOnlineAPI.entity.Rule
 
 interface RuleService {
-    fun addRule(newRule: RuleDTO): Rule
+    fun addRule(newRule: RuleDTO): RuleDTO
     fun deleteRuleById(id: Long)
     fun updateRule(ruleDTO: RuleDTO): RuleDTO
     fun getRules(): List<RuleDTO>

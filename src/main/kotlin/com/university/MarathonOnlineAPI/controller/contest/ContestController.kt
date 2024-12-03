@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.controller.contest
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
+import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.service.ContestService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -80,6 +81,21 @@ class ContestController(private val contestService: ContestService) {
             logger.error("Unexpected error in getContests", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "An unexpected error occurred"))
+        }
+    }
+
+    @GetMapping("/jwt")
+    fun getContestByJwt(@RequestHeader("Authorization") token: String): ResponseEntity<Any>{
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val contests = contestService.getContestByJwt(jwt)
+            ResponseEntity(contests, HttpStatus.OK)
+        } catch (e: ContestException) {
+            logger.error("Error contest: ${e.message}")
+            ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         }
     }
 
