@@ -23,21 +23,18 @@ class RuleServiceImpl(
 
     private val logger = LoggerFactory.getLogger(RuleServiceImpl::class.java)
 
-    override fun addRule(newRule: RuleDTO): Rule {
-        val contest = Contest(32L) //change to current Contest
-
-        logger.debug("Contest found: $contest")
+    override fun addRule(newRule: RuleDTO): RuleDTO {
 
         val rule = Rule(
             icon = newRule.icon,
             name = newRule.name,
             description = newRule.description,
             updateDate = newRule.updateDate,
-            contest = contest
         )
 
         logger.debug("Saving rule: $rule")
-        return ruleRepository.save(rule)
+        val savedRule = ruleRepository.save(rule)
+        return ruleMapper.toDto(savedRule)
     }
 
     override fun deleteRuleById(id: Long) {
@@ -52,7 +49,6 @@ class RuleServiceImpl(
 
     override fun updateRule(ruleDTO: RuleDTO): RuleDTO {
         return try {
-            // Tìm quy tắc hiện tại trong cơ sở dữ liệu
             val existingRule = ruleRepository.findById(ruleDTO.id ?: throw RuleException("Rule ID must not be null"))
                 .orElseThrow { RuleException("Rule with ID ${ruleDTO.id} not found") }
 
@@ -61,21 +57,12 @@ class RuleServiceImpl(
             existingRule.name = ruleDTO.name
             existingRule.description = ruleDTO.description
             existingRule.updateDate = ruleDTO.updateDate
-            existingRule.contest = Contest(32) // change when update
-
 
             // Lưu quy tắc đã cập nhật
             val updatedRule = ruleRepository.save(existingRule)
 
             // Chuyển đổi lại thành DTO để trả về
-            RuleDTO(
-                id = updatedRule.id,
-                icon = updatedRule.icon,
-                name = updatedRule.name,
-                description = updatedRule.description,
-                updateDate = updatedRule.updateDate,
-                contestId = updatedRule.contest?.id
-            )
+            ruleMapper.toDto(updatedRule)
         } catch (e: DataAccessException) {
             logger.error("Error updating rule: ${e.message}")
             throw RuleException("Database error occurred while updating rule: ${e.message}")

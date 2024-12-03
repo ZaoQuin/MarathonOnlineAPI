@@ -3,9 +3,12 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.*
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.ContestException
+import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.ContestService
+import com.university.MarathonOnlineAPI.service.TokenService
+import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
@@ -19,6 +22,8 @@ class ContestServiceImpl(
     private val userMapper: UserMapper,
     private val ruleMapper: RuleMapper,
     private val rewardMapper: RewardMapper,
+    private val tokenService: TokenService,
+    private val userService: UserService,
 ) : ContestService {
 
     private val logger = LoggerFactory.getLogger(ContestServiceImpl::class.java)
@@ -87,6 +92,21 @@ class ContestServiceImpl(
             throw ContestException("Database error occurred while retrieving contests: ${e.message}")
         }
     }
+
+    override fun getContestByJwt(jwt: String): List<ContestDTO> {
+        val email = tokenService.extractEmail(jwt)
+            ?: throw ContestException("Email not found in the token")
+
+        val userDTO = userService.findByEmail(email)
+            ?: throw ContestException("User not found for email: $email")
+
+        // Tìm các contest mà user là organizer hoặc đã đăng ký
+        val contests = userDTO.id?.let { contestRepository.findByOrganizerOrRegistrant(it) }
+            ?: throw ContestException("No registration found for user with email ${userDTO.email}")
+
+        return contests.map { contestMapper.toDto(it) }
+    }
+
 
     override fun getById(id: Long): ContestDTO {
         try {

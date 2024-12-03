@@ -101,6 +101,18 @@ class RegistrationServiceImpl(
         }
     }
 
+    override fun getRegistrationByJwt(jwt: String): List<RegistrationDTO> {
+        val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+            userService.findByEmail(email)
+        } ?: throw AuthenticationException("Email not found in the token")
+
+        val registrations = userDTO.email?.let { registrationRepository.findByRunnerEmail(it) }
+            ?: throw RegistrationException("No registration found for user with email ${userDTO.email}")
+
+        return registrations.map { registrationMapper.toDto(it) }
+    }
+
+
     override fun saveRaceIntoRegistration(raceDTO: RaceDTO, jwt: String): List<RegistrationDTO> {
         return try {
             val userDTO =

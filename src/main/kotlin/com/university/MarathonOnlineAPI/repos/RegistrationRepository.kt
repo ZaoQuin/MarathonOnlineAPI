@@ -20,4 +20,7 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
             "AND r.contest.endDate >= :currentTime")
     fun findActiveRegistration(@Param("currentTime") currentTime: LocalDateTime,
                                @Param("userId") userId: Long): List<Registration>
+
+    @Query("SELECT r FROM Registration r WHERE r.runner.email = :email")
+    fun findByRunnerEmail(@Param("email") email: String): List<Registration>
 }

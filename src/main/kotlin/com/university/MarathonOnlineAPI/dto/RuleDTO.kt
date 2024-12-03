@@ -8,5 +8,4 @@ data class RuleDTO (
     var name: String? = null,
     var description: String? = null,
     var updateDate: LocalDateTime? = null,
-    var contestId: Long? = null
 )

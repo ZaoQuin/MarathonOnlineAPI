@@ -32,14 +32,7 @@ class RewardServiceImpl(
 
             logger.info("Map to entity: $reward")
             val savedReward = rewardRepository.save(reward)
-            return RewardDTO(
-                id = savedReward.id,
-                name = savedReward.name,
-                description = savedReward.description,
-                rewardRank = savedReward.rewardRank,
-                type = savedReward.type,
-                isClaim = savedReward.isClaim
-            )
+            return rewardMapper.toDto(savedReward)
         } catch (e: DataAccessException) {
             logger.error("Error saving reward: ${e.message}")
             throw RewardException("Database error occurred while saving reward: ${e.message}")

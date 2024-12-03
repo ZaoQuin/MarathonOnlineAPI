@@ -9,6 +9,7 @@ interface ContestService {
     fun deleteContestById(id: Long)
     fun updateContest(contestDTO: ContestDTO): ContestDTO
     fun getContests(): List<ContestDTO>
+    fun getContestByJwt(jwt: String): List<ContestDTO>
     fun getById(id: Long): ContestDTO
     fun getHomeContests(): List<ContestDTO>
 }

@@ -9,6 +9,7 @@ interface RegistrationService {
     fun deleteRegistrationById(id: Long)
     fun updateRegistration(registrationDTO: RegistrationDTO): RegistrationDTO
     fun getRegistrations(): List<RegistrationDTO>
+    fun getRegistrationByJwt(jwt: String): List<RegistrationDTO>
     fun getById(id: Long): RegistrationDTO
     fun saveRaceIntoRegistration(race: RaceDTO, jwt: String): List<RegistrationDTO>
 }
