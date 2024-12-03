@@ -9,4 +9,5 @@ interface RaceService {
     fun updateRace(raceDTO: RaceDTO): RaceDTO
     fun getRaces(): List<RaceDTO>
     fun getById(id: Long): RaceDTO
+    abstract fun getRacesByToken(jwt: String): List<RaceDTO>
 }

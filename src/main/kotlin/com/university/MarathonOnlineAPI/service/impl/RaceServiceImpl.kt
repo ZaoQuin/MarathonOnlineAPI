@@ -84,13 +84,7 @@ class RaceServiceImpl @Autowired constructor(
         return try {
             val races = raceRepository.findAll()
             val raceDTOs = races.map { race ->
-                RaceDTO(
-                    id = race.id,
-                    distance = race.distance,
-                    timeTaken = race.timeTaken,
-                    avgSpeed = race.avgSpeed,
-                    timestamp = race.timestamp
-                )
+                raceMapper.toDto(race)
             }
             raceDTOs
         } catch (e: DataAccessException) {
@@ -114,6 +108,21 @@ class RaceServiceImpl @Autowired constructor(
         } catch (e: DataAccessException) {
             logger.error("Error fetching race with ID $id: ${e.message}")
             throw RaceException("Database error occurred while fetching race: ${e.message}")
+        }
+    }
+
+    override fun getRacesByToken(jwt: String): List<RaceDTO> {
+        try {
+            val userDTO =
+                tokenService.extractEmail(jwt)?.let { email ->
+                    userService.findByEmail(email)
+                } ?: throw AuthenticationException("Email not found in the token")
+
+            val races = userDTO.id?.let { raceRepository.getByUserId(it) }
+            return races?.map { raceMapper.toDto(it) }!!
+        } catch (e: DataAccessException) {
+            logger.error("Error saving race: ${e.message}")
+            throw RaceException("Database error occurred while saving race: ${e.message}")
         }
     }
 }

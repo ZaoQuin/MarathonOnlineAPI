@@ -68,7 +68,6 @@ class RaceController(private val raceService: RaceService) {
         }
     }
 
-    // Lấy danh sách tất cả các Race
     @GetMapping
     fun getRaces(): ResponseEntity<List<RaceDTO>> {
         return try {
@@ -80,7 +79,18 @@ class RaceController(private val raceService: RaceService) {
         }
     }
 
-    // Lấy thông tin một Race theo ID
+    @GetMapping("/runner")
+    fun getByRunnerToken(@RequestHeader("Authorization") token: String): ResponseEntity<List<RaceDTO>> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val races = raceService.getRacesByToken(jwt)
+            ResponseEntity(races, HttpStatus.OK)
+        } catch (e: Exception) {
+            logger.error("Error in getRaces: ${e.message}")
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
     @GetMapping("/{id}")
     fun getRaceById(@PathVariable id: Long): ResponseEntity<RaceDTO> {
         return try {
