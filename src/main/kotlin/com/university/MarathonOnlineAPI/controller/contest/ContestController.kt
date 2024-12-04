@@ -104,7 +104,10 @@ class ContestController(private val contestService: ContestService) {
         return try {
             val jwt = token.replace("Bearer ", "")
             val contests = contestService.getContestsByRunner(jwt)
-            ResponseEntity(contests, HttpStatus.OK)
+            when {
+                contests.isEmpty() -> ResponseEntity.noContent().build()
+                else -> ResponseEntity.ok(GetContestsResponse(contests))
+            }
         } catch (e: ContestException) {
             logger.error("Error contest: ${e.message}")
             ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)

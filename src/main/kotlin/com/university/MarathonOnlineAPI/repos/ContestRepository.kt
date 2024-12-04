@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 import java.util.*
 
 @Repository
@@ -43,4 +44,5 @@ interface ContestRepository : JpaRepository<Contest, Long> {
         WHERE r.runner.id = :userId
     """)
     fun getContestsByRunner(@Param("userId") userId: Long): List<Contest>
+    fun findAllByEndDateBeforeAndStatus(now: LocalDateTime?, active: EContestStatus): List<Contest>
 }
