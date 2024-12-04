@@ -3,6 +3,7 @@ package com.university.MarathonOnlineAPI.service
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.dto.RuleDTO
 import com.university.MarathonOnlineAPI.entity.Rule
+import org.springframework.http.ResponseEntity
 
 interface ContestService {
     fun addContest(newContest: ContestDTO): ContestDTO
@@ -12,4 +13,5 @@ interface ContestService {
     fun getContestByJwt(jwt: String): List<ContestDTO>
     fun getById(id: Long): ContestDTO
     fun getHomeContests(): List<ContestDTO>
+    fun getContestsByRunner(jwt: String): List<ContestDTO>
 }

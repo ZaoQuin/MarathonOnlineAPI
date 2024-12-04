@@ -99,6 +99,21 @@ class ContestController(private val contestService: ContestService) {
         }
     }
 
+    @GetMapping("/runner")
+    fun getContestByRunner(@RequestHeader("Authorization") token: String): ResponseEntity<Any>{
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val contests = contestService.getContestsByRunner(jwt)
+            ResponseEntity(contests, HttpStatus.OK)
+        } catch (e: ContestException) {
+            logger.error("Error contest: ${e.message}")
+            ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
+    }
+
     @GetMapping("/home")
     fun getHomeContests(): ResponseEntity<*> {
         return try {

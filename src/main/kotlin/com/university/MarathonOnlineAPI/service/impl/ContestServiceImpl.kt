@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.*
 import com.university.MarathonOnlineAPI.entity.*
+import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.*
@@ -12,6 +13,7 @@ import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
@@ -124,6 +126,21 @@ class ContestServiceImpl(
         return try {
             val contests = contestRepository.getHomeContests()
             contests.map { contestMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error retrieving contests: ${e.message}", e)
+            throw ContestException("Database error occurred while retrieving contests: ${e.message}")
+        }
+    }
+
+    override fun getContestsByRunner(jwt: String): List<ContestDTO> {
+        return try {
+            val userDTO =
+                tokenService.extractEmail(jwt)?.let { email ->
+                    userService.findByEmail(email)
+                } ?: throw AuthenticationException("Email not found in the token")
+
+            val contests = userDTO.id?.let { contestRepository.getContestsByRunner(it) }
+            contests?.map { contestMapper.toDto(it) }?: emptyList()
         } catch (e: DataAccessException) {
             logger.error("Error retrieving contests: ${e.message}", e)
             throw ContestException("Database error occurred while retrieving contests: ${e.message}")

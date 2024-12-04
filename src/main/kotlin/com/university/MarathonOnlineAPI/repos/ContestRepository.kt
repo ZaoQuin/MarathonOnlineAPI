@@ -36,4 +36,11 @@ interface ContestRepository : JpaRepository<Contest, Long> {
         WHERE c.organizer.id = :userId OR r.runner.id = :userId
     """)
     fun findByOrganizerOrRegistrant(@Param("userId") userId: Long): List<Contest>
+
+    @Query("""
+        SELECT c FROM Contest c
+        LEFT JOIN c.registrations r 
+        WHERE r.runner.id = :userId
+    """)
+    fun getContestsByRunner(@Param("userId") userId: Long): List<Contest>
 }
