@@ -120,10 +120,9 @@ class RegistrationServiceImpl(
                 tokenService.extractEmail(jwt)?.let { email ->
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
-            val currentTime = LocalDateTime.now()
             val race = raceMapper.toEntity(raceDTO)
-            val registrations = userDTO.id?.let { registrationRepository.findActiveRegistration(currentTime, it) }
-//            val registrations = registrationRepository.findAll()
+            val registrations = userDTO.id?.let { registrationRepository.findActiveRegistration(it) }
+            logger.info("saveRaceIntoRegistration", registrations)
             registrations!!.forEach { registration ->
                 registration.races?.let { races ->
                     if (races is MutableList) {
