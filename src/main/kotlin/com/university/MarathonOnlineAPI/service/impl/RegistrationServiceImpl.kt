@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
+import com.university.MarathonOnlineAPI.dto.PaymentDTO
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 import com.university.MarathonOnlineAPI.entity.ERegistrationStatus

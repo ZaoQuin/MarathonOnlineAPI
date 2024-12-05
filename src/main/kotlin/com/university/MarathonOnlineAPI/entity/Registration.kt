@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
 import com.fasterxml.jackson.annotation.JsonBackReference
+import com.fasterxml.jackson.annotation.JsonManagedReference
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -15,6 +16,7 @@ data class Registration(
     var runner: User? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
+    @JsonManagedReference
     var payment: Payment? = null,
 
     var registrationDate: LocalDateTime? = null,
@@ -41,5 +43,5 @@ data class Registration(
 )
 
 enum class ERegistrationStatus {
-    PENDING, COMPLETED, REJECTED, CANCELLED
+    PENDING, ACTIVE, COMPLETED
 }

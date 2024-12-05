@@ -36,7 +36,6 @@ class RaceMapperTest {
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
             registrationRank = 1,
-            raceResults = null,
             rewards = null,
             status = null,
             contest = null
@@ -48,7 +47,6 @@ class RaceMapperTest {
             timeTaken = 10800L, // 3 hours in seconds
             avgSpeed = 14.0,
             timestamp = LocalDateTime.now(),
-            registration = registration
         )
 
         raceDTO = RaceDTO(

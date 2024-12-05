@@ -14,21 +14,15 @@ interface ContestRepository : JpaRepository<Contest, Long> {
     fun findByName(name: String): Optional<Contest>
     @Query("""
         SELECT c FROM Contest c
-        WHERE c.status IN (:activeStatus, :pendingStatus)
-          AND c.registrationDeadline >= CURRENT_DATE
+        WHERE c.status = :activeStatus
+          AND c.registrationDeadline > CURRENT_DATE
         ORDER BY 
-          CASE c.status
-            WHEN :activeStatus THEN 1
-            WHEN :pendingStatus THEN 2
-            ELSE 3
-          END ASC,  
           c.startDate ASC,   
           SIZE(c.registrations) DESC, 
           c.fee ASC          
     """)
     fun getHomeContests(
-        @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
-        @Param("pendingStatus") pendingStatus: EContestStatus = EContestStatus.PENDING
+        @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE
     ): List<Contest>
 
     @Query("""

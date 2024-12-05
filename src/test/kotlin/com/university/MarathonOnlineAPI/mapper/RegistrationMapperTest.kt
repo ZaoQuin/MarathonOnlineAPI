@@ -57,7 +57,6 @@ class RegistrationMapperTest {
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
             registrationRank = 1,
-            raceResults = listOf(race),
             rewards = listOf(reward),
             status = ERegistrationStatus.COMPLETED,
             contest = contest
@@ -70,7 +69,6 @@ class RegistrationMapperTest {
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
 //            registrationrank = 1,
-            raceResults = listOf(raceDTO),
             rewards = listOf(rewardDTO),
             status = ERegistrationStatus.COMPLETED
         )
@@ -88,7 +86,6 @@ class RegistrationMapperTest {
         assertEquals(registration.registrationDate, result.registrationDate)
         assertEquals(registration.completedDate, result.completedDate)
 //        assertEquals(registration.registrationRank, result.registrationrank)
-        assertEquals(registration.raceResults?.size, result.raceResults?.size)
         assertEquals(registration.rewards?.size, result.rewards?.size)
         assertEquals(registration.status, result.status)
     }
@@ -105,7 +102,6 @@ class RegistrationMapperTest {
         assertEquals(registrationDTO.registrationDate?.second, result.registrationDate?.second)
         assertEquals(registrationDTO.completedDate?.second, result.completedDate?.second)
 //        assertEquals(registrationDTO.registrationrank, result.registrationRank)
-        assertEquals(registrationDTO.raceResults?.size, result.raceResults?.size)
         assertEquals(registrationDTO.rewards?.size, result.rewards?.size)
         assertEquals(registrationDTO.status, result.status)
     }

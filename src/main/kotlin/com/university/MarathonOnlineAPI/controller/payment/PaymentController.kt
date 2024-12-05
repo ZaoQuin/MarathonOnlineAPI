@@ -21,7 +21,7 @@ class PaymentController(private val paymentService: PaymentService) {
     fun addPayment(@RequestBody @Valid newPayment: CreatePaymentRequest): ResponseEntity<Any> {
         return try {
             val addedPayment = paymentService.addPayment(newPayment)
-            ResponseEntity(addedPayment, HttpStatus.CREATED)
+            ResponseEntity(addedPayment, HttpStatus.OK)
         } catch (e: PaymentException) {
             logger.error("Error adding payment: ${e.message}")
             ResponseEntity("Payment error occurred: ${e.message}", HttpStatus.BAD_REQUEST)

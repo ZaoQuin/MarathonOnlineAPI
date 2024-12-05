@@ -45,7 +45,7 @@ class ContestMapperTest {
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
             registrationRank = 1,
-            raceResults = emptyList(),
+//            raceResults = emptyList(),
             rewards = emptyList(),
             status = ERegistrationStatus.COMPLETED,
             contest = null
@@ -58,7 +58,7 @@ class ContestMapperTest {
             registrationDate = LocalDateTime.now(),
             completedDate = LocalDateTime.now(),
             registrationRank = 1,
-            raceResults = emptyList(),
+//            raceResults = emptyList(),
             rewards = emptyList(),
             status = ERegistrationStatus.COMPLETED
         )
@@ -139,7 +139,7 @@ class ContestMapperTest {
             assertEquals(registration.runner?.id, result.registrations!![index].runner?.id)
             assertEquals(registration.runner?.fullName, result.registrations!![index].runner?.fullName)
             assertEquals(registration.registrationRank, result.registrations!![index].registrationRank)
-            assertEquals(registration.raceResults, result.registrations!![index].raceResults)
+//            assertEquals(registration.raceResults, result.registrations!![index].raceResults)
             assertEquals(registration.rewards, result.registrations!![index].rewards)
             assertEquals(registration.status, result.registrations!![index].status)
         }
@@ -177,7 +177,7 @@ class ContestMapperTest {
             assertEquals(registration.runner?.id, result.registrations!![index].runner?.id)
             assertEquals(registration.runner?.fullName, result.registrations!![index].runner?.fullName)
             assertEquals(registration.registrationRank, result.registrations!![index].registrationRank)
-            assertEquals(registration.raceResults, result.registrations!![index].raceResults)
+//            assertEquals(registration.raceResults, result.registrations!![index].raceResults)
             assertEquals(registration.rewards, result.registrations!![index].rewards)
             assertEquals(registration.status, result.registrations!![index].status)
         }
