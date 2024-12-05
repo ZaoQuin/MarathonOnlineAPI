@@ -1,5 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -11,10 +13,5 @@ data class Payment(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
     var amount: BigDecimal? = null,
-    var paymentDate: LocalDateTime? = null,
-    var status: EPaymentStatus? = null
+    var paymentDate: LocalDateTime? = null
 )
-
-enum class EPaymentStatus {
-    PENDING, COMPLETED, FAILED, EXPIRED, CANCELLED
-}

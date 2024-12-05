@@ -1,7 +1,6 @@
 package com.university.MarathonOnlineAPI.mapper
 
 import com.university.MarathonOnlineAPI.dto.PaymentDTO
-import com.university.MarathonOnlineAPI.entity.EPaymentStatus
 import com.university.MarathonOnlineAPI.entity.Payment
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -33,14 +32,14 @@ class PaymentMapperTest {
             id = 1L,
             amount = BigDecimal(100.50),
             paymentDate = LocalDateTime.now(),
-            status = EPaymentStatus.COMPLETED
+//            status = EPaymentStatus.COMPLETED
         )
 
         paymentDTO = PaymentDTO(
             id = 1L,
             amount = BigDecimal(100.50),
             paymentDate = LocalDateTime.now(),
-            status = EPaymentStatus.COMPLETED
+//            status = EPaymentStatus.COMPLETED
         )
     }
 
@@ -53,7 +52,7 @@ class PaymentMapperTest {
         assertEquals(payment.id, result.id)
         assertEquals(payment.amount, result.amount)
         assertEquals(payment.paymentDate, result.paymentDate)
-        assertEquals(payment.status, result.status)
+//        assertEquals(payment.status, result.status)
     }
 
     @Test
@@ -65,6 +64,6 @@ class PaymentMapperTest {
         assertEquals(paymentDTO.id, result.id)
         assertEquals(paymentDTO.amount, result.amount)
         assertEquals(paymentDTO.paymentDate?.second, result.paymentDate?.second)
-        assertEquals(paymentDTO.status, result.status)
+//        assertEquals(paymentDTO.status, result.status)
     }
 }

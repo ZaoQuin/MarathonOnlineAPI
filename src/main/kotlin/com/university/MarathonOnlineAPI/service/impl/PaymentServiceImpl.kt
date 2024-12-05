@@ -2,24 +2,24 @@ package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.CreatePaymentRequest
 import com.university.MarathonOnlineAPI.dto.PaymentDTO
+import com.university.MarathonOnlineAPI.entity.ERegistrationStatus
 import com.university.MarathonOnlineAPI.entity.Payment
 import com.university.MarathonOnlineAPI.exception.PaymentException
-import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.PaymentMapper
 import com.university.MarathonOnlineAPI.repos.PaymentRepository
+import com.university.MarathonOnlineAPI.repos.RegistrationRepository
 import com.university.MarathonOnlineAPI.service.PaymentService
-import org.modelmapper.ModelMapper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
-import kotlin.math.log
+import java.time.LocalDateTime
 
 
 @Service
 class PaymentServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val paymentMapper: PaymentMapper,
-
+    private val registrationRepository: RegistrationRepository
 ) : PaymentService {
 
     private val logger = LoggerFactory.getLogger(PaymentServiceImpl::class.java)
@@ -27,13 +27,20 @@ class PaymentServiceImpl(
     override fun addPayment(newPayment: CreatePaymentRequest): PaymentDTO {
         logger.info("Received PaymentDTO: $newPayment")
         try {
-            val payment = Payment()
-            payment.amount = newPayment.amount
-            payment.paymentDate = newPayment.paymentDate
-            payment.status = newPayment.status
+            val payment = Payment().apply {
+                amount = newPayment.amount
+                paymentDate = LocalDateTime.now()
+            }
 
-            logger.info("Map to Entity: $payment")
             paymentRepository.save(payment)
+
+            val registration = registrationRepository.findById(newPayment.registration?.id ?: throw IllegalArgumentException("Registration ID is required"))
+                .orElseThrow { IllegalArgumentException("Registration not found") }
+
+            registration.payment = payment
+            registration.status = ERegistrationStatus.ACTIVE
+            registrationRepository.save(registration)
+
             return paymentMapper.toDto(payment)
         } catch (e: Exception){
             throw PaymentException("Error adding payment: ${e.message}")
@@ -72,7 +79,6 @@ class PaymentServiceImpl(
                     id = payment.id,
                     amount = payment.amount,
                     paymentDate = payment.paymentDate,
-                    status = payment.status
                 )
             }
 
