@@ -26,6 +26,7 @@ class ContestServiceImpl(
     private val rewardMapper: RewardMapper,
     private val tokenService: TokenService,
     private val userService: UserService,
+    private val notificationRepository: NotificationRepository,
 ) : ContestService {
 
     private val logger = LoggerFactory.getLogger(ContestServiceImpl::class.java)
@@ -58,9 +59,23 @@ class ContestServiceImpl(
             throw ContestException("Database error occurred while saving contest: ${e.message}")
         }
     }
+    override fun approveContest(id: Long): ContestDTO {
+        val contest = contestRepository.findById(id)
+            .orElseThrow { ContestException("Contest with ID $id not found") }
+
+        // Chỉ cập nhật trạng thái
+        contest.status = EContestStatus.ACTIVE
+
+        // Lưu lại cuộc thi đã thay đổi
+        val updatedContest = contestRepository.save(contest)
+
+        // Chuyển đổi sang DTO để trả về
+        return contestMapper.toDto(updatedContest)
+    }
 
     override fun deleteContestById(id: Long) {
         try {
+            notificationRepository.deleteByContestId(id)
             contestRepository.deleteById(id)
             logger.info("Contest with ID $id deleted successfully")
         } catch (e: DataAccessException) {
