@@ -87,10 +87,7 @@ class ContestController(private val contestService: ContestService) {
     fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
-            when {
-                contests.isEmpty() -> ResponseEntity.noContent().build()
-                else -> ResponseEntity.ok(GetContestsResponse(contests))
-            }
+            ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
         } catch (e: ContestException) {
             logger.error("Contest retrieval error", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -122,10 +119,7 @@ class ContestController(private val contestService: ContestService) {
         return try {
             val jwt = token.replace("Bearer ", "")
             val contests = contestService.getContestsByRunner(jwt)
-            when {
-                contests.isEmpty() -> ResponseEntity.noContent().build()
-                else -> ResponseEntity.ok(GetContestsResponse(contests))
-            }
+            ResponseEntity.ok(GetContestsResponse(contests))
         } catch (e: ContestException) {
             logger.error("Error contest: ${e.message}")
             ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
@@ -139,10 +133,7 @@ class ContestController(private val contestService: ContestService) {
     fun getHomeContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getHomeContests()
-            when {
-                contests.isEmpty() -> ResponseEntity.noContent().build()
-                else -> ResponseEntity.ok(GetContestsResponse(contests))
-            }
+            ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
         } catch (e: ContestException) {
             logger.error("Contest retrieval error", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
