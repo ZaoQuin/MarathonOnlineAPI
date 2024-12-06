@@ -24,7 +24,7 @@ data class User(
 )
 
 enum class ERole {
-    RUNNER, ORGANIZE, ADMIN
+    RUNNER, ORGANIZER, ADMIN
 }
 
 enum class EGender {

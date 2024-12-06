@@ -1,7 +1,6 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
-import com.university.MarathonOnlineAPI.dto.PaymentDTO
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 import com.university.MarathonOnlineAPI.entity.ERegistrationStatus
@@ -131,6 +130,9 @@ class RegistrationServiceImpl(
                 } ?: run {
                     registration.races = mutableListOf(race)
                 }
+
+                if(registration.races?.sumOf{ it.distance!!.toDouble()}!! >= registration.contest?.distance!!)
+                    registration.status = ERegistrationStatus.COMPLETED
             }
 
             val registrationsResult = registrationRepository.saveAll(registrations)
