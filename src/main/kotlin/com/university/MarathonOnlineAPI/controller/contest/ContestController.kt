@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/contest")
+@CrossOrigin(origins = ["http://localhost:3000"])
 class ContestController(private val contestService: ContestService) {
 
     private val logger = LoggerFactory.getLogger(ContestController::class.java)
@@ -65,7 +66,24 @@ class ContestController(private val contestService: ContestService) {
         }
     }
 
+    @PutMapping("/approve/{id}")
+    fun approveContest(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+            // Gọi service để duyệt cuộc thi, chỉ thay đổi trạng thái của cuộc thi
+            val approvedContest = contestService.approveContest(id)
+            ResponseEntity.ok(approvedContest)
+        } catch (e: ContestException) {
+            logger.error("Contest approval error: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error approving contest: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error occurred during contest approval: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while approving the contest")
+        }
+    }
+
     @GetMapping
+    @CrossOrigin(origins = ["http://localhost:3000"])
     fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
