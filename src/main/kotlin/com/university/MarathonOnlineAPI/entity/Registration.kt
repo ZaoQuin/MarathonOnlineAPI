@@ -31,7 +31,7 @@ data class Registration(
     )
     var races: List<Race>? = null,
 
-    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY)
     var rewards: List<Reward>? = null,
 
     var status: ERegistrationStatus? = null,
