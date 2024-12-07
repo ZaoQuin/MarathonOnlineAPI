@@ -195,4 +195,14 @@ class ContestServiceImpl(
             throw ContestException("Database error occurred while retrieving contests: ${e.message}")
         }
     }
+
+    override fun getActiveAndFinished(): List<ContestDTO> {
+        return try {
+            val contests = contestRepository.getActiveAndFinished()
+            contests.map { contestMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error retrieving contests: ${e.message}", e)
+            throw ContestException("Database error occurred while retrieving contests: ${e.message}")
+        }
+    }
 }

@@ -15,10 +15,10 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
     fun findByContest(contest: Contest): List<Registration>
     @Query("SELECT r FROM Registration r " +
             "WHERE r.runner.id = :userId " +
-            "AND r.status = :activeRgStatus " +
+            "AND r.status != :pendingRgStatus " +
             "AND r.contest.status = :activeCtStatus " +
             "AND r.contest.startDate <= CURRENT_DATE ")
-    fun findActiveRegistration(@Param("userId") userId: Long,  @Param("activeRgStatus") activeRgStatus: ERegistrationStatus = ERegistrationStatus.ACTIVE,
+    fun findActiveRegistration(@Param("userId") userId: Long,  @Param("pendingRgStatus") pendingRgStatus: ERegistrationStatus = ERegistrationStatus.PENDING,
                                @Param("activeCtStatus") activeCtStatus: EContestStatus = EContestStatus.ACTIVE): List<Registration>
 
     @Query("SELECT r FROM Registration r WHERE r.runner.email = :email")

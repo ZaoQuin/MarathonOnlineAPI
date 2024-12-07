@@ -39,4 +39,18 @@ interface ContestRepository : JpaRepository<Contest, Long> {
     """)
     fun getContestsByRunner(@Param("userId") userId: Long): List<Contest>
     fun findAllByEndDateBeforeAndStatus(now: LocalDateTime?, active: EContestStatus): List<Contest>
+
+    @Query("""
+        SELECT c FROM Contest c
+        WHERE c.status = :activeStatus
+          OR c.status = :finishedStatus
+        ORDER BY 
+          c.startDate ASC,   
+          SIZE(c.registrations) DESC, 
+          c.fee ASC          
+    """)
+    fun getActiveAndFinished(
+        @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
+        @Param("finishedStatus") finishedStatus: EContestStatus = EContestStatus.FINISHED
+    ): List<Contest>
 }

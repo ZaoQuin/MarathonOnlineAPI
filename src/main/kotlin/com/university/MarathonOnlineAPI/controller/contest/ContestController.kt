@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.controller.contest
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
-import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.service.ContestService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -134,6 +133,22 @@ class ContestController(private val contestService: ContestService) {
     fun getHomeContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getHomeContests()
+            ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
+        } catch (e: ContestException) {
+            logger.error("Contest retrieval error", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to e.message))
+        } catch (e: Exception) {
+            logger.error("Unexpected error in getContests", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "An unexpected error occurred"))
+        }
+    }
+
+    @GetMapping("/active-and-finish")
+    fun getActiveAndFinish(): ResponseEntity<*> {
+        return try {
+            val contests = contestService.getActiveAndFinished()
             ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
         } catch (e: ContestException) {
             logger.error("Contest retrieval error", e)
