@@ -1,10 +1,10 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.controller.contest.CreateContestRequest
 import com.university.MarathonOnlineAPI.dto.*
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
-import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.ContestService
@@ -13,47 +13,61 @@ import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ContestServiceImpl(
     private val contestRepository: ContestRepository,
     private val contestMapper: ContestMapper,
-    private val userRepository: UserRepository,
     private val userMapper: UserMapper,
     private val ruleMapper: RuleMapper,
     private val rewardMapper: RewardMapper,
     private val tokenService: TokenService,
     private val userService: UserService,
     private val notificationRepository: NotificationRepository,
+    private val ruleRepository: RuleRepository,
+    private val rewardRepository: RewardRepository
 ) : ContestService {
 
     private val logger = LoggerFactory.getLogger(ContestServiceImpl::class.java)
 
-    override fun addContest(newContest: ContestDTO): ContestDTO {
+    override fun addContest(request: CreateContestRequest, jwt: String): ContestDTO {
         try {
+            val userDTO =
+                tokenService.extractEmail(jwt)?.let { email ->
+                    userService.findByEmail(email)
+                } ?: throw AuthenticationException("Email not found in the token")
+
+            logger.info(request.toString())
+
+            val rules = request.rules?.map { ruleMapper.toEntity(it) } ?: emptyList()
+            val rewards = request.rewards?.map { rewardMapper.toEntity(it) } ?: emptyList()
+
             val contest = Contest(
-                organizer = newContest.organizer?.let { userMapper.toEntity(it) },
-                name = newContest.name,
-                description = newContest.description,
-                distance = newContest.distance,
-                startDate = newContest.startDate,
-                endDate = newContest.endDate,
-                fee = newContest.fee,
-                maxMembers = newContest.maxMembers,
-                status = newContest.status,
-                rules = newContest.rules?.map { ruleMapper.toEntity(it) } ?: emptyList(),
-                rewards = newContest.rewards?.map { rewardMapper.toEntity(it) } ?: emptyList(),
-                createDate = newContest.createDate,
-                registrationDeadline = newContest.registrationDeadline
+                organizer = userMapper.toEntity(userDTO),
+                name = request.name,
+                description = request.description,
+                distance = request.distance,
+                startDate = request.startDate,
+                endDate = request.endDate,
+                fee = request.fee,
+                maxMembers = request.maxMembers,
+                status = request.status,
+                createDate = LocalDateTime.now(),
+                registrationDeadline = request.registrationDeadline
             )
 
-            contest.rules?.forEach { it.contest = contest }
-            contest.rewards?.forEach { it.contest = contest }
 
             val savedContest = contestRepository.save(contest)
-            return contestMapper.toDto(savedContest)
+            rules.forEach { it.contest = savedContest }
+            rewards.forEach {it.contest = savedContest }
+            savedContest.rules = rules
+            savedContest.rewards = rewards
+
+            val finalSavedContest  = contestRepository.save(savedContest)
+
+            return contestMapper.toDto(finalSavedContest)
         } catch (e: DataAccessException) {
             logger.error("Database error occurred while saving contest: ${e.message}", e)
             throw ContestException("Database error occurred while saving contest: ${e.message}")
@@ -63,13 +77,10 @@ class ContestServiceImpl(
         val contest = contestRepository.findById(id)
             .orElseThrow { ContestException("Contest with ID $id not found") }
 
-        // Chỉ cập nhật trạng thái
         contest.status = EContestStatus.ACTIVE
 
-        // Lưu lại cuộc thi đã thay đổi
         val updatedContest = contestRepository.save(contest)
 
-        // Chuyển đổi sang DTO để trả về
         return contestMapper.toDto(updatedContest)
     }
 
@@ -86,11 +97,34 @@ class ContestServiceImpl(
 
     override fun updateContest(contestDTO: ContestDTO): ContestDTO {
         return try {
-            // Kiểm tra xem contest có tồn tại không
-            contestRepository.findById(contestDTO.id!!)
+            val existingContest = contestRepository.findById(contestDTO.id!!)
                 .orElseThrow { ContestException("Contest with ID ${contestDTO.id} not found") }
 
             val contestEntity = contestMapper.toEntity(contestDTO)
+
+            val existingRules = existingContest.rules ?: emptyList()
+            val existingRewards = existingContest.rewards ?: emptyList()
+
+            val newRuleIds = contestEntity.rules?.map { it.id } ?: emptyList()
+            val newRewardIds = contestEntity.rewards?.map { it.id } ?: emptyList()
+
+            val rulesToDelete = existingRules.filter { it.id !in newRuleIds }
+            val rewardsToDelete = existingRewards.filter { it.id !in newRewardIds }
+
+            rulesToDelete.forEach { ruleRepository.delete(it) }
+            rewardsToDelete.forEach { rewardRepository.delete(it) }
+
+            contestEntity.rules?.forEach { rule ->
+                rule.contest = contestEntity
+                ruleRepository.save(rule)
+            }
+
+            contestEntity.rewards?.forEach { reward ->
+                reward.contest = contestEntity
+                rewardRepository.save(reward)
+            }
+
+
             val updatedContest = contestRepository.save(contestEntity)
             contestMapper.toDto(updatedContest)
         } catch (e: DataAccessException) {

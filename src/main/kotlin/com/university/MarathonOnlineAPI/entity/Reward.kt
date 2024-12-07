@@ -23,6 +23,7 @@ data class Reward (
 
     @ManyToOne
     @JoinColumn(name = "registration_id")
+    @JsonBackReference
     var registration: Registration? = null
 )
 

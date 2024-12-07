@@ -26,10 +26,10 @@ data class Contest(
     @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
     @JsonManagedReference
     var rules: List<Rule>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JsonManagedReference
     var rewards: List<Reward>? = null,
-    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "contest", fetch = FetchType.EAGER , cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JsonManagedReference
     var registrations: List<Registration>? = null,
     var registrationDeadline: LocalDateTime? = null

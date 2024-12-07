@@ -19,10 +19,11 @@ class ContestController(private val contestService: ContestService) {
     private val logger = LoggerFactory.getLogger(ContestController::class.java)
 
     @PostMapping
-    fun addContest(@RequestBody @Valid newContest: ContestDTO): ResponseEntity<Any> {
+    fun addContest(@RequestHeader("Authorization") token: String, @RequestBody @Valid createContestRequest: CreateContestRequest): ResponseEntity<Any> {
         return try {
-            val addedContest = contestService.addContest(newContest)
-            ResponseEntity(addedContest, HttpStatus.CREATED)
+            val jwt = token.replace("Bearer ", "")
+            val addedContest = contestService.addContest(createContestRequest, jwt)
+            ResponseEntity(addedContest, HttpStatus.OK)
         } catch (e: ContestException) {
             logger.error("Error adding contest: ${e.message}")
             ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)

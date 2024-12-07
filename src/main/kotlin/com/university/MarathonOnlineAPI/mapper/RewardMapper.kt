@@ -9,11 +9,9 @@ import org.springframework.stereotype.Component
 class RewardMapper(private val modelMapper: ModelMapper): Mapper<RewardDTO, Reward> {
 
     override fun toDto(entity: Reward): RewardDTO {
-        val rewardDTO = modelMapper.map(entity, RewardDTO::class.java)
-        return rewardDTO
+        return modelMapper.map(entity, RewardDTO::class.java)
     }
     override fun toEntity(dto: RewardDTO): Reward {
-        val reward = modelMapper.map(dto, Reward::class.java)
-        return reward
+        return modelMapper.map(dto, Reward::class.java)
     }
 }
