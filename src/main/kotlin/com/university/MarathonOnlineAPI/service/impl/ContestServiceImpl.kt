@@ -87,6 +87,8 @@ class ContestServiceImpl(
     override fun deleteContestById(id: Long) {
         try {
             notificationRepository.deleteByContestId(id)
+            rewardRepository.deleteByContestId(id)
+            ruleRepository.deleteByContestId(id)
             contestRepository.deleteById(id)
             logger.info("Contest with ID $id deleted successfully")
         } catch (e: DataAccessException) {
@@ -116,12 +118,10 @@ class ContestServiceImpl(
 
             contestEntity.rules?.forEach { rule ->
                 rule.contest = contestEntity
-                ruleRepository.save(rule)
             }
 
             contestEntity.rewards?.forEach { reward ->
                 reward.contest = contestEntity
-                rewardRepository.save(reward)
             }
 
 

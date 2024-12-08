@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.controller.contest
 
+import com.university.MarathonOnlineAPI.controller.DeleteResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.service.ContestService
@@ -33,24 +34,24 @@ class ContestController(private val contestService: ContestService) {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteContest(@PathVariable id: Long): ResponseEntity<String> {
+    fun deleteContest(@PathVariable id: Long): ResponseEntity<DeleteResponse> {
         return try {
             contestService.deleteContestById(id)
             logger.info("Contest with ID $id deleted successfully")
-            ResponseEntity.ok("Contest with ID $id deleted successfully")
+            ResponseEntity.ok(DeleteResponse( message = "Contest with ID $id deleted successfully"))
         } catch (e: ContestException) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Failed to delete contest with ID $id: ${e.message}")
+                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
         } catch (e: Exception) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Failed to delete contest with ID $id: ${e.message}")
+                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
         }
     }
 
     @PutMapping
-    fun updateContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<ContestDTO> {
+    fun updateContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
         return try {
             val updatedContest = contestService.updateContest(contestDTO)
             ResponseEntity(updatedContest, HttpStatus.OK)
