@@ -97,6 +97,18 @@ class ContestServiceImpl(
         }
     }
 
+    override fun cancelContest(contestDTO: ContestDTO): ContestDTO {
+        return try {
+            val contest = contestMapper.toEntity(contestDTO)
+            contest.status = EContestStatus.CANCELLED
+            val savedContest = contestRepository.save(contest)
+            contestMapper.toDto(savedContest)
+        } catch (e: DataAccessException) {
+            logger.error("Error cancel contest: ${e.message}", e)
+            throw ContestException("Database error occurred while canceling contest: ${e.message}")
+        }
+    }
+
     override fun updateContest(contestDTO: ContestDTO): ContestDTO {
         return try {
             val existingContest = contestRepository.findById(contestDTO.id!!)

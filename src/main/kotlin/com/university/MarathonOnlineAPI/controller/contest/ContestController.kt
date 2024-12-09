@@ -50,6 +50,23 @@ class ContestController(private val contestService: ContestService) {
         }
     }
 
+    @PutMapping("/cancel")
+    fun cancelContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
+        return try {
+            val updatedContest = contestService.cancelContest(contestDTO)
+            ResponseEntity(updatedContest, HttpStatus.OK)
+        } catch (e: ContestException) {
+            logger.error("Contest exception: ${e.message}")
+            throw e
+        } catch (e: DataAccessException) {
+            logger.error("Database access error: ${e.message}")
+            throw ContestException("Database error occurred: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error updating contest: ${e.message}")
+            throw ContestException("Error updating contest: ${e.message}")
+        }
+    }
+
     @PutMapping
     fun updateContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
         return try {
