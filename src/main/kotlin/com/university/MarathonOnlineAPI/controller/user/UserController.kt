@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.controller.user
 
 import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.validation.Valid
@@ -67,6 +68,36 @@ class UserController(
             throw UserException("Error updating user: ${e.message}")
         }
 
+    }
+
+    @PutMapping("/block/{id}")
+    fun blockUser(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+            val blockedUser = userService.blockUser(id)
+            ResponseEntity.ok(blockedUser)
+        } catch (e: ContestException) {
+            logger.error("User block error: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error blocking user: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error occurred during user block: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while blocking an user")
+        }
+    }
+
+    @PutMapping("/active/{id}")
+    fun unblockUser(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+            val unblockedUser = userService.unblockUser(id)
+            ResponseEntity.ok(unblockedUser)
+        } catch (e: ContestException) {
+            logger.error("User approval error: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error approving contest: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error occurred during contest approval: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while approving the contest")
+        }
     }
 
     @GetMapping

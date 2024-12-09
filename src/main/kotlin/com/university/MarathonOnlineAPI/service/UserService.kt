@@ -14,5 +14,6 @@ interface UserService {
     fun removeRefreshTokenByEmail(email: String): Boolean
     fun checkEmailExists(email: String): Boolean
     fun updatePassword(email: String, password: String): Boolean
-
+    fun blockUser(id: Long)
+    fun unblockUser(id: Long)
 }

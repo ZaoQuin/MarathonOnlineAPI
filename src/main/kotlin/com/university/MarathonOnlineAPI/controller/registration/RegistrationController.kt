@@ -122,4 +122,19 @@ class RegistrationController(private val registrationService: RegistrationServic
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
+
+    @GetMapping("/by-month")
+    fun getRevenueByMonth(@RequestParam year: Int): List<Map<String, Any>> {
+        return registrationService.getRevenueByMonth(year)
+    }
+
+    @GetMapping("/by-week")
+    fun getRevenueByWeek(@RequestParam year: Int): List<Map<String, Any>> {
+        return registrationService.getRevenueByWeek(year)
+    }
+
+    @GetMapping("/by-year")
+    fun getRevenueByYear(): List<Map<String, Any>> {
+        return registrationService.getRevenueByYear()
+    }
 }

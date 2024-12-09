@@ -118,6 +118,32 @@ class UserServiceImpl(
         }
     }
 
+    override fun blockUser(id: Long) {
+        try {
+            val user = userRepos.findById(id).orElseThrow {
+                throw UserException("User not found with ID: $id")
+            }
+            user.isDeleted = true
+            userRepos.save(user)
+            logger.info("User with ID $id blocked successfully")
+        } catch (e: Exception){
+            throw UserException("Error deleting user: ${e.message}")
+        }
+    }
+
+    override fun unblockUser(id: Long) {
+        try {
+            val user = userRepos.findById(id).orElseThrow {
+                throw UserException("User not found with ID: $id")
+            }
+            user.isDeleted = false
+            userRepos.save(user)
+            logger.info("User with ID $id blocked successfully")
+        } catch (e: Exception){
+            throw UserException("Error deleting user: ${e.message}")
+        }
+    }
+
     override fun findByEmail(email: String): UserDTO {
         return try {
             val user = userRepos.findByEmail(email)

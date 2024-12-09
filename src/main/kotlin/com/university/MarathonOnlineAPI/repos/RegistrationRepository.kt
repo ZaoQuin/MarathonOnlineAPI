@@ -23,4 +23,40 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
 
     @Query("SELECT r FROM Registration r WHERE r.runner.email = :email")
     fun findByRunnerEmail(@Param("email") email: String): List<Registration>
+
+    // Tổng doanh thu theo tháng
+    @Query(
+        """
+        SELECT MONTH(r.registrationDate) AS month, SUM(p.amount) AS revenue
+        FROM Registration r
+        JOIN r.payment p
+        WHERE YEAR(r.registrationDate) = :year
+        GROUP BY MONTH(r.registrationDate)
+        ORDER BY MONTH(r.registrationDate)
+        """
+    )
+    fun revenueByMonth(@Param("year") year: Int): List<Map<String, Any>>
+
+    @Query(
+        """
+        SELECT WEEK(r.registrationDate) AS week, SUM(p.amount) AS revenue
+        FROM Registration r
+        JOIN r.payment p
+        WHERE YEAR(r.registrationDate) = :year
+        GROUP BY WEEK(r.registrationDate)
+        ORDER BY WEEK(r.registrationDate)
+        """
+    )
+    fun revenueByWeek(@Param("year") year: Int): List<Map<String, Any>>
+
+    // Tổng doanh thu theo năm
+    @Query("""
+        SELECT YEAR(r.registrationDate) AS year, SUM(p.amount) AS totalRevenue
+        FROM Registration r
+        JOIN r.payment p
+        WHERE r.status = 1
+        GROUP BY YEAR(r.registrationDate)
+        ORDER BY YEAR(r.registrationDate)
+    """)
+    fun revenueByYear(): List<Map<String, Any>>
 }
