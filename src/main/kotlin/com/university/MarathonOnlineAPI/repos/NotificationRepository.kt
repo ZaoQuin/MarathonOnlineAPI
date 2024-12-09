@@ -15,4 +15,5 @@ interface NotificationRepository : JpaRepository<Notification, Long> {
     @Transactional
     @Query("DELETE FROM Notification n WHERE n.contest.id = :contestId")
     fun deleteByContestId(contestId: Long)
+    fun getByReceiverId(it: Long): List<Notification>
 }

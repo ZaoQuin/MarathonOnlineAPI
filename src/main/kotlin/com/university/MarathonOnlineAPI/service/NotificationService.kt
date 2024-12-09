@@ -8,4 +8,5 @@ interface NotificationService {
     fun updateNotification(notificationDTO: NotificationDTO): NotificationDTO
     fun getNotifications(): List<NotificationDTO>
     fun getById(id: Long): NotificationDTO
+    fun getNotificationsByJwt(jwt: String): List<NotificationDTO>
 }

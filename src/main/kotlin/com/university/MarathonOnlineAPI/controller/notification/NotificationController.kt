@@ -92,4 +92,19 @@ class NotificationController(private val notificationService: NotificationServic
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
+
+    @GetMapping("/my-notify")
+    fun getNotificationsByJwt(@RequestHeader("Authorization") token: String): ResponseEntity<List<NotificationDTO>> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val foundNotification = notificationService.getNotificationsByJwt(jwt)
+            ResponseEntity.ok(foundNotification)
+        } catch (e: NotificationException) {
+            logger.error("Error getting notification by JWT")
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        } catch (e: Exception) {
+            logger.error("Error getting notification by JWT")
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
 }
