@@ -43,4 +43,17 @@ interface ContestRepository : JpaRepository<Contest, Long> {
 
     @Query("SELECT COALESCE(SUM(c.fee * SIZE(c.registrations)), 0) FROM Contest c WHERE c.status = 1")
     fun sumRevenueBasedOnRegistrations(): Long
+    @Query("""
+        SELECT c FROM Contest c
+        WHERE c.status = :activeStatus
+          OR c.status = :finishedStatus
+        ORDER BY 
+          c.startDate ASC,   
+          SIZE(c.registrations) DESC, 
+          c.fee ASC          
+    """)
+    fun getActiveAndFinished(
+        @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
+        @Param("finishedStatus") finishedStatus: EContestStatus = EContestStatus.FINISHED
+    ): List<Contest>
 }

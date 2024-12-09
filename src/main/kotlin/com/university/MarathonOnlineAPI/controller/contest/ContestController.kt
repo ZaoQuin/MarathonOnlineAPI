@@ -1,8 +1,8 @@
 package com.university.MarathonOnlineAPI.controller.contest
 
+import com.university.MarathonOnlineAPI.controller.DeleteResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
-import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.service.ContestService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -19,10 +19,11 @@ class ContestController(private val contestService: ContestService) {
     private val logger = LoggerFactory.getLogger(ContestController::class.java)
 
     @PostMapping
-    fun addContest(@RequestBody @Valid newContest: ContestDTO): ResponseEntity<Any> {
+    fun addContest(@RequestHeader("Authorization") token: String, @RequestBody @Valid createContestRequest: CreateContestRequest): ResponseEntity<Any> {
         return try {
-            val addedContest = contestService.addContest(newContest)
-            ResponseEntity(addedContest, HttpStatus.CREATED)
+            val jwt = token.replace("Bearer ", "")
+            val addedContest = contestService.addContest(createContestRequest, jwt)
+            ResponseEntity(addedContest, HttpStatus.OK)
         } catch (e: ContestException) {
             logger.error("Error adding contest: ${e.message}")
             ResponseEntity("Contest error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
@@ -33,24 +34,41 @@ class ContestController(private val contestService: ContestService) {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteContest(@PathVariable id: Long): ResponseEntity<String> {
+    fun deleteContest(@PathVariable id: Long): ResponseEntity<DeleteResponse> {
         return try {
             contestService.deleteContestById(id)
             logger.info("Contest with ID $id deleted successfully")
-            ResponseEntity.ok("Contest with ID $id deleted successfully")
+            ResponseEntity.ok(DeleteResponse( message = "Contest with ID $id deleted successfully"))
         } catch (e: ContestException) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Failed to delete contest with ID $id: ${e.message}")
+                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
         } catch (e: Exception) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Failed to delete contest with ID $id: ${e.message}")
+                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
+        }
+    }
+
+    @PutMapping("/cancel")
+    fun cancelContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
+        return try {
+            val updatedContest = contestService.cancelContest(contestDTO)
+            ResponseEntity(updatedContest, HttpStatus.OK)
+        } catch (e: ContestException) {
+            logger.error("Contest exception: ${e.message}")
+            throw e
+        } catch (e: DataAccessException) {
+            logger.error("Database access error: ${e.message}")
+            throw ContestException("Database error occurred: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error updating contest: ${e.message}")
+            throw ContestException("Error updating contest: ${e.message}")
         }
     }
 
     @PutMapping
-    fun updateContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<ContestDTO> {
+    fun updateContest(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<Any> {
         return try {
             val updatedContest = contestService.updateContest(contestDTO)
             ResponseEntity(updatedContest, HttpStatus.OK)
@@ -148,6 +166,22 @@ class ContestController(private val contestService: ContestService) {
     fun getHomeContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getHomeContests()
+            ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
+        } catch (e: ContestException) {
+            logger.error("Contest retrieval error", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to e.message))
+        } catch (e: Exception) {
+            logger.error("Unexpected error in getContests", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "An unexpected error occurred"))
+        }
+    }
+
+    @GetMapping("/active-and-finish")
+    fun getActiveAndFinish(): ResponseEntity<*> {
+        return try {
+            val contests = contestService.getActiveAndFinished()
             ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
         } catch (e: ContestException) {
             logger.error("Contest retrieval error", e)
