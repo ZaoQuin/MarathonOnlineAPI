@@ -141,4 +141,15 @@ class RegistrationServiceImpl(
             emptyList()
         }
     }
+    override fun getRevenueByMonth(year: Int): List<Map<String, Any>> {
+        return registrationRepository.revenueByMonth(year)
+    }
+
+    override fun getRevenueByWeek(year: Int): List<Map<String, Any>> {
+        return registrationRepository.revenueByWeek(year)
+    }
+
+    override fun getRevenueByYear(): List<Map<String, Any>> {
+        return registrationRepository.revenueByYear()
+    }
 }

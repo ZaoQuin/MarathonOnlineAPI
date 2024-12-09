@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
 
@@ -40,6 +41,8 @@ interface ContestRepository : JpaRepository<Contest, Long> {
     fun getContestsByRunner(@Param("userId") userId: Long): List<Contest>
     fun findAllByEndDateBeforeAndStatus(now: LocalDateTime?, active: EContestStatus): List<Contest>
 
+    @Query("SELECT COALESCE(SUM(c.fee * SIZE(c.registrations)), 0) FROM Contest c WHERE c.status = 1")
+    fun sumRevenueBasedOnRegistrations(): Long
     @Query("""
         SELECT c FROM Contest c
         WHERE c.status = :activeStatus

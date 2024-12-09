@@ -83,6 +83,19 @@ class ContestServiceImpl(
 
         return contestMapper.toDto(updatedContest)
     }
+    override fun rejectContest(id: Long): ContestDTO {
+        val contest = contestRepository.findById(id)
+            .orElseThrow { ContestException("Contest with ID $id not found") }
+
+        // Chỉ cập nhật trạng thái
+        contest.status = EContestStatus.NOT_APPROVAL
+
+        // Lưu lại cuộc thi đã thay đổi
+        val updatedContest = contestRepository.save(contest)
+
+        // Chuyển đổi sang DTO để trả về
+        return contestMapper.toDto(updatedContest)
+    }
 
     override fun deleteContestById(id: Long) {
         try {

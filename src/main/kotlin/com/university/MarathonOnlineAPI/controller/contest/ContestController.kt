@@ -87,7 +87,6 @@ class ContestController(private val contestService: ContestService) {
     @PutMapping("/approve/{id}")
     fun approveContest(@PathVariable id: Long): ResponseEntity<Any> {
         return try {
-            // Gọi service để duyệt cuộc thi, chỉ thay đổi trạng thái của cuộc thi
             val approvedContest = contestService.approveContest(id)
             ResponseEntity.ok(approvedContest)
         } catch (e: ContestException) {
@@ -99,6 +98,22 @@ class ContestController(private val contestService: ContestService) {
                 .body("An unexpected error occurred while approving the contest")
         }
     }
+
+    @PutMapping("/reject/{id}")
+    fun rejectContest(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+            val rejectedContest = contestService.rejectContest(id)
+            ResponseEntity.ok(rejectedContest)
+        } catch (e: ContestException) {
+            logger.error("Contest approval error: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error approving contest: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error occurred during contest approval: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while approving the contest")
+        }
+    }
+
 
     @GetMapping
     @CrossOrigin(origins = ["http://localhost:3000"])
