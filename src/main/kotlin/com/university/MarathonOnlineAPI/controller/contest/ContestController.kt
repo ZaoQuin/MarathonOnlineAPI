@@ -116,6 +116,7 @@ class ContestController(private val contestService: ContestService) {
 
 
     @GetMapping
+    @CrossOrigin(origins = ["https://login-admin-page.onrender.com/"])
     fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
