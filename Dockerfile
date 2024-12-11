@@ -1,7 +1,7 @@
 # Build stage
 FROM gradle:7.6.0-jdk17 AS build
 WORKDIR /app
-COPY . .                          # Copy toàn bộ mã nguồn vào container
+COPY . .
 RUN ./gradlew bootJar --no-daemon # Build file JAR bằng Gradle
 
 # Runtime stage
