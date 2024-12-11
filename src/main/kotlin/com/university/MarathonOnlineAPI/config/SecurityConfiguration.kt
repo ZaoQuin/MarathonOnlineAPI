@@ -49,9 +49,10 @@ class SecurityConfiguration(
 
     // Cấu hình CORS cho phép truy cập từ localhost:3000 (React app)
     override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/api/**") // Chỉ cho phép CORS cho các API
-            .allowedOrigins("https://login-admin-page.onrender.com/") // React frontend chạy trên localhost:3000
+        registry.addMapping("/**") // Chỉ cho phép CORS cho các API
+            .allowedOrigins("https://login-admin-page.onrender.com") // React frontend chạy trên localhost:3000
             .allowedMethods("GET", "POST", "PUT", "DELETE") // Các phương thức HTTP được phép
             .allowedHeaders("*") // Cho phép tất cả headers
+            .allowCredentials(true)
     }
 }
