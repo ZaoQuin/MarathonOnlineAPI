@@ -152,4 +152,17 @@ class RegistrationServiceImpl(
     override fun getRevenueByYear(): List<Map<String, Any>> {
         return registrationRepository.revenueByYear()
     }
+
+    override fun block(registrationDTO: RegistrationDTO): RegistrationDTO {
+        return try {
+            val registration = registrationRepository.findById(registrationDTO.id!!)
+                .orElseThrow { RegistrationException("Registration with ID $registrationDTO.id not found") }
+            registration.status = ERegistrationStatus.BLOCK
+            registrationRepository.save(registration)
+            registrationMapper.toDto(registration)
+        } catch (e: DataAccessException) {
+            logger.error("Error blocking registration: ${e.message}")
+            throw RegistrationException("Database error occurred while blocking registration: ${e.message}")
+        }
+    }
 }

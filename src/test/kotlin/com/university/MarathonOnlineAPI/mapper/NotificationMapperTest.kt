@@ -48,7 +48,7 @@ class NotificationMapperTest {
             content = "You are invited to the Annual Marathon",
             createAt = LocalDateTime.now(),
             isRead = false,
-            type = ENotificationType.NEW_NOTIFICATION
+            type = ENotificationType.NEW_CONTEST
         )
 
         notificationDTO = NotificationDTO(
@@ -59,7 +59,7 @@ class NotificationMapperTest {
             content = "You are invited to the Annual Marathon",
             createAt = LocalDateTime.now(),
             isRead = false,
-            type = ENotificationType.NEW_NOTIFICATION
+            type = ENotificationType.NEW_CONTEST
         )
     }
 

@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
 
 @Repository
 interface RegistrationRepository : JpaRepository<Registration, Long>{
@@ -16,15 +15,17 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
     @Query("SELECT r FROM Registration r " +
             "WHERE r.runner.id = :userId " +
             "AND r.status != :pendingRgStatus " +
+            "AND r.status != :blockRgStatus " +
             "AND r.contest.status = :activeCtStatus " +
             "AND r.contest.startDate <= CURRENT_DATE ")
-    fun findActiveRegistration(@Param("userId") userId: Long,  @Param("pendingRgStatus") pendingRgStatus: ERegistrationStatus = ERegistrationStatus.PENDING,
+    fun findActiveRegistration(@Param("userId") userId: Long,
+                               @Param("pendingRgStatus") pendingRgStatus: ERegistrationStatus = ERegistrationStatus.PENDING,
+                               @Param("blockRgStatus") blockRgStatus: ERegistrationStatus = ERegistrationStatus.BLOCK,
                                @Param("activeCtStatus") activeCtStatus: EContestStatus = EContestStatus.ACTIVE): List<Registration>
 
     @Query("SELECT r FROM Registration r WHERE r.runner.email = :email")
     fun findByRunnerEmail(@Param("email") email: String): List<Registration>
 
-    // Tổng doanh thu theo tháng
     @Query(
         """
         SELECT MONTH(r.registrationDate) AS month, SUM(p.amount) AS revenue
@@ -49,7 +50,6 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
     )
     fun revenueByWeek(@Param("year") year: Int): List<Map<String, Any>>
 
-    // Tổng doanh thu theo năm
     @Query("""
         SELECT YEAR(r.registrationDate) AS year, SUM(p.amount) AS totalRevenue
         FROM Registration r

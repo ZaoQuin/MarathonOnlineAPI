@@ -43,5 +43,5 @@ data class Registration(
 )
 
 enum class ERegistrationStatus {
-    PENDING, ACTIVE, COMPLETED
+    PENDING, ACTIVE, COMPLETED, BLOCK
 }

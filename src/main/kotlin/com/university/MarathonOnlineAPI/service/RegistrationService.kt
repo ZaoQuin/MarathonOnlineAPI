@@ -15,4 +15,5 @@ interface RegistrationService {
     fun getRevenueByMonth(year: Int): List<Map<String, Any>>
     fun getRevenueByWeek(year: Int): List<Map<String, Any>>
     fun getRevenueByYear(): List<Map<String, Any>>
+    fun block(registrationDTO: RegistrationDTO): RegistrationDTO
 }

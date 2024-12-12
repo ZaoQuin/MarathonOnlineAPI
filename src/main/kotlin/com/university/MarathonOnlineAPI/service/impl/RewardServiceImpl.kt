@@ -28,7 +28,6 @@ class RewardServiceImpl(
             reward.description = newReward.description
             reward.rewardRank = newReward.rewardRank
             reward.type = newReward.type
-            reward.isClaim = newReward.isClaim
 
             logger.info("Map to entity: $reward")
             val savedReward = rewardRepository.save(reward)
@@ -69,8 +68,7 @@ class RewardServiceImpl(
                     name= reward.name,
                     description = reward.description,
                     rewardRank = reward.rewardRank,
-                    type= reward.type,
-                    isClaim = reward.isClaim
+                    type= reward.type
                 )
             }
         } catch (e: DataAccessException) {
