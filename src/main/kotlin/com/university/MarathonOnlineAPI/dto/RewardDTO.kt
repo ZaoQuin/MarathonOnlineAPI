@@ -7,6 +7,5 @@ data class RewardDTO (
     var name: String? = null,
     var description: String? = null,
     var rewardRank: Int? = null,
-    var type: ERewardType? = null,
-    var isClaim: Boolean? = null
+    var type: ERewardType? = null
 )

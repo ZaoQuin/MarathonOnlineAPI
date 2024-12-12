@@ -68,6 +68,23 @@ class RegistrationController(private val registrationService: RegistrationServic
         }
     }
 
+    @PutMapping("/block")
+    fun blockRegistration(@RequestBody @Valid registrationDTO: RegistrationDTO): ResponseEntity<RegistrationDTO> {
+        return try {
+            val blockedRegistration = registrationService.block(registrationDTO)
+            ResponseEntity(blockedRegistration, HttpStatus.OK)
+        } catch (e: RegistrationException) {
+            logger.error("Registration exception: ${e.message}")
+            throw e
+        } catch (e: DataAccessException) {
+            logger.error("Database access error: ${e.message}")
+            throw RegistrationException("Database error occurred: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error updating registration: ${e.message}")
+            throw RegistrationException("Error updating registration: ${e.message}")
+        }
+    }
+
 //    @GetMapping
 //    fun getRegistrations(): ResponseEntity<List<RegistrationDTO>> {
 //        return try {

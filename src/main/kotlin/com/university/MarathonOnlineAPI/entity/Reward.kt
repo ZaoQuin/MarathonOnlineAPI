@@ -14,7 +14,6 @@ data class Reward (
     var description: String? = null,
     var rewardRank: Int? = null,
     var type: ERewardType? = null,
-    var isClaim: Boolean? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contest_id")

@@ -23,5 +23,5 @@ data class Notification(
 )
 
 enum class ENotificationType {
-    REWARD, NEW_NOTIFICATION
+    REWARD, NEW_CONTEST, BLOCK_CONTEST, ACCEPT_CONTEST, NOT_APPROVAL_CONTEST
 }
