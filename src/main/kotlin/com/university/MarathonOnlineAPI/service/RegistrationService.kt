@@ -3,6 +3,7 @@ package com.university.MarathonOnlineAPI.service
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
+import com.university.MarathonOnlineAPI.entity.Contest
 
 interface RegistrationService {
     fun registerForContest(contest: ContestDTO, jwt: String): RegistrationDTO
@@ -16,4 +17,5 @@ interface RegistrationService {
     fun getRevenueByWeek(year: Int): List<Map<String, Any>>
     fun getRevenueByYear(): List<Map<String, Any>>
     fun block(registrationDTO: RegistrationDTO): RegistrationDTO
+    fun awardPrizes(contestDTO: ContestDTO): List<RegistrationDTO>
 }

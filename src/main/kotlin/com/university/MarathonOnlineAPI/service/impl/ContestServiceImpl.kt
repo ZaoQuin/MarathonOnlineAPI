@@ -5,6 +5,7 @@ import com.university.MarathonOnlineAPI.dto.*
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
+import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.ContestService
@@ -229,5 +230,22 @@ class ContestServiceImpl(
             logger.error("Error retrieving contests: ${e.message}", e)
             throw ContestException("Database error occurred while retrieving contests: ${e.message}")
         }
+    }
+
+
+    override fun awardPrizes(contestDTO: ContestDTO): ContestDTO {
+        val contest = contestRepository.findById(contestDTO.id!!)
+            .orElseThrow { RegistrationException("Registration with ID $contestDTO.id not found") }
+        contest.status = EContestStatus.COMPLETED
+        val updatedContest = contestRepository.save(contest)
+        return contestMapper.toDto(updatedContest)
+    }
+
+
+    private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
+        rewards.forEach { it.registration = registration }
+        registration.rewards = registration.rewards?.toMutableList()?.apply {
+            addAll(rewards)
+        } ?: rewards.toMutableList()
     }
 }

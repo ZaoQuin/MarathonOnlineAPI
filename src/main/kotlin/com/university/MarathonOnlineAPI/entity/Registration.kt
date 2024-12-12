@@ -32,6 +32,7 @@ data class Registration(
     var races: List<Race>? = null,
 
     @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY)
+    @JsonManagedReference
     var rewards: List<Reward>? = null,
 
     var status: ERegistrationStatus? = null,

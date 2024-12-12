@@ -85,6 +85,23 @@ class RegistrationController(private val registrationService: RegistrationServic
         }
     }
 
+    @PutMapping("/prizes")
+    fun awardPrizes(@RequestBody @Valid contestDTO: ContestDTO): ResponseEntity<List<RegistrationDTO>> {
+        return try {
+            val registrations = registrationService.awardPrizes(contestDTO)
+            ResponseEntity(registrations, HttpStatus.OK)
+        } catch (e: RegistrationException) {
+            logger.error("Registration exception: ${e.message}")
+            throw e
+        } catch (e: DataAccessException) {
+            logger.error("Database access error: ${e.message}")
+            throw RegistrationException("Database error occurred: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error prizing registration: ${e.message}")
+            throw RegistrationException("Error prizing registration: ${e.message}")
+        }
+    }
+
 //    @GetMapping
 //    fun getRegistrations(): ResponseEntity<List<RegistrationDTO>> {
 //        return try {
