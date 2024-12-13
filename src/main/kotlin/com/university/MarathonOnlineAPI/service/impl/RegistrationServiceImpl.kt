@@ -3,14 +3,15 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.dto.RaceDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
-import com.university.MarathonOnlineAPI.entity.ERegistrationStatus
-import com.university.MarathonOnlineAPI.entity.Registration
+import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
+import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.ContestMapper
 import com.university.MarathonOnlineAPI.mapper.RaceMapper
 import com.university.MarathonOnlineAPI.mapper.RegistrationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
+import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.RegistrationRepository
 import com.university.MarathonOnlineAPI.service.RegistrationService
 import com.university.MarathonOnlineAPI.service.TokenService
@@ -24,6 +25,7 @@ import java.time.LocalDateTime
 class RegistrationServiceImpl(
     private val registrationRepository: RegistrationRepository,
     private val registrationMapper: RegistrationMapper,
+    private val contestRepository: ContestRepository,
     private val raceMapper: RaceMapper,
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
@@ -33,15 +35,17 @@ class RegistrationServiceImpl(
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)
 
-    override fun registerForContest(contest: ContestDTO, jwt: String): RegistrationDTO {
+    override fun registerForContest(contestDTO: ContestDTO, jwt: String): RegistrationDTO {
         return try {
+            val contest = contestRepository.findById(contestDTO.id!!)
+                .orElseThrow { ContestException("Contest with ID ${contestDTO.id!!} not found") }
             val userDTO =
                 tokenService.extractEmail(jwt)?.let { email ->
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
             val registration = Registration(
                 runner = userMapper.toEntity(userDTO),
-                contest = contestMapper.toEntity(contest),
+                contest = contest,
                 registrationDate = LocalDateTime.now(),
                 races = emptyList(),
                 status = ERegistrationStatus.PENDING
@@ -164,5 +168,48 @@ class RegistrationServiceImpl(
             logger.error("Error blocking registration: ${e.message}")
             throw RegistrationException("Database error occurred while blocking registration: ${e.message}")
         }
+    }
+
+    override fun awardPrizes(contestDTO: ContestDTO): List<RegistrationDTO> {
+        val contest = contestRepository.findById(contestDTO.id!!)
+            .orElseThrow { RegistrationException("Registration with ID $contestDTO.id not found") }
+        val sortedRegistrations = contest.registrations
+            ?.filter { it.status == ERegistrationStatus.COMPLETED }
+            ?.sortedWith(
+                compareByDescending<Registration> { reg ->
+                    reg.races?.sumOf { it.distance?.toDouble() ?: 0.0 } ?: 0.0
+                }.thenBy { reg ->
+                    reg.races?.sumOf { it.timeTaken?.toLong() ?: 0L } ?: 0L
+                }.thenBy { reg ->
+                    reg.races?.map { it.avgSpeed?.toDouble() ?: 0.0 }?.average() ?: 0.0
+                }.thenBy { reg ->
+                    reg.registrationDate
+                }
+            ) ?: emptyList()
+        val rewardsByRank = contest.rewards?.groupBy { it.rewardRank } ?: emptyMap()
+
+        rewardsByRank.filterKeys { it!! > 0 }.forEach { (rank, rewards) ->
+            sortedRegistrations.getOrNull(rank!! - 1)?.let { registration ->
+                assignRewardsToRegistration(registration, rewards)
+            }
+        }
+
+        val defaultRewards = rewardsByRank[0] ?: emptyList()
+        sortedRegistrations.forEach { registration ->
+            registration.contest = contest
+            assignRewardsToRegistration(registration, defaultRewards)
+        }
+
+
+        val registrations = registrationRepository.saveAll(sortedRegistrations)
+        return registrations.map { registrationMapper.toDto(it) }
+    }
+
+
+    private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
+        rewards.forEach { it.registration = registration }
+        registration.rewards = registration.rewards?.toMutableList()?.apply {
+            addAll(rewards)
+        } ?: rewards.toMutableList()
     }
 }

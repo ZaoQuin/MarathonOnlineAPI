@@ -16,4 +16,5 @@ interface ContestService {
     fun getContestsByRunner(jwt: String): List<ContestDTO>
     fun getActiveAndFinished(): List<ContestDTO>
     fun cancelContest(contestDTO: ContestDTO): ContestDTO
+    fun awardPrizes(contestDTO: ContestDTO): ContestDTO
 }
