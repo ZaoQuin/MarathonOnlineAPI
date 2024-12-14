@@ -1,9 +1,7 @@
 package com.university.MarathonOnlineAPI.controller.notification
 
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.dto.RuleDTO
-import com.university.MarathonOnlineAPI.entity.ERole
-import com.university.MarathonOnlineAPI.entity.Rule
+import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.service.NotificationService
 import jakarta.validation.Valid
@@ -12,7 +10,6 @@ import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import kotlin.math.log
 
 @RestController
 @RequestMapping("/api/v1/notification")
@@ -21,9 +18,9 @@ class NotificationController(private val notificationService: NotificationServic
     private val logger = LoggerFactory.getLogger(NotificationController::class.java)
 
     @PostMapping
-    fun addNotification(@RequestBody @Valid newNotification: NotificationDTO): ResponseEntity<Any> {
+    fun addNotification(@RequestBody @Valid notification: NotificationDTO): ResponseEntity<Any> {
         return try {
-            val addedNotification = notificationService.addNotification(newNotification)
+            val addedNotification = notificationService.addNotification(notification)
             //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
@@ -35,10 +32,64 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-    @PostMapping("/notifications/send")
-    fun sendNotificationToRole(@RequestBody request: NotificationRequest) {
-        if (request.targetRole == "RUNNER") {
-            notificationService.sendNotificationToRunners(request.contestId, request.title, request.content)
+
+    @PutMapping("/readed")
+    fun readNotify(@RequestBody @Valid notification: NotificationDTO): ResponseEntity<Any> {
+        return try {
+            val addedNotification = notificationService.readNotify(notification)
+            //logger.info("Show newNotification: $addedNotification")
+            ResponseEntity(addedNotification, HttpStatus.CREATED)
+        } catch (e: NotificationException) {
+            logger.error("Error adding notification: ${e.message}")
+            ResponseEntity("Notification error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    @PostMapping("/individual")
+    fun addIndividualNotification(@RequestBody @Valid notification: CreateIndividualNotificationRequest): ResponseEntity<Any> {
+        return try {
+            val addedNotification = notificationService.addIndividualNotification(notification)
+            //logger.info("Show newNotification: $addedNotification")
+            ResponseEntity(addedNotification, HttpStatus.CREATED)
+        } catch (e: NotificationException) {
+            logger.error("Error adding notification: ${e.message}")
+            ResponseEntity("Notification error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    @PostMapping("/all")
+    fun addAllRunnerNotification(@RequestBody @Valid notification: CreateAllNotificationRequest): ResponseEntity<Any> {
+        return try {
+            val addedNotification = notificationService.addAllRunnerNotification(notification)
+            //logger.info("Show newNotification: $addedNotification")
+            ResponseEntity(addedNotification, HttpStatus.CREATED)
+        } catch (e: NotificationException) {
+            logger.error("Error adding notification: ${e.message}")
+            ResponseEntity("Notification error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    @PostMapping("/group")
+    fun addGroupNotification(@RequestBody @Valid newNotification: CreateGroupNotificationRequest): ResponseEntity<Any> {
+        return try {
+            val addedNotification = notificationService.addGroupNotification(newNotification)
+            //logger.info("Show newNotification: $addedNotification")
+            ResponseEntity(addedNotification, HttpStatus.CREATED)
+        } catch (e: NotificationException) {
+            logger.error("Error adding notification: ${e.message}")
+            ResponseEntity("Notification error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         }
     }
 
