@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.repos
 
+import com.university.MarathonOnlineAPI.entity.ERole
 import com.university.MarathonOnlineAPI.entity.User
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -9,6 +10,7 @@ import java.util.*
 @Repository
 interface UserRepository: JpaRepository<User, Long> {
     fun findByEmail(email: String): Optional<User>
+    fun findAllByRole(role: ERole): List<User>
     fun findByTokenRefresh(token: String): Optional<User>
     @Query("SELECT COUNT(u) FROM User u WHERE u.isDeleted = false")
     override fun count(): Long

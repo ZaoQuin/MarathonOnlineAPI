@@ -1,9 +1,7 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.entity.Contest
-import com.university.MarathonOnlineAPI.entity.Notification
-import com.university.MarathonOnlineAPI.entity.User
+import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.exception.RaceException
@@ -20,6 +18,7 @@ import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class NotificationServiceImpl(
@@ -118,5 +117,23 @@ class NotificationServiceImpl(
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
         }
+    }
+
+    override fun sendNotificationToRunners(contestId: Long, title: String, content: String) {
+        val contest = contestRepository.findById(contestId)
+            .orElseThrow { IllegalArgumentException("Contest with ID $contestId not found") }
+        val runners = userRepository.findAllByRole(ERole.RUNNER) // Truy vấn tất cả RUNNER
+        val notifications = runners.map { runner ->
+            Notification(
+                receiver = runner,
+                contest = contest,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.NEW_CONTEST
+            )
+        }
+        notificationRepository.saveAll(notifications) // Lưu tất cả thông báo
     }
 }
