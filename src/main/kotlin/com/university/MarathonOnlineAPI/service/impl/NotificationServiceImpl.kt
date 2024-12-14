@@ -1,7 +1,13 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.controller.notification.CreateAllNotificationRequest
+import com.university.MarathonOnlineAPI.controller.notification.CreateGroupNotificationRequest
+import com.university.MarathonOnlineAPI.controller.notification.CreateIndividualNotificationRequest
+import com.university.MarathonOnlineAPI.controller.notification.CreateNotificationRequest
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
+import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.entity.Contest
+import com.university.MarathonOnlineAPI.entity.ERole
 import com.university.MarathonOnlineAPI.entity.Notification
 import com.university.MarathonOnlineAPI.entity.User
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
@@ -14,12 +20,14 @@ import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
+import com.university.MarathonOnlineAPI.service.ContestService
 import com.university.MarathonOnlineAPI.service.NotificationService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class NotificationServiceImpl(
@@ -51,6 +59,86 @@ class NotificationServiceImpl(
         } catch (e: DataAccessException) {
             logger.error("Error saving notification: ${e.message}")
             throw NotificationException("Database error occurred while saving notification: ${e.message}")
+        }
+    }
+
+    override fun addIndividualNotification(request: CreateIndividualNotificationRequest): NotificationDTO {
+        return try {
+            val notification = Notification(
+                receiver = request.receiver?.let { userMapper.toEntity(it) },
+                contest = request.contest?.let { contestMapper.toEntity(it) },
+                title = request.title,
+                content = request.content,
+                createAt =  LocalDateTime.now(),
+                isRead = false,
+                type =  request.type
+            )
+            val saveNotification = notificationRepository.save(notification)
+            notificationMapper.toDto(saveNotification)
+        } catch (e: DataAccessException) {
+            logger.error("Error saving notification: ${e.message}")
+            throw NotificationException("Database error occurred while saving notification: ${e.message}")
+        }
+    }
+
+    override fun addAllRunnerNotification(request: CreateAllNotificationRequest): List<NotificationDTO> {
+        return try {
+            val runners = userRepository.findByRole(ERole.RUNNER)
+            val notifications = mutableListOf<Notification>()
+            runners.forEach {receiver ->
+                val notification = Notification(
+                    receiver = receiver,
+                    contest = request.contest?.let { contestMapper.toEntity(it) },
+                    title = request.title,
+                    content = request.content,
+                    createAt =  LocalDateTime.now(),
+                    isRead = false,
+                    type =  request.type
+                )
+                notifications.add(notification)
+            }
+            val savedNotifications = notificationRepository.saveAll(notifications)
+            savedNotifications.map { notificationMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error saving notification: ${e.message}")
+            throw NotificationException("Database error occurred while saving notification: ${e.message}")
+        }
+    }
+
+    override fun addGroupNotification(request: CreateGroupNotificationRequest): List<NotificationDTO> {
+        return try {
+            val notifications = mutableListOf<Notification>()
+            request.receivers.forEach {receiver ->
+                val notification = Notification(
+                    receiver = userMapper.toEntity(receiver),
+                    contest = request.contest?.let { contestMapper.toEntity(it) },
+                    title = request.title,
+                    content = request.content,
+                    createAt =  LocalDateTime.now(),
+                    isRead = false,
+                    type =  request.type
+                )
+                notifications.add(notification)
+            }
+            val savedNotifications = notificationRepository.saveAll(notifications)
+            savedNotifications.map { notificationMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error saving notification: ${e.message}")
+            throw NotificationException("Database error occurred while saving notification: ${e.message}")
+        }
+    }
+
+    override fun readNotify(notificationDTO: NotificationDTO): NotificationDTO {
+        return try {
+            val existingNotification = notificationRepository.findById(notificationDTO.id ?: throw RuleException("Rule ID must not be null"))
+                .orElseThrow { RuleException("Rule with ID ${notificationDTO.id} not found") }
+            existingNotification.isRead = true
+
+            val savedNotification = notificationRepository.save(existingNotification)
+            notificationMapper.toDto(savedNotification)
+        } catch (e: DataAccessException) {
+            logger.error("Error updating notification: ${e.message}")
+            throw NotificationException("Database error occurred while updating notification: ${e.message}")
         }
     }
 
