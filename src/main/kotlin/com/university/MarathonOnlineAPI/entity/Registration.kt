@@ -31,8 +31,12 @@ data class Registration(
     )
     var races: List<Race>? = null,
 
-    @OneToMany(mappedBy = "registration", fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "reward_registration",
+        joinColumns = [JoinColumn(name = "registration_id")],
+        inverseJoinColumns = [JoinColumn(name = "reward_id")]
+    )
     var rewards: List<Reward>? = null,
 
     var status: ERegistrationStatus? = null,

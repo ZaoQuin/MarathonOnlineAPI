@@ -6,6 +6,7 @@ import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RegistrationException
+import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.ContestService
@@ -241,11 +242,25 @@ class ContestServiceImpl(
         return contestMapper.toDto(updatedContest)
     }
 
+    override fun checkNameExist(name: String): Boolean {
+        return try {
+            !contestRepository.findByName(name).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking email: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
+    }
 
-    private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
-        rewards.forEach { it.registration = registration }
-        registration.rewards = registration.rewards?.toMutableList()?.apply {
-            addAll(rewards)
-        } ?: rewards.toMutableList()
+    override fun checkActiveContest(jwt: String): Boolean {
+        val userDTO =
+            tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+        return try {
+            !contestRepository.findActiveAndPendingByEmail(userDTO.email!!).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking email: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
     }
 }

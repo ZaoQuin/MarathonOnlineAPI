@@ -17,4 +17,6 @@ interface ContestService {
     fun getActiveAndFinished(): List<ContestDTO>
     fun cancelContest(contestDTO: ContestDTO): ContestDTO
     fun awardPrizes(contestDTO: ContestDTO): ContestDTO
+    fun checkNameExist(name: String): Boolean
+    fun checkActiveContest(jwt: String): Boolean
 }

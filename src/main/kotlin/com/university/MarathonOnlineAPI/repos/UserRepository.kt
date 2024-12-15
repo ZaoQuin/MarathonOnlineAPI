@@ -16,4 +16,6 @@ interface UserRepository: JpaRepository<User, Long> {
     override fun count(): Long
     @Query("SELECT u FROM User u WHERE u.role = :role")
     fun findByRole(@Param("role") role: ERole): List<User>
+    @Query("SELECT u FROM User u WHERE u.username = :username")
+    fun findByUsername(username: String): Optional<User>
 }

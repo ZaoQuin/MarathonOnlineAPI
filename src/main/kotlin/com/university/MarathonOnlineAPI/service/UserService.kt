@@ -16,4 +16,5 @@ interface UserService {
     fun updatePassword(email: String, password: String): Boolean
     fun blockUser(id: Long)
     fun unblockUser(id: Long)
+    fun checkUsernameExists(username: String): Boolean
 }

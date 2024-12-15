@@ -207,9 +207,15 @@ class RegistrationServiceImpl(
 
 
     private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
-        rewards.forEach { it.registration = registration }
+        rewards.forEach {
+            val registrations = it.registrations!!.toMutableList()
+            if(registration !in registrations)
+                registrations.add(registration)
+            it.registrations = registrations
+        }
         registration.rewards = registration.rewards?.toMutableList()?.apply {
-            addAll(rewards)
+            val existingIds = this.map { it.id }
+            addAll(rewards.filter { it.id !in existingIds })
         } ?: rewards.toMutableList()
     }
 }

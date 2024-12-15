@@ -144,6 +144,15 @@ class UserServiceImpl(
         }
     }
 
+    override fun checkUsernameExists(username: String): Boolean {
+        return try {
+            !userRepos.findByUsername(username).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking email: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
+    }
+
     override fun findByEmail(email: String): UserDTO {
         return try {
             val user = userRepos.findByEmail(email)

@@ -135,6 +135,16 @@ class UserController(
         }
     }
 
+    @PostMapping("/check-username")
+    fun checkUsername(@RequestBody request: CheckUsernameRequest): ResponseEntity<CheckUsernameResponse> {
+        val emailExists = userService.checkUsernameExists(request.username.trim())
+        return if (emailExists) {
+            ResponseEntity(CheckUsernameResponse(true), HttpStatus.OK)
+        } else {
+            ResponseEntity(CheckUsernameResponse(false, "Username not found"), HttpStatus.OK)
+        }
+    }
+
     @PostMapping("/update-password")
     fun updatePassword(@RequestBody request: UpdatePasswordRequest): ResponseEntity<UpdatePasswordResponse> {
         val updated = userService.updatePassword(request.email, request.password)
