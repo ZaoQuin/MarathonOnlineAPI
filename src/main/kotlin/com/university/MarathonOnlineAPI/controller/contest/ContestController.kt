@@ -1,6 +1,8 @@
 package com.university.MarathonOnlineAPI.controller.contest
 
 import com.university.MarathonOnlineAPI.controller.DeleteResponse
+import com.university.MarathonOnlineAPI.controller.user.CheckEmailRequest
+import com.university.MarathonOnlineAPI.controller.user.CheckEmailResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.service.ContestService
@@ -178,6 +180,28 @@ class ContestController(private val contestService: ContestService) {
             ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         }
     }
+
+    @PostMapping("/check-name")
+    fun checkName(@RequestBody request: CheckContestNameRequest): ResponseEntity<Any> {
+        val emailExists = contestService.checkNameExist(request.name.trim())
+        return if (emailExists) {
+            ResponseEntity(CheckEmailResponse(true, "Founded"), HttpStatus.OK)
+        } else {
+            ResponseEntity(CheckEmailResponse(false, "Not found"), HttpStatus.OK)
+        }
+    }
+
+    @PostMapping("/check-active")
+    fun checkActiveContest(@RequestHeader("Authorization") token: String): ResponseEntity<Any> {
+        val jwt = token.replace("Bearer ", "")
+        val exist = contestService.checkActiveContest(jwt)
+        return if (exist) {
+            ResponseEntity(CheckActiveContestResponse(true, "Founded"), HttpStatus.OK)
+        } else {
+            ResponseEntity(CheckActiveContestResponse(false, "Not found"), HttpStatus.OK)
+        }
+    }
+
 
     @GetMapping("/home")
     fun getHomeContests(): ResponseEntity<*> {

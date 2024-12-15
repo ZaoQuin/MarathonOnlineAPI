@@ -56,4 +56,13 @@ interface ContestRepository : JpaRepository<Contest, Long> {
         @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
         @Param("finishedStatus") finishedStatus: EContestStatus = EContestStatus.FINISHED
     ): List<Contest>
+
+    @Query("""
+        SELECT c FROM Contest c 
+        WHERE c.organizer.email = :email
+        AND (c.status = :activeStatus OR c.status = :pendingStatus)
+    """)
+    fun findActiveAndPendingByEmail(@Param("email") email: String,
+                                    @Param("pendingStatus") pendingStatus: EContestStatus = EContestStatus.PENDING,
+                                    @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE): Optional<List<Contest>>
 }

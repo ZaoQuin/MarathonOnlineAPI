@@ -20,10 +20,8 @@ data class Reward (
     @JsonBackReference
     var contest: Contest? = null,
 
-    @ManyToOne
-    @JoinColumn(name = "registration_id")
-    @JsonBackReference
-    var registration: Registration? = null
+    @ManyToMany(mappedBy = "rewards")
+    var registrations: List<Registration>? = null
 )
 
 enum class ERewardType {
