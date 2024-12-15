@@ -18,4 +18,7 @@ interface NotificationService {
     fun addAllRunnerNotification(notification: CreateAllNotificationRequest): List<NotificationDTO>
     fun addGroupNotification(newNotification: CreateGroupNotificationRequest): List<NotificationDTO>
     fun readNotify(notification: NotificationDTO): NotificationDTO
+    fun sendAcceptContestNotificationToRunners(contestId: Long, title: String, content: String)
+    fun sendAcceptContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long)
+    fun sendRejectContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long)
 }

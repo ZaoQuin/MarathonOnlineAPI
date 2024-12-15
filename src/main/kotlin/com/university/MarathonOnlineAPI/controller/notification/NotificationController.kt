@@ -93,6 +93,35 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
+    @PostMapping("/send/users")
+    fun sendAcceptContestNotificationToUser(@RequestBody request: NotificationRequest) {
+        if (request.targetRole == "RUNNER") {
+            notificationService.sendAcceptContestNotificationToRunners(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content
+            )
+        }
+        if(request.type == "NOT_APPROVAL_CONTEST")
+        {
+            notificationService.sendRejectContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+        }
+        if (request.type == "ACCEPT_CONTEST")
+        {
+            notificationService.sendAcceptContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+        }
+    }
+
     @DeleteMapping("/{id}")
     fun deleteNotification(@PathVariable id: Long): ResponseEntity<String> {
         return try {

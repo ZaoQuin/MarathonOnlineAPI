@@ -6,10 +6,7 @@ import com.university.MarathonOnlineAPI.controller.notification.CreateIndividual
 import com.university.MarathonOnlineAPI.controller.notification.CreateNotificationRequest
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
 import com.university.MarathonOnlineAPI.dto.UserDTO
-import com.university.MarathonOnlineAPI.entity.Contest
-import com.university.MarathonOnlineAPI.entity.ERole
-import com.university.MarathonOnlineAPI.entity.Notification
-import com.university.MarathonOnlineAPI.entity.User
+import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.exception.RaceException
@@ -205,6 +202,60 @@ class NotificationServiceImpl(
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
+        }
+    }
+
+    override fun sendAcceptContestNotificationToRunners(contestId: Long, title: String, content: String) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val runners = userRepository.findAllByRole(ERole.RUNNER) // Truy vấn tất cả RUNNER
+            val notifications = runners.map { runner ->
+                Notification(
+                    receiver = runner,
+                    contest = contest,
+                    title = title,
+                    content = content,
+                    createAt = LocalDateTime.now(),
+                    isRead = false,
+                    type = ENotificationType.NEW_CONTEST
+                )
+            }
+            notificationRepository.saveAll(notifications) // Lưu tất cả thông báo
+        }
+    }
+
+    override fun sendAcceptContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val organizer = userRepository.findById(organizerId)
+                .orElseThrow { IllegalArgumentException("Organizer with ID $organizerId not found") }
+
+            val notification = Notification(
+                receiver = organizer,
+                contest = contest,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.ACCEPT_CONTEST
+            )
+            notificationRepository.save(notification) // Lưu tất cả thông báo
+        }
+    }
+
+    override fun sendRejectContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val organizer = userRepository.findById(organizerId)
+                .orElseThrow { IllegalArgumentException("Organizer with ID $organizerId not found") }
+
+            val notification = Notification(
+                receiver = organizer,
+                contest = contest,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.NOT_APPROVAL_CONTEST
+            )
+            notificationRepository.save(notification) // Lưu tất cả thông báo
         }
     }
 }
