@@ -54,7 +54,6 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
         SELECT YEAR(r.registrationDate) AS year, SUM(p.amount) AS totalRevenue
         FROM Registration r
         JOIN r.payment p
-        WHERE r.status = 1
         GROUP BY YEAR(r.registrationDate)
         ORDER BY YEAR(r.registrationDate)
     """)
