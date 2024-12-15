@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/contest")
-@CrossOrigin("http://localhost:3000/")
+@CrossOrigin("https://login-admin-page.onrender.com/")
 class ContestController(private val contestService: ContestService) {
 
     private val logger = LoggerFactory.getLogger(ContestController::class.java)
@@ -133,7 +133,7 @@ class ContestController(private val contestService: ContestService) {
 
 
     @GetMapping
-    @CrossOrigin(origins = ["http://localhost:3000/"])
+    @CrossOrigin(origins = ["https://login-admin-page.onrender.com/"])
     fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
