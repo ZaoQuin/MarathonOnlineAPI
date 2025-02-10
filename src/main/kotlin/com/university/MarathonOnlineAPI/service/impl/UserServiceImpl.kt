@@ -6,6 +6,7 @@ import com.university.MarathonOnlineAPI.exception.UserException
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
+import com.university.MarathonOnlineAPI.entity.EUserStatus
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -34,7 +35,7 @@ class UserServiceImpl(
             user.address = newUser.address
             user.password = newUser.password
             user.role = newUser.role
-            user.isVerified = newUser.isVerified
+            user.status = EUserStatus.PENDING
 2
             logger.info("Mapper to Entity: $user")
             userRepos.save(user)
@@ -76,12 +77,10 @@ class UserServiceImpl(
             user.gender = userDTO.gender
             user.birthday = userDTO.birthday
             user.address = userDTO.address
-            user.isVerified = userDTO.isVerified
             user.phoneNumber = userDTO.phoneNumber
             user.role = userDTO.role
             user.username = userDTO.username
-            user.isVerified = userDTO.isVerified
-            user.isDeleted = userDTO.isDeleted
+            user.status = userDTO.status!!
 
             userRepos.save(user)
 
@@ -123,7 +122,7 @@ class UserServiceImpl(
             val user = userRepos.findById(id).orElseThrow {
                 throw UserException("User not found with ID: $id")
             }
-            user.isDeleted = true
+            user.status = EUserStatus.DELETED
             userRepos.save(user)
             logger.info("User with ID $id blocked successfully")
         } catch (e: Exception){
@@ -136,7 +135,7 @@ class UserServiceImpl(
             val user = userRepos.findById(id).orElseThrow {
                 throw UserException("User not found with ID: $id")
             }
-            user.isDeleted = false
+            user.status = EUserStatus.PUBLIC
             userRepos.save(user)
             logger.info("User with ID $id blocked successfully")
         } catch (e: Exception){

@@ -6,6 +6,7 @@ import com.university.MarathonOnlineAPI.controller.auth.AuthenticationRequest
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationResponse
 import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.entity.ERole
+import com.university.MarathonOnlineAPI.entity.EUserStatus
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.service.AuthenticationService
 import com.university.MarathonOnlineAPI.service.RefreshTokenService
@@ -49,11 +50,11 @@ class AuthenticationServiceImpl(
 
             AuthenticationResponse(
                 fullName = userDTO.fullName?:"",
+                email = userDTO.email?:"",
                 accessToken = accessToken,
                 refreshToken = refreshToken,
                 role = userDTO.role?:ERole.RUNNER,
-                isVerified = userDTO.isVerified,
-                isDeleted = userDTO.isDeleted
+                status = userDTO.status?: EUserStatus.PENDING,
             )
         } catch (e: Exception) {
             throw AuthenticationException("Authentication failed: ${e.message}")
@@ -105,7 +106,7 @@ class AuthenticationServiceImpl(
     override fun verifyAccount(jwt: String): UserDTO {
         return try {
             val user = getUserByToken(jwt)
-            user.isVerified = true
+            user.status = EUserStatus.PUBLIC
             userService.updateUser(user)
         } catch (e: AuthenticationException) {
             logger.error("Authentication failed: ${e.message}", e)
@@ -120,7 +121,7 @@ class AuthenticationServiceImpl(
         return if (tokenService.validateToken(jwt)) {
             tokenService.extractEmail(jwt)?.let { email ->
                 val userDTO = userService.findByEmail(email)
-                userDTO.isDeleted = true
+                userDTO.status = EUserStatus.DELETED
                 userService.updateUser(userDTO)
             } ?: throw AuthenticationException("Email not found in the token")
 
