@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional
 @Repository
 interface NotificationRepository : JpaRepository<Notification, Long> {
 
-    // Phương thức xóa các Notification liên quan đến contestId
     @Modifying
     @Transactional
     @Query("DELETE FROM Notification n WHERE n.contest.id = :contestId")

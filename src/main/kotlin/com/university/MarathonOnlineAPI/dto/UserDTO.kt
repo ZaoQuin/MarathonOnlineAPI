@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.dto
 
 import com.university.MarathonOnlineAPI.entity.EGender
 import com.university.MarathonOnlineAPI.entity.ERole
+import com.university.MarathonOnlineAPI.entity.EUserStatus
 import java.time.LocalDate
 
 data class UserDTO(
@@ -14,7 +15,6 @@ data class UserDTO(
     var address: String? = null,
     var username: String? = null,
     var role: ERole? = null,
-    var isVerified: Boolean = false,
-    var isDeleted: Boolean = false,
+    var status: EUserStatus? = null,
     var tokenRefresh: String? = null
 )

@@ -18,8 +18,7 @@ data class User(
     var username: String? = null,
     var password: String? = null,
     var role: ERole? = null,
-    var isVerified: Boolean = false,
-    var isDeleted: Boolean = false,
+    var status: EUserStatus? = null,
     var tokenRefresh: String? = null
 )
 
@@ -29,4 +28,8 @@ enum class ERole {
 
 enum class EGender {
     MALE, FEMALE
+}
+
+enum class EUserStatus {
+    PENDING, DELETED, PRIVATE, PUBLIC
 }
