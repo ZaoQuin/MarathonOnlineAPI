@@ -6,7 +6,7 @@ import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
 
 @Component
-class RegistrationMapper(private val modelMapper: ModelMapper, private val userMapper: UserMapper, private val paymentMapper: PaymentMapper, private val rewardMapper: RewardMapper, private val raceMapper: RaceMapper): Mapper<RegistrationDTO, Registration> {
+class RegistrationMapper(private val modelMapper: ModelMapper, private val userMapper: UserMapper, private val paymentMapper: PaymentMapper, private val rewardMapper: RewardMapper, private val recordMapper: RecordMapper): Mapper<RegistrationDTO, Registration> {
     override fun toDto(entity: Registration): RegistrationDTO {
         val registrationDTO = modelMapper.map(entity, RegistrationDTO::class.java)
         return registrationDTO

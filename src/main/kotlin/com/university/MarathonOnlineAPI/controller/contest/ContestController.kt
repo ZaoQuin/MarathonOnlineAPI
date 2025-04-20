@@ -60,9 +60,6 @@ class ContestController(private val contestService: ContestService) {
         } catch (e: ContestException) {
             logger.error("Contest exception: ${e.message}")
             throw e
-        } catch (e: DataAccessException) {
-            logger.error("Database access error: ${e.message}")
-            throw ContestException("Database error occurred: ${e.message}")
         } catch (e: Exception) {
             logger.error("Error updating contest: ${e.message}")
             throw ContestException("Error updating contest: ${e.message}")
@@ -77,9 +74,6 @@ class ContestController(private val contestService: ContestService) {
         } catch (e: ContestException) {
             logger.error("Contest exception: ${e.message}")
             throw e
-        } catch (e: DataAccessException) {
-            logger.error("Database access error: ${e.message}")
-            throw ContestException("Database error occurred: ${e.message}")
         } catch (e: Exception) {
             logger.error("Error updating contest: ${e.message}")
             throw ContestException("Error updating contest: ${e.message}")
@@ -94,9 +88,6 @@ class ContestController(private val contestService: ContestService) {
         } catch (e: ContestException) {
             logger.error("Contest exception: ${e.message}")
             throw e
-        } catch (e: DataAccessException) {
-            logger.error("Database access error: ${e.message}")
-            throw ContestException("Database error occurred: ${e.message}")
         } catch (e: Exception) {
             logger.error("Error updating contest: ${e.message}")
             throw ContestException("Error updating contest: ${e.message}")
