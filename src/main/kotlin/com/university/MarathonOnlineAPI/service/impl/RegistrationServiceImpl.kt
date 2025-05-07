@@ -29,8 +29,7 @@ class RegistrationServiceImpl(
     private val recordMapper: RecordMapper,
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
-    private val userService: UserService,
-    private val contestMapper: ContestMapper,
+    private val userService: UserService
 ) : RegistrationService {
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)

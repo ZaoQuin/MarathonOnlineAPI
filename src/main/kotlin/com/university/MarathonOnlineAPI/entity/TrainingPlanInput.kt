@@ -26,9 +26,6 @@ data class TrainingPlanInput(
     @Column(name = "average_pace", nullable = false)
     var averagePace: Double? = null, // minutes/km
 
-    @Column(nullable = false)
-    var weeks: Int? = null,
-
     @Column(name = "days_per_week", nullable = false)
     var daysPerWeek: Int? = null,
 
@@ -44,5 +41,5 @@ enum class ETrainingPlanInputLevel {
 }
 
 enum class ETrainingPlanInputGoal {
-    FINISH, TIME, NO_INJURY
+    MARATHON_FINISH, MARATHON_TIME, NO_INJURY, OTHER
 }

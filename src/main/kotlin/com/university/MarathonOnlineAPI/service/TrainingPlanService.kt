@@ -9,4 +9,5 @@ interface TrainingPlanService {
     fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, userId: Long): TrainingPlanDTO
     fun getUserTrainingPlans(userId: Long): List<TrainingPlanDTO>
     fun getTrainingPlanById(planId: Long): TrainingPlanDTO
+    fun getTrainingPlanByJwt(jwt: String): TrainingPlanDTO
 }

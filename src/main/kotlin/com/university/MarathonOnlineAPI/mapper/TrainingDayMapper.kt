@@ -7,9 +7,14 @@ import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
 
 @Component
-class TrainingDayMapper (private val modelMapper: ModelMapper): Mapper<TrainingDayDTO, TrainingDay> {
+class TrainingDayMapper (private val modelMapper: ModelMapper,
+                         private val trainingSessionMapper: TrainingSessionMapper): Mapper<TrainingDayDTO, TrainingDay> {
     override fun toDto(entity: TrainingDay): TrainingDayDTO {
-        return modelMapper.map(entity, TrainingDayDTO::class.java)
+        val dto = modelMapper.map(entity, TrainingDayDTO::class.java)
+
+        dto.session = entity.session?.let { trainingSessionMapper.toDto(it) }
+
+        return dto
     }
     override fun toEntity(dto: TrainingDayDTO): TrainingDay {
         return modelMapper.map(dto, TrainingDay::class.java)
