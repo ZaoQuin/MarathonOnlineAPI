@@ -1,14 +1,14 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
-import com.university.MarathonOnlineAPI.dto.RaceDTO
+import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.mapper.ContestMapper
-import com.university.MarathonOnlineAPI.mapper.RaceMapper
+import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.RegistrationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.ContestRepository
@@ -26,11 +26,10 @@ class RegistrationServiceImpl(
     private val registrationRepository: RegistrationRepository,
     private val registrationMapper: RegistrationMapper,
     private val contestRepository: ContestRepository,
-    private val raceMapper: RaceMapper,
+    private val recordMapper: RecordMapper,
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
-    private val userService: UserService,
-    private val contestMapper: ContestMapper,
+    private val userService: UserService
 ) : RegistrationService {
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)
@@ -47,7 +46,7 @@ class RegistrationServiceImpl(
                 runner = userMapper.toEntity(userDTO),
                 contest = contest,
                 registrationDate = LocalDateTime.now(),
-                races = emptyList(),
+                records = emptyList(),
                 status = ERegistrationStatus.PENDING
             )
             registrationRepository.save(registration)
@@ -117,25 +116,25 @@ class RegistrationServiceImpl(
     }
 
 
-    override fun saveRaceIntoRegistration(raceDTO: RaceDTO, jwt: String): List<RegistrationDTO> {
+    override fun saveRaceIntoRegistration(recordDTO: RecordDTO, jwt: String): List<RegistrationDTO> {
         return try {
             val userDTO =
                 tokenService.extractEmail(jwt)?.let { email ->
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
-            val race = raceMapper.toEntity(raceDTO)
+            val race = recordMapper.toEntity(recordDTO)
             val registrations = userDTO.id?.let { registrationRepository.findActiveRegistration(it) }
             logger.info("saveRaceIntoRegistration", registrations)
             registrations!!.forEach { registration ->
-                registration.races?.let { races ->
+                registration.records?.let { races ->
                     if (races is MutableList) {
                         races.add(race)
                     }
                 } ?: run {
-                    registration.races = mutableListOf(race)
+                    registration.records = mutableListOf(race)
                 }
 
-                if(registration.races?.sumOf{ it.distance!!.toDouble()}!! >= registration.contest?.distance!!)
+                if(registration.records?.sumOf{ it.distance!!.toDouble()}!! >= registration.contest?.distance!!)
                     registration.status = ERegistrationStatus.COMPLETED
             }
 
@@ -177,11 +176,11 @@ class RegistrationServiceImpl(
             ?.filter { it.status == ERegistrationStatus.COMPLETED }
             ?.sortedWith(
                 compareByDescending<Registration> { reg ->
-                    reg.races?.sumOf { it.distance?.toDouble() ?: 0.0 } ?: 0.0
+                    reg.records?.sumOf { it.distance?.toDouble() ?: 0.0 } ?: 0.0
                 }.thenBy { reg ->
-                    reg.races?.sumOf { it.timeTaken?.toLong() ?: 0L } ?: 0L
+                    reg.records?.sumOf { it.timeTaken?.toLong() ?: 0L } ?: 0L
                 }.thenBy { reg ->
-                    reg.races?.map { it.avgSpeed?.toDouble() ?: 0.0 }?.average() ?: 0.0
+                    reg.records?.map { it.avgSpeed?.toDouble() ?: 0.0 }?.average() ?: 0.0
                 }.thenBy { reg ->
                     reg.registrationDate
                 }

@@ -26,7 +26,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	runtimeOnly("com.h2database:h2")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -36,7 +35,6 @@ dependencies {
 	annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
 
 	//Mapper - Test
-
 	testImplementation("org.mockito:mockito-core:5.0.0")
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.0.0")
 	testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
@@ -53,6 +51,21 @@ dependencies {
 	implementation("org.springframework.security:spring-security-config")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
+
+	// WebClient
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
+
+	// Jackson
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+	// Okhttp3
+	implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+	// json
+	implementation("org.json:json:20250107")
+
+	// Dotenv
+	implementation("io.github.cdimascio:dotenv-java:2.3.0")
 }
 
 kotlin {

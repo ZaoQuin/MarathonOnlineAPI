@@ -2,7 +2,7 @@ package com.university.MarathonOnlineAPI.controller.registration
 
 import com.university.MarathonOnlineAPI.controller.contest.RegistrationsResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
-import com.university.MarathonOnlineAPI.dto.RaceDTO
+import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
 import com.university.MarathonOnlineAPI.exception.RegistrationException
 import com.university.MarathonOnlineAPI.service.RegistrationService
@@ -143,7 +143,7 @@ class RegistrationController(private val registrationService: RegistrationServic
     }
 
     @PostMapping("/race")
-    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid race: RaceDTO): ResponseEntity<RegistrationsResponse> {
+    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid race: RecordDTO): ResponseEntity<RegistrationsResponse> {
         return try {
             val jwt = token.replace("Bearer ", "")
             val registrations = registrationService.saveRaceIntoRegistration(race, jwt)

@@ -4,8 +4,8 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "race")
-data class Race(
+@Table(name = "record")
+data class Record(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
@@ -17,7 +17,8 @@ data class Race(
     var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
     var timestamp: LocalDateTime? = null,
+    var heartRace: Double? = null,
 
-    @ManyToMany(mappedBy = "races")
+    @ManyToMany(mappedBy = "records")
     var registrations: List<Registration>? = null
 )

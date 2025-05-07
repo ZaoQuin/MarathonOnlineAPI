@@ -2,7 +2,7 @@ package com.university.MarathonOnlineAPI.dto
 
 import java.time.LocalDateTime
 
-data class RaceDTO(
+data class RecordDTO(
     var id: Long? = null,
     var user: UserDTO? = null,
     var steps: Int? = null,

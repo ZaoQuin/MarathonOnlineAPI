@@ -29,7 +29,7 @@ data class Registration(
         joinColumns = [JoinColumn(name = "registration_id")],
         inverseJoinColumns = [JoinColumn(name = "race_id")]
     )
-    var races: List<Race>? = null,
+    var records: List<Record>? = null,
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

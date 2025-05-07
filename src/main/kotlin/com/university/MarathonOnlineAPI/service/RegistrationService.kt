@@ -1,9 +1,8 @@
 package com.university.MarathonOnlineAPI.service
 
 import com.university.MarathonOnlineAPI.dto.ContestDTO
-import com.university.MarathonOnlineAPI.dto.RaceDTO
+import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.RegistrationDTO
-import com.university.MarathonOnlineAPI.entity.Contest
 
 interface RegistrationService {
     fun registerForContest(contest: ContestDTO, jwt: String): RegistrationDTO
@@ -12,7 +11,7 @@ interface RegistrationService {
     fun getRegistrations(): List<RegistrationDTO>
     fun getRegistrationByJwt(jwt: String): List<RegistrationDTO>
     fun getById(id: Long): RegistrationDTO
-    fun saveRaceIntoRegistration(race: RaceDTO, jwt: String): List<RegistrationDTO>
+    fun saveRaceIntoRegistration(race: RecordDTO, jwt: String): List<RegistrationDTO>
     fun getRevenueByMonth(year: Int): List<Map<String, Any>>
     fun getRevenueByWeek(year: Int): List<Map<String, Any>>
     fun getRevenueByYear(): List<Map<String, Any>>

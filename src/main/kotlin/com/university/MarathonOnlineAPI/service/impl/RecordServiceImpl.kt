@@ -1,14 +1,14 @@
 package com.university.MarathonOnlineAPI.service.impl
 
-import com.university.MarathonOnlineAPI.dto.CreateRaceRequest
-import com.university.MarathonOnlineAPI.dto.RaceDTO
-import com.university.MarathonOnlineAPI.entity.Race
+import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
+import com.university.MarathonOnlineAPI.dto.RecordDTO
+import com.university.MarathonOnlineAPI.entity.Record
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.RaceException
-import com.university.MarathonOnlineAPI.mapper.RaceMapper
+import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
-import com.university.MarathonOnlineAPI.repos.RaceRepository
-import com.university.MarathonOnlineAPI.service.RaceService
+import com.university.MarathonOnlineAPI.repos.RecordRepository
+import com.university.MarathonOnlineAPI.service.RecordService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
@@ -17,17 +17,17 @@ import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
 
 @Service
-class RaceServiceImpl @Autowired constructor(
-    private val raceRepository: RaceRepository,
+class RecordServiceImpl @Autowired constructor(
+    private val recordRepository: RecordRepository,
     private val tokenService: TokenService,
     private val userService: UserService,
-    private val raceMapper: RaceMapper,
+    private val recordMapper: RecordMapper,
     private val userMapper: UserMapper
-) : RaceService {
+) : RecordService {
 
-    private val logger = LoggerFactory.getLogger(RaceServiceImpl::class.java)
+    private val logger = LoggerFactory.getLogger(RecordServiceImpl::class.java)
 
-    override fun addRace(newRace: CreateRaceRequest, jwt: String): RaceDTO {
+    override fun addRace(newRace: CreateRecordRequest, jwt: String): RecordDTO {
         logger.info("Received RaceDTO: $newRace")
         try {
             val userDTO =
@@ -35,7 +35,7 @@ class RaceServiceImpl @Autowired constructor(
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
 
-            val race = Race(
+            val record = Record(
                 steps = newRace.steps,
                 distance = newRace.distance,
                 timeTaken = newRace.timeTaken,
@@ -44,10 +44,10 @@ class RaceServiceImpl @Autowired constructor(
                 user = userMapper.toEntity(userDTO)
             )
 
-            logger.info("Map to Entity: $race")
+            logger.info("Map to Entity: $record")
 
-            val savedRace = raceRepository.save(race)
-            return raceMapper.toDto(savedRace)
+            val savedRace = recordRepository.save(record)
+            return recordMapper.toDto(savedRace)
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
@@ -56,8 +56,8 @@ class RaceServiceImpl @Autowired constructor(
 
     override fun deleteRaceById(id: Long) {
         try {
-            if (raceRepository.existsById(id)) {
-                raceRepository.deleteById(id)
+            if (recordRepository.existsById(id)) {
+                recordRepository.deleteById(id)
                 logger.info("Race with ID $id deleted successfully")
             } else {
                 throw RaceException("Race with ID $id not found")
@@ -68,23 +68,23 @@ class RaceServiceImpl @Autowired constructor(
         }
     }
 
-    override fun updateRace(raceDTO: RaceDTO): RaceDTO {
-        logger.info("Updating RaceDTO: $raceDTO")
+    override fun updateRace(recordDTO: RecordDTO): RecordDTO {
+        logger.info("Updating RaceDTO: $recordDTO")
         return try {
-            val race = raceMapper.toEntity(raceDTO)
-            raceRepository.save(race)
-            raceMapper.toDto(race)
+            val race = recordMapper.toEntity(recordDTO)
+            recordRepository.save(race)
+            recordMapper.toDto(race)
         } catch (e: DataAccessException) {
             logger.error("Error updating race: ${e.message}")
             throw RaceException("Database error occurred while updating race: ${e.message}")
         }
     }
 
-    override fun getRaces(): List<RaceDTO> {
+    override fun getRaces(): List<RecordDTO> {
         return try {
-            val races = raceRepository.findAll()
+            val races = recordRepository.findAll()
             val raceDTOs = races.map { race ->
-                raceMapper.toDto(race)
+                recordMapper.toDto(race)
             }
             raceDTOs
         } catch (e: DataAccessException) {
@@ -93,12 +93,12 @@ class RaceServiceImpl @Autowired constructor(
         }
     }
 
-    override fun getById(id: Long): RaceDTO {
+    override fun getById(id: Long): RecordDTO {
         return try {
-            val race = raceRepository.findById(id)
+            val race = recordRepository.findById(id)
                 .orElseThrow { RaceException("Race with ID $id not found") }
 
-            RaceDTO(
+            RecordDTO(
                 id = race.id,
                 distance = race.distance,
                 timeTaken = race.timeTaken,
@@ -111,15 +111,15 @@ class RaceServiceImpl @Autowired constructor(
         }
     }
 
-    override fun getRacesByToken(jwt: String): List<RaceDTO> {
+    override fun getRacesByToken(jwt: String): List<RecordDTO> {
         try {
             val userDTO =
                 tokenService.extractEmail(jwt)?.let { email ->
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
 
-            val races = userDTO.id?.let { raceRepository.getByUserId(it) }
-            return races?.map { raceMapper.toDto(it) }!!
+            val races = userDTO.id?.let { recordRepository.getByUserId(it) }
+            return races?.map { recordMapper.toDto(it) }!!
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RaceException("Database error occurred while saving race: ${e.message}")
