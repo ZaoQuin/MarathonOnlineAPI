@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.university.MarathonOnlineAPI.config.AITrainingProperties
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.AITrainingPlanService
@@ -18,10 +19,11 @@ import java.util.regex.Pattern
 class AITrainingPlanServiceImpl(
     private val trainingSessionRepository: TrainingSessionRepository,
     private val trainingDayRepository: TrainingDayRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val aiTrainingProperties: AITrainingProperties
 ): AITrainingPlanService {
     val dotenv = Dotenv.load()!!
-    val apiKey = dotenv["GROQ_API_KEY"]!!
+    val apiKey = aiTrainingProperties.api
     private val GROQ_MODEL = "llama3-70b-8192"
 
     override fun generateTrainingDays(input: TrainingPlanInput, plan: TrainingPlan): List<TrainingDay> {
