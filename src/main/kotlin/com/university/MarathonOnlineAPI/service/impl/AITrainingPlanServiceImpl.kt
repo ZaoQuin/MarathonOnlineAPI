@@ -22,7 +22,6 @@ class AITrainingPlanServiceImpl(
     private val userRepository: UserRepository,
     private val aiTrainingProperties: AITrainingProperties
 ): AITrainingPlanService {
-    val dotenv = Dotenv.load()!!
     val apiKey = aiTrainingProperties.api
     private val GROQ_MODEL = "llama3-70b-8192"
 
