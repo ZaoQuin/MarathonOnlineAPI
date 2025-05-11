@@ -1,8 +1,11 @@
 package com.university.MarathonOnlineAPI.controller.record
 
 import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
+import com.university.MarathonOnlineAPI.dto.RecordApprovalDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
+import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
 import com.university.MarathonOnlineAPI.exception.RaceException
+import com.university.MarathonOnlineAPI.service.RecordApprovalService
 import com.university.MarathonOnlineAPI.service.RecordService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -13,7 +16,8 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/record")
-class RecordController(private val recordService: RecordService) {
+class RecordController(private val recordService: RecordService,
+    private val recordApprovalService: RecordApprovalService) {
 
     private val logger = LoggerFactory.getLogger(RecordController::class.java)
 
@@ -102,6 +106,49 @@ class RecordController(private val recordService: RecordService) {
         } catch (e: Exception) {
             logger.error("Error getting record by ID $id: ${e.message}")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping("/validate")
+    fun validateRecord(@RequestBody recordDTO: RecordDTO): ResponseEntity<RecordApprovalDTO> {
+        try {
+            val approvalResult = recordApprovalService.analyzeRecordApproval(recordDTO)
+            return ResponseEntity.ok(approvalResult)
+        } catch (e: Exception) {
+            logger.error("Lỗi khi xác thực bản ghi", e)
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(RecordApprovalDTO(
+                    approvalStatus = ERecordApprovalStatus.PENDING,
+                    fraudRisk = 50.0,
+                    fraudType = "Lỗi hệ thống",
+                    reviewNote = "Lỗi khi xử lý yêu cầu: ${e.message}"
+                ))
+        }
+    }
+
+    /**
+     * Endpoint để cập nhật trạng thái phê duyệt cho bản ghi đang ở trạng thái PENDING
+     */
+    @PutMapping("/{recordId}/approval")
+    fun updateApprovalStatus(
+        @PathVariable recordId: Long,
+        @RequestBody approvalDTO: RecordApprovalDTO
+    ): ResponseEntity<RecordApprovalDTO> {
+        try {
+            // Tìm bản ghi và cập nhật trạng thái phê duyệt
+            val updatedApproval = recordApprovalService.updateApprovalStatus(recordId, approvalDTO)
+            return ResponseEntity.ok(updatedApproval)
+        } catch (e: Exception) {
+            logger.error("Lỗi khi cập nhật trạng thái phê duyệt", e)
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(RecordApprovalDTO(
+                    approvalStatus = ERecordApprovalStatus.PENDING,
+                    fraudRisk = null,
+                    fraudType = null,
+                    reviewNote = "Lỗi khi cập nhật trạng thái phê duyệt: ${e.message}"
+                ))
         }
     }
 }

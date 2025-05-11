@@ -3,9 +3,7 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.controller.notification.CreateAllNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateGroupNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateIndividualNotificationRequest
-import com.university.MarathonOnlineAPI.controller.notification.CreateNotificationRequest
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.entity.Contest
 import com.university.MarathonOnlineAPI.entity.ERole
 import com.university.MarathonOnlineAPI.entity.Notification
@@ -20,7 +18,6 @@ import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
-import com.university.MarathonOnlineAPI.service.ContestService
 import com.university.MarathonOnlineAPI.service.NotificationService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
