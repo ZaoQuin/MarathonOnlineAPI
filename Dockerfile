@@ -25,7 +25,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Create pythonScripts directory
+# Create pythonScripts directory and copy scripts
 RUN mkdir -p /app/pythonScripts
+COPY pythonScripts/ /app/pythonScripts/
+RUN chmod +x /app/pythonScripts/record_validator.py
+ENV PYTHON_PATH=/usr/local/bin/python
 
 # Verify Python installation
 RUN python --version && python3.10 --version
