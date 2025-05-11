@@ -1,7 +1,6 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.config.JwtProperties
-import com.university.MarathonOnlineAPI.controller.auth.AuthController
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationRequest
 import com.university.MarathonOnlineAPI.controller.auth.AuthenticationResponse
 import com.university.MarathonOnlineAPI.dto.UserDTO

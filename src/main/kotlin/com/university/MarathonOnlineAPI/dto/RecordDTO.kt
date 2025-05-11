@@ -9,5 +9,7 @@ data class RecordDTO(
     var distance: Double? = null,
     var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
-    var timestamp: LocalDateTime? = null
+    var timestamp: LocalDateTime? = null,
+    var heartRace: Double? = null,
+    var approval: RecordApprovalDTO? = null
 )

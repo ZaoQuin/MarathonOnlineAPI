@@ -7,7 +7,6 @@ import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.service.RefreshTokenService
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 
 @Service

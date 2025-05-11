@@ -20,5 +20,9 @@ data class Record(
     var heartRace: Double? = null,
 
     @ManyToMany(mappedBy = "records")
-    var registrations: List<Registration>? = null
+    var registrations: List<Registration>? = null,
+
+    @OneToOne(cascade = [CascadeType.ALL])
+    @JoinColumn(name = "approval_id", referencedColumnName = "id")
+    var approval: RecordApproval? = null
 )

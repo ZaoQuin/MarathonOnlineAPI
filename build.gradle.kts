@@ -63,9 +63,6 @@ dependencies {
 
 	// json
 	implementation("org.json:json:20250107")
-
-	// Dotenv
-	implementation("io.github.cdimascio:dotenv-java:2.3.0")
 }
 
 kotlin {

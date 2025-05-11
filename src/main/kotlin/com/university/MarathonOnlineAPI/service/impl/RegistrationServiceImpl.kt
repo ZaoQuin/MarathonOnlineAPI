@@ -7,7 +7,6 @@ import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RegistrationException
-import com.university.MarathonOnlineAPI.mapper.ContestMapper
 import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.RegistrationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper

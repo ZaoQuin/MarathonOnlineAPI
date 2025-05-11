@@ -1,15 +1,12 @@
 package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.RuleDTO
-import com.university.MarathonOnlineAPI.entity.Contest
 import com.university.MarathonOnlineAPI.entity.Rule
-import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.RuleException
 import com.university.MarathonOnlineAPI.mapper.RuleMapper
 import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.RuleRepository
 import com.university.MarathonOnlineAPI.service.RuleService
-import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service

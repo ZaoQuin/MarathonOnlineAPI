@@ -4,7 +4,6 @@ import com.university.MarathonOnlineAPI.config.AITrainingProperties
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.service.AITrainingPlanService
-import io.github.cdimascio.dotenv.Dotenv
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request

@@ -6,7 +6,7 @@ import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
 
 @Component
-class RecordMapper(private val modelMapper: ModelMapper, private val userMapper: UserMapper) : Mapper<RecordDTO, Record> {
+class RecordMapper(private val modelMapper: ModelMapper) : Mapper<RecordDTO, Record> {
 
     override fun toDto(entity: Record): RecordDTO {
         return modelMapper.map(entity, RecordDTO::class.java)
