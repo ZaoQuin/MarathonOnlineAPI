@@ -24,8 +24,8 @@ class RecordApprovalServiceImpl(
     private val recordApprovalMapper: RecordApprovalMapper,
     private val objectMapper: ObjectMapper
 ): RecordApprovalService {
-    override fun analyzeRecordApproval(recordDTO: RecordDTO): RecordApprovalDTO {
 
+    override fun analyzeRecordApproval(recordDTO: RecordDTO): RecordApprovalDTO {
         if (recordDTO.steps == null || recordDTO.distance == null || recordDTO.timeTaken == null) {
             return RecordApprovalDTO(
                 approvalStatus = ERecordApprovalStatus.REJECTED,
@@ -38,11 +38,7 @@ class RecordApprovalServiceImpl(
         val recordApproval = analyzeRecord(recordDTO)
         val savedRecordApproval = recordApprovalRepository.save(recordApprovalMapper.toEntity(recordApproval))
 
-        val record = recordMapper.toEntity(recordDTO)
-        record.approval = savedRecordApproval
-        val savedRecord = recordRepository.save(record)
-
-        return recordApprovalMapper.toDto(savedRecord.approval!!)
+        return recordApprovalMapper.toDto(savedRecordApproval)
     }
 
     override fun saveRecordApproval(recordDTO: RecordDTO): RecordApprovalDTO {

@@ -22,7 +22,7 @@ data class Record(
     @ManyToMany(mappedBy = "records")
     var registrations: List<Registration>? = null,
 
-    @OneToOne(cascade = [CascadeType.ALL])
+    @OneToOne
     @JoinColumn(name = "approval_id", referencedColumnName = "id")
     var approval: RecordApproval? = null
 )

@@ -10,7 +10,7 @@ import com.university.MarathonOnlineAPI.entity.Notification
 import com.university.MarathonOnlineAPI.entity.User
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
-import com.university.MarathonOnlineAPI.exception.RaceException
+import com.university.MarathonOnlineAPI.exception.RecordException
 import com.university.MarathonOnlineAPI.exception.RuleException
 import com.university.MarathonOnlineAPI.mapper.ContestMapper
 import com.university.MarathonOnlineAPI.mapper.NotificationMapper
@@ -201,7 +201,7 @@ class NotificationServiceImpl(
             return notifications?.map { notificationMapper.toDto(it) }!!
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
-            throw RaceException("Database error occurred while saving race: ${e.message}")
+            throw RecordException("Database error occurred while saving race: ${e.message}")
         }
     }
 }
