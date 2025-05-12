@@ -4,7 +4,7 @@ import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordApprovalDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
-import com.university.MarathonOnlineAPI.exception.RaceException
+import com.university.MarathonOnlineAPI.exception.RecordException
 import com.university.MarathonOnlineAPI.service.RecordApprovalService
 import com.university.MarathonOnlineAPI.service.RecordService
 import jakarta.validation.Valid
@@ -22,13 +22,13 @@ class RecordController(private val recordService: RecordService,
     private val logger = LoggerFactory.getLogger(RecordController::class.java)
 
     @PostMapping
-    fun addRaceAndSaveIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRace: CreateRecordRequest): ResponseEntity<Any> {
+    fun addRaceAndSaveIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRecord: CreateRecordRequest): ResponseEntity<Any> {
         return try {
             val jwt = token.replace("Bearer ", "")
-            val addedRace = recordService.addRace(newRace, jwt)
-            logger.error("Show addedRace: $addedRace")
-            ResponseEntity(addedRace, HttpStatus.CREATED)
-        } catch (e: RaceException) {
+            val addedRecord = recordService.addRecord(newRecord, jwt)
+            logger.error("Show addedRace: $addedRecord")
+            ResponseEntity(addedRecord, HttpStatus.CREATED)
+        } catch (e: RecordException) {
             logger.error("Error adding record: ${e.message}")
             ResponseEntity("Race error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
         } catch (e: Exception) {
@@ -40,10 +40,10 @@ class RecordController(private val recordService: RecordService,
     @DeleteMapping("/{id}")
     fun deleteRace(@PathVariable id: Long): ResponseEntity<String> {
         return try {
-            recordService.deleteRaceById(id)
+            recordService.deleteRecordById(id)
             logger.info("Race with ID $id deleted successfully")
             ResponseEntity.ok("Race with ID $id deleted successfully")
-        } catch (e: RaceException) {
+        } catch (e: RecordException) {
             logger.error("Failed to delete record with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body("Failed to delete record with ID $id: ${e.message}")
@@ -58,24 +58,24 @@ class RecordController(private val recordService: RecordService,
     @PutMapping
     fun updateRace(@RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RecordDTO> {
         return try {
-            val updatedRace = recordService.updateRace(recordDTO)
+            val updatedRace = recordService.updateRecord(recordDTO)
             ResponseEntity(updatedRace, HttpStatus.OK)
-        } catch (e: RaceException) {
+        } catch (e: RecordException) {
             logger.error("Race exception: ${e.message}")
             throw e
         } catch (e: DataAccessException) {
             logger.error("Database access error: ${e.message}")
-            throw RaceException("Database error occurred: ${e.message}")
+            throw RecordException("Database error occurred: ${e.message}")
         } catch (e: Exception) {
             logger.error("Error updating record: ${e.message}")
-            throw RaceException("Error updating record: ${e.message}")
+            throw RecordException("Error updating record: ${e.message}")
         }
     }
 
     @GetMapping
     fun getRaces(): ResponseEntity<List<RecordDTO>> {
         return try {
-            val records = recordService.getRaces()
+            val records = recordService.getRecords()
             ResponseEntity(records, HttpStatus.OK)
         } catch (e: Exception) {
             logger.error("Error in getRaces: ${e.message}")
@@ -87,7 +87,7 @@ class RecordController(private val recordService: RecordService,
     fun getByRunnerToken(@RequestHeader("Authorization") token: String): ResponseEntity<List<RecordDTO>> {
         return try {
             val jwt = token.replace("Bearer ", "")
-            val records = recordService.getRacesByToken(jwt)
+            val records = recordService.getRecordsByToken(jwt)
             ResponseEntity(records, HttpStatus.OK)
         } catch (e: Exception) {
             logger.error("Error in getRaces: ${e.message}")
@@ -100,7 +100,7 @@ class RecordController(private val recordService: RecordService,
         return try {
             val foundRace = recordService.getById(id)
             ResponseEntity.ok(foundRace)
-        } catch (e: RaceException) {
+        } catch (e: RecordException) {
             logger.error("Error getting record by ID $id: ${e.message}")
             ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
