@@ -30,7 +30,6 @@ class RecordServiceImpl @Autowired constructor(
 
     private val logger = LoggerFactory.getLogger(RecordServiceImpl::class.java)
 
-    @Transactional
     override fun addRecord(newRecord: CreateRecordRequest, jwt: String): RecordDTO {
         logger.info("Received RecordDTO: $newRecord")
         try {
