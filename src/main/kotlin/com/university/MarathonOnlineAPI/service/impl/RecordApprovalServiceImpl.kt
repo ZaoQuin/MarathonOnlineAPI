@@ -89,6 +89,7 @@ class RecordApprovalServiceImpl(
             val output = reader.lines().collect(Collectors.joining("\n"))
 
             val exitCode = process.waitFor()
+            debugPythonExecution(output, exitCode)
 
             // Xóa file tạm sau khi xử lý xong
             tempFile.delete()
@@ -167,5 +168,12 @@ class RecordApprovalServiceImpl(
                 reviewNote = "Không thể phân tích kết quả: ${e.message}"
             )
         }
+    }
+
+    // Thêm phương thức này vào lớp RecordApprovalServiceImpl của bạn
+    private fun debugPythonExecution(output: String, exitCode: Int) {
+        println("Python execution completed with exit code: $exitCode")
+        println("Output:")
+        println(output)
     }
 }
