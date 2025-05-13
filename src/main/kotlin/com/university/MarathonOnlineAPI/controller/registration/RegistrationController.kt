@@ -142,17 +142,17 @@ class RegistrationController(private val registrationService: RegistrationServic
         }
     }
 
-    @PostMapping("/race")
-    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid race: RecordDTO): ResponseEntity<RegistrationsResponse> {
+    @PostMapping("/record")
+    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RegistrationsResponse> {
         return try {
             val jwt = token.replace("Bearer ", "")
-            val registrations = registrationService.saveRaceIntoRegistration(race, jwt)
+            val registrations = registrationService.saveRaceIntoRegistration(recordDTO, jwt)
             ResponseEntity.ok(RegistrationsResponse(registrations))
         } catch (e: RegistrationException) {
-            logger.error("Error getting registration by Race ${race.id}: ${e.message}")
+            logger.error("Error getting registration by Race ${recordDTO.id}: ${e.message}")
             ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
-            logger.error("Error getting registration by ID ${race.id}: ${e.message}")
+            logger.error("Error getting registration by ID ${recordDTO.id}: ${e.message}")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
