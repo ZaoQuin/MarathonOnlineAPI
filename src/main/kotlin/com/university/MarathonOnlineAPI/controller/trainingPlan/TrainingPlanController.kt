@@ -22,12 +22,13 @@ class TrainingPlanController(
     }
 
 
-    @PostMapping("/generate/{userId}")
+    @PostMapping("/generate")
     fun generateTrainingPlan(
-        @PathVariable userId: Long,
+        @RequestHeader("Authorization") token: String,
         @RequestBody input: TrainingPlanInputDTO
     ): ResponseEntity<TrainingPlanDTO> {
-        val trainingPlan = trainingPlanService.createTrainingPlan(input, userId)
+        val jwt = token.replace("Bearer ", "")
+        val trainingPlan = trainingPlanService.createTrainingPlan(input, jwt)
         return ResponseEntity.ok(trainingPlan)
     }
 

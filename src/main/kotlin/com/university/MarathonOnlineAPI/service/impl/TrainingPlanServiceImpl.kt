@@ -23,13 +23,18 @@ class TrainingPlanServiceImpl(
     private val aiTrainingPlanService: AITrainingPlanService,
     private val tokenService: TokenService,
     private val userService: UserService,
+    private val userMapper: UserMapper,
     private val recordService: RecordService
 ): TrainingPlanService {
-    override fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, userId: Long): TrainingPlanDTO {
-        val currentUser = userRepository.findById(userId)
-            .orElseThrow();
+    override fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, jwt: String): TrainingPlanDTO {
+        val userDTO =
+            tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
 
-        val runningStat = recordService.getRunningStatsByUser(userId)
+        val currentUser = userMapper.toEntity(userDTO)
+
+        val runningStat = recordService.getRunningStatsByUser(currentUser.id!!)
 
         // Chuyển DTO sang entity
         val input = TrainingPlanInput().apply {
@@ -54,7 +59,7 @@ class TrainingPlanServiceImpl(
         )
 
 
-        val activePlans = trainingPlanRepository.findByUserIdAndStatus(userId, ETrainingPlanStatus.ACTIVE)
+        val activePlans = trainingPlanRepository.findByUserIdAndStatus(currentUser.id!!, ETrainingPlanStatus.ACTIVE)
         activePlans.forEach {
             it.status = ETrainingPlanStatus.ARCHIVED
         }
