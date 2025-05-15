@@ -18,7 +18,6 @@ class TrainingPlanServiceImpl(
     private val trainingPlanRepository: TrainingPlanRepository,
     private val trainingPlanMapper: TrainingPlanMapper,
     private val trainingPlanInputRepository: TrainingPlanInputRepository,
-    private val trainingSessionRepository: TrainingSessionRepository,
     private val trainingDayRepository: TrainingDayRepository,
     private val userRepository: UserRepository,
     private val aiTrainingPlanService: AITrainingPlanService,
@@ -134,11 +133,15 @@ class TrainingPlanServiceImpl(
         }
 
         val goal = when (input.goal) {
-            ETrainingPlanInputGoal.MARATHON_FINISH -> "về đích"
-            ETrainingPlanInputGoal.MARATHON_TIME -> "phá kỷ lục thời gian"
-            ETrainingPlanInputGoal.NO_INJURY -> "không chấn thương"
-            ETrainingPlanInputGoal.OTHER -> "mục tiêu khác"
-            else -> "không rõ mục tiêu"
+            ETrainingPlanInputGoal.MARATHON_FINISH -> "về đích marathon"
+            ETrainingPlanInputGoal.MARATHON_TIME -> "phá kỷ lục thời gian marathon"
+            ETrainingPlanInputGoal.HALF_MARATHON_FINISH -> "về đích half marathon"
+            ETrainingPlanInputGoal.HALF_MARATHON_TIME -> "phá kỷ lục thời gian half marathon"
+            ETrainingPlanInputGoal.TEN_KM_FINISH -> "hoàn thành 10 km"
+            ETrainingPlanInputGoal.TEN_KM_TIME -> "phá kỷ lục thời gian 10 km"
+            ETrainingPlanInputGoal.FIVE_KM_FINISH -> "hoàn thành 5 km"
+            ETrainingPlanInputGoal.FIVE_KM_TIME -> "phá kỷ lục thời gian 5 km"
+            else -> "mục tiêu khác"
         }
 
         val weeks = 4
