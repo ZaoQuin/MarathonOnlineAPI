@@ -23,18 +23,21 @@ class TrainingPlanServiceImpl(
     private val userRepository: UserRepository,
     private val aiTrainingPlanService: AITrainingPlanService,
     private val tokenService: TokenService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val recordService: RecordService
 ): TrainingPlanService {
     override fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, userId: Long): TrainingPlanDTO {
         val currentUser = userRepository.findById(userId)
             .orElseThrow();
 
+        val runningStat = recordService.getRunningStatsByUser(userId)
+
         // Chuyển DTO sang entity
         val input = TrainingPlanInput().apply {
             level = inputDTO.level
             goal = inputDTO.goal
-            maxDistance = inputDTO.maxDistance
-            averagePace = inputDTO.averagePace
+            maxDistance = runningStat?.maxDistance
+            averagePace = runningStat?.averagePace
             daysPerWeek = inputDTO.daysPerWeek
             user = currentUser
         }

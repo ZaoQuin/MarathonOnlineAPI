@@ -18,7 +18,6 @@ import java.util.regex.Pattern
 class AITrainingPlanServiceImpl(
     private val trainingSessionRepository: TrainingSessionRepository,
     private val trainingDayRepository: TrainingDayRepository,
-    private val userRepository: UserRepository,
     private val aiTrainingProperties: AITrainingProperties
 ): AITrainingPlanService {
     val apiKey = aiTrainingProperties.api
