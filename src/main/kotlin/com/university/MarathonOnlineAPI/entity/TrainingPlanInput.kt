@@ -31,9 +31,6 @@ data class TrainingPlanInput(
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
-
-//    @Embedded
-//var config: MarathonTrainingConfig = MarathonTrainingConfig()
 )
 
 enum class ETrainingPlanInputLevel {

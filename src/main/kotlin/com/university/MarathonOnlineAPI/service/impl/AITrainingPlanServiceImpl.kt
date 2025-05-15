@@ -186,6 +186,10 @@ class AITrainingPlanServiceImpl(
                         this.dayOfWeek = dayOfWeek
                     }
 
+                    savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
+                        add(trainingDay)
+                    }
+
                     trainingMap[Pair(week, dayOfWeek)] = trainingDay
                 }
 
@@ -213,6 +217,10 @@ class AITrainingPlanServiceImpl(
                                 this.session = savedRestSession
                                 this.week = week
                                 this.dayOfWeek = dayOfWeek
+                            }
+
+                            savedRestSession.trainingDays = savedRestSession.trainingDays.toMutableList().apply {
+                                add(restDay)
                             }
 
                             trainingMap[key] = restDay

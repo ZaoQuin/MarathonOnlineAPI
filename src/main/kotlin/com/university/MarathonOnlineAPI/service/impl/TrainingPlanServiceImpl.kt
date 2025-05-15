@@ -76,7 +76,8 @@ class TrainingPlanServiceImpl(
         savedPlan.startDate = LocalDateTime.now()
         savedPlan.endDate = savedPlan.startDate?.plusWeeks(4)
 
-        return trainingPlanMapper.toDto(trainingPlanRepository.save(savedPlan))
+        val savedPlanFinal = trainingPlanRepository.findById(savedPlan.id!!).get()
+        return trainingPlanMapper.toDto(savedPlanFinal)
     }
 
     override fun getUserTrainingPlans(userId: Long): List<TrainingPlanDTO> {
