@@ -22,4 +22,13 @@ data class TrainingDay(
 
     @Column(name = "day_of_week")
     var dayOfWeek: Int? = null
-)
+){
+    // Constructor to help with bidirectional relationship
+    constructor() : this(null, null, null, null, null)
+
+    // After setting the session, update the session's trainingDays collection
+    fun setSessionAndUpdateRelationship(session: TrainingSession?) {
+        this.session = session
+        session?.trainingDays?.add(this)
+    }
+}
