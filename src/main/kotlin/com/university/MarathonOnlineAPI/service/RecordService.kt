@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.service
 
 import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordDTO
+import com.university.MarathonOnlineAPI.dto.RunningStatsDTO
 
 interface RecordService {
     fun addRecord(newRace: CreateRecordRequest, jwt: String): RecordDTO
@@ -10,4 +11,5 @@ interface RecordService {
     fun getRecords(): List<RecordDTO>
     fun getById(id: Long): RecordDTO
     fun getRecordsByToken(jwt: String): List<RecordDTO>
+    fun getRunningStatsByUser(userId: Long): RunningStatsDTO?
 }

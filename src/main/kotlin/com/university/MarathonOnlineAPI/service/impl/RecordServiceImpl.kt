@@ -2,7 +2,7 @@ package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordDTO
-import com.university.MarathonOnlineAPI.entity.Record
+import com.university.MarathonOnlineAPI.dto.RunningStatsDTO
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.RecordException
 import com.university.MarathonOnlineAPI.mapper.RecordMapper
@@ -12,7 +12,6 @@ import com.university.MarathonOnlineAPI.service.RecordApprovalService
 import com.university.MarathonOnlineAPI.service.RecordService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
-import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
@@ -130,5 +129,24 @@ class RecordServiceImpl @Autowired constructor(
             logger.error("Error saving race: ${e.message}")
             throw RecordException("Database error occurred while saving race: ${e.message}")
         }
+    }
+
+    override fun getRunningStatsByUser(userId: Long): RunningStatsDTO? {
+        val records = recordRepository.getByUserId(userId)
+            .filter { it.distance != null && it.timeTaken != null && it.distance!! > 0 }
+
+        if (records.isEmpty()) return null
+
+        val maxDistance = records.maxOf { it.distance ?: 0.0 }
+
+        val totalDistance = records.sumOf { it.distance ?: 0.0 }
+        val totalTimeInMinutes = records.sumOf { (it.timeTaken ?: 0L) } / 60.0
+
+        val averagePace = if (totalDistance > 0) totalTimeInMinutes / totalDistance else 0.0
+
+        return RunningStatsDTO(
+            maxDistance = "%.2f".format(maxDistance).toDouble(),
+            averagePace = "%.2f".format(averagePace).toDouble()
+        )
     }
 }
