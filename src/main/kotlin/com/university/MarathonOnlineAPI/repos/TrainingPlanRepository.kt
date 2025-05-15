@@ -13,6 +13,19 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
     fun findByUserId(userId: Long): List<TrainingPlan>
     fun findByUserIdOrderByCreatedAtDesc(id: Long): List<TrainingPlan>
 
+    @Query("""
+        SELECT tp FROM TrainingPlan tp 
+        WHERE tp.user.id = :userId 
+          AND tp.status = :status 
+          AND tp.startDate <= :now 
+          AND tp.endDate >= :now
+    """)
+    fun findActivePlanNow(
+        @Param("userId") userId: Long,
+        @Param("status") status: ETrainingPlanStatus,
+        @Param("now") now: LocalDateTime
+    ): TrainingPlan?
+
     fun findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
         userId: Long,
         status: ETrainingPlanStatus,

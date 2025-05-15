@@ -8,12 +8,11 @@ import org.springframework.stereotype.Component
 @Component
 class TrainingPlanMapper(
     private val modelMapper: ModelMapper,
-    private val trainingDayMapper: TrainingDayMapper
+    private val trainingDayMapper: TrainingDayMapper,
 ): Mapper<TrainingPlanDTO, TrainingPlan> {
     override fun toDto(entity: TrainingPlan): TrainingPlanDTO {
         val dto = modelMapper.map(entity, TrainingPlanDTO::class.java)
         dto.trainingDays = entity.trainingDays.map { trainingDayMapper.toDto(it) }
-
         return dto
     }
     override fun toEntity(dto: TrainingPlanDTO): TrainingPlan {

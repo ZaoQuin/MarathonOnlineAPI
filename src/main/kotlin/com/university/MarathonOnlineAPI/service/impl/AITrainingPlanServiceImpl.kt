@@ -181,7 +181,7 @@ class AITrainingPlanServiceImpl(
                     // Tạo training day
                     val trainingDay = TrainingDay().apply {
                         this.plan = plan
-                        this.session = savedSession
+                        setSessionAndUpdateRelationship(savedSession)
                         this.week = week
                         this.dayOfWeek = dayOfWeek
                     }
@@ -214,13 +214,9 @@ class AITrainingPlanServiceImpl(
                             // Tạo training day nghỉ ngơi
                             val restDay = TrainingDay().apply {
                                 this.plan = plan
-                                this.session = savedRestSession
+                                setSessionAndUpdateRelationship(savedRestSession)
                                 this.week = week
                                 this.dayOfWeek = dayOfWeek
-                            }
-
-                            savedRestSession.trainingDays = savedRestSession.trainingDays.toMutableList().apply {
-                                add(restDay)
                             }
 
                             trainingMap[key] = restDay
@@ -344,7 +340,7 @@ class AITrainingPlanServiceImpl(
                 // Tạo training day
                 val trainingDay = TrainingDay().apply {
                     this.plan = plan
-                    this.session = savedSession
+                    setSessionAndUpdateRelationship(savedSession)
                     this.week = week
                     this.dayOfWeek = day
                 }

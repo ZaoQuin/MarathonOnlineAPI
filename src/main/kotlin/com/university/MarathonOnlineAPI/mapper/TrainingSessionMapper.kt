@@ -1,15 +1,11 @@
 package com.university.MarathonOnlineAPI.mapper
 
 import com.university.MarathonOnlineAPI.dto.TrainingSessionDTO
-import com.university.MarathonOnlineAPI.entity.TrainingDay
 import com.university.MarathonOnlineAPI.entity.TrainingSession
 import org.modelmapper.ModelMapper
 import org.springframework.stereotype.Component
-import java.time.DayOfWeek
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.temporal.TemporalAdjusters
 
 @Component
 class TrainingSessionMapper(private val modelMapper: ModelMapper): Mapper<TrainingSessionDTO, TrainingSession> {
@@ -17,9 +13,10 @@ class TrainingSessionMapper(private val modelMapper: ModelMapper): Mapper<Traini
     override fun toDto(entity: TrainingSession): TrainingSessionDTO {
         val trainingSessionDTO = modelMapper.map(entity, TrainingSessionDTO::class.java)
 
-        // Nếu có trainingDays, tính toán dateTime từ startDate của plan và week/dayOfWeek
+        // Getting and logging trainingDays size
         println("TrainingDays count: ${entity.trainingDays.size}")
 
+        // Process dateTime only if trainingDays exist
         if (entity.trainingDays.isNotEmpty()) {
             val trainingDay = entity.trainingDays.firstOrNull()
             trainingDay?.let { day ->

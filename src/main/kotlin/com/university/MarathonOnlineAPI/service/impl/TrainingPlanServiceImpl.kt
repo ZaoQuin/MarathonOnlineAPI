@@ -9,6 +9,7 @@ import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.*
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -36,7 +37,6 @@ class TrainingPlanServiceImpl(
 
         val runningStat = recordService.getRunningStatsByUser(currentUser.id!!)
 
-        // Chuyển DTO sang entity
         val input = TrainingPlanInput().apply {
             level = inputDTO.level
             goal = inputDTO.goal
@@ -46,18 +46,17 @@ class TrainingPlanServiceImpl(
             user = currentUser
         }
 
-        // Lưu input trước
         val savedInput = trainingPlanInputRepository.save(input)
 
-        // Tạo plan
         val plan = TrainingPlan(
             name = generatePlanName(input, currentUser.fullName ?: "Runner"),
             user = currentUser,
             input = savedInput,
             createdAt = LocalDateTime.now(),
             status = ETrainingPlanStatus.ACTIVE,
+            startDate = LocalDateTime.now(),
+            endDate = LocalDateTime.now().plusWeeks(4)
         )
-
 
         val activePlans = trainingPlanRepository.findByUserIdAndStatus(currentUser.id!!, ETrainingPlanStatus.ACTIVE)
         activePlans.forEach {
@@ -65,19 +64,14 @@ class TrainingPlanServiceImpl(
         }
         trainingPlanRepository.saveAll(activePlans)
 
-        // Lưu plan
         val savedPlan = trainingPlanRepository.save(plan)
 
-        // Tạo lịch trình với AI
         val trainingDays = aiTrainingPlanService.generateTrainingDays(savedInput, savedPlan)
 
-        // Cập nhật ngày bắt đầu và kết thúc
         savedPlan.trainingDays = trainingDays
-        savedPlan.startDate = LocalDateTime.now()
-        savedPlan.endDate = savedPlan.startDate?.plusWeeks(4)
 
-        val savedPlanFinal = trainingPlanRepository.findById(savedPlan.id!!).get()
-        return trainingPlanMapper.toDto(savedPlanFinal)
+        val final = trainingPlanRepository.findById(savedPlan.id!!)
+        return trainingPlanMapper.toDto(final.orElseThrow())
     }
 
     override fun getUserTrainingPlans(userId: Long): List<TrainingPlanDTO> {
@@ -93,20 +87,30 @@ class TrainingPlanServiceImpl(
     }
 
     override fun getTrainingPlanByJwt(jwt: String): TrainingPlanDTO {
-        val userDTO =
-            tokenService.extractEmail(jwt)?.let { email ->
-                userService.findByEmail(email)
-            } ?: throw AuthenticationException("Email not found in the token")
+        return try {
+            val email = tokenService.extractEmail(jwt)
+                ?: throw AuthenticationException("Email not found in the token")
 
-        val now = LocalDateTime.now()
-        val plan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
-            userDTO.id!!,
-            ETrainingPlanStatus.ACTIVE,
-            now,
-            now
-        )
-        return plan?.let { trainingPlanMapper.toDto(it) }!!
+            val userDTO = userService.findByEmail(email)
+            val now = LocalDateTime.now()
+
+            val allPlans = trainingPlanRepository.findByUserIdAndStatus(userDTO.id!!, ETrainingPlanStatus.ACTIVE)
+
+            val plan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
+                userDTO.id!!,
+                ETrainingPlanStatus.ACTIVE,
+                now,
+                now
+            ) ?: throw IllegalStateException("No matching training plan found.")
+
+            trainingPlanMapper.toDto(plan)
+        } catch (e: Exception) {
+            println("❌ Error getTrainingPlanByJwt: ${e.message}")
+            throw e
+        }
     }
+
+
 
     fun getUserPlans(userId: Long): List<TrainingPlan> {
         val currentUser = userRepository.findById(userId).orElseThrow()
