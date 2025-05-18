@@ -21,7 +21,18 @@ data class TrainingDay(
     var week: Int? = null,
 
     @Column(name = "day_of_week")
-    var dayOfWeek: Int? = null
+    var dayOfWeek: Int? = null,
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "race_training_date",
+        joinColumns = [JoinColumn(name = "training_date_id")],
+        inverseJoinColumns = [JoinColumn(name = "race_id")]
+    )
+    var records: List<Record>? = null,
+
+    @Column
+    var status: ETrainingDayStatus?= null
 ){
     // Constructor to help with bidirectional relationship
     constructor() : this(null, null, null, null, null)
@@ -31,4 +42,10 @@ data class TrainingDay(
         this.session = session
         session?.trainingDays?.add(this)
     }
+}
+
+enum class ETrainingDayStatus {
+    ACTIVE,
+    COMPLETED,
+    MISSED
 }

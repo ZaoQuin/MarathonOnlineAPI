@@ -7,12 +7,14 @@ import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.mapper.TrainingPlanMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.*
-import jakarta.transaction.Transactional
+import com.university.MarathonOnlineAPI.view.SingleTrainingPlanView
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import java.util.*
+import jakarta.persistence.criteria.Predicate
 
 @Service
 class TrainingPlanServiceImpl(
@@ -110,6 +112,20 @@ class TrainingPlanServiceImpl(
         }
     }
 
+    override fun getPlansByStatus(
+        pageable: Pageable,
+        status: ETrainingPlanStatus,
+        jwt: String,
+        startDate: LocalDateTime?,
+        endDate: LocalDateTime?
+    ): Page<SingleTrainingPlanView> {
+        val email = tokenService.extractEmail(jwt)
+            ?: throw AuthenticationException("Email not found in token")
+
+        val user = userService.findByEmail(email)
+
+        return trainingPlanRepository.findProjectedByFilters(user.id!!, status, startDate, endDate, pageable)
+    }
 
 
     fun getUserPlans(userId: Long): List<TrainingPlan> {

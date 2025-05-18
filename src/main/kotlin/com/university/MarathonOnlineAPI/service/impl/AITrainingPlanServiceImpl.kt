@@ -184,6 +184,8 @@ class AITrainingPlanServiceImpl(
                         setSessionAndUpdateRelationship(savedSession)
                         this.week = week
                         this.dayOfWeek = dayOfWeek
+                        this.records = emptyList()
+                        this.status = ETrainingDayStatus.ACTIVE
                     }
 
                     savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
@@ -217,6 +219,8 @@ class AITrainingPlanServiceImpl(
                                 setSessionAndUpdateRelationship(savedRestSession)
                                 this.week = week
                                 this.dayOfWeek = dayOfWeek
+                                this.records = emptyList()
+                                this.status = ETrainingDayStatus.ACTIVE
                             }
 
                             trainingMap[key] = restDay
@@ -343,6 +347,8 @@ class AITrainingPlanServiceImpl(
                     setSessionAndUpdateRelationship(savedSession)
                     this.week = week
                     this.dayOfWeek = day
+                    this.records = emptyList()
+                    this.status = ETrainingDayStatus.ACTIVE
                 }
 
                 trainingDays.add(trainingDay)
