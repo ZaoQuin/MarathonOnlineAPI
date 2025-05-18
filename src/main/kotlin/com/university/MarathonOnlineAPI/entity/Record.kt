@@ -24,5 +24,8 @@ data class Record(
 
     @OneToOne
     @JoinColumn(name = "approval_id", referencedColumnName = "id")
-    var approval: RecordApproval? = null
+    var approval: RecordApproval? = null,
+
+    @ManyToMany(mappedBy = "records")
+    var trainingDays: List<TrainingDay>? = null,
 )

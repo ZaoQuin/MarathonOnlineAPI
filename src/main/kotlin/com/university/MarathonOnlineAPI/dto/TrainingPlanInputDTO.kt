@@ -6,5 +6,7 @@ import com.university.MarathonOnlineAPI.entity.ETrainingPlanInputLevel
 data class TrainingPlanInputDTO(
     var level: ETrainingPlanInputLevel? = null,
     var goal: ETrainingPlanInputGoal? = null,
+    var maxDistance: Double?= null,
+    var averagePace: Double?= null,
     var daysPerWeek: Int? = null
 )
