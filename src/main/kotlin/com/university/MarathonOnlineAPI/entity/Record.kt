@@ -27,5 +27,5 @@ data class Record(
     var approval: RecordApproval? = null,
 
     @ManyToMany(mappedBy = "records")
-    var trainingDays: List<TrainingDay>? = null,
+    var trainingDays: List<TrainingDay>? = null
 )

@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.entity
 
 import jakarta.persistence.*
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "training_day")
@@ -32,17 +33,11 @@ data class TrainingDay(
     var records: List<Record>? = null,
 
     @Column
-    var status: ETrainingDayStatus?= null
-){
-    // Constructor to help with bidirectional relationship
-    constructor() : this(null, null, null, null, null)
+    var status: ETrainingDayStatus?= null,
 
-    // After setting the session, update the session's trainingDays collection
-    fun setSessionAndUpdateRelationship(session: TrainingSession?) {
-        this.session = session
-        session?.trainingDays?.add(this)
-    }
-}
+    @Column
+    var dateTime: LocalDateTime? = null
+)
 
 enum class ETrainingDayStatus {
     ACTIVE,

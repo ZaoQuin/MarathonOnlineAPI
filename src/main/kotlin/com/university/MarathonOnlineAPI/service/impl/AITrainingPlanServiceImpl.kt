@@ -12,6 +12,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.springframework.stereotype.Service
 import java.io.IOException
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.regex.Pattern
 
 @Service
@@ -181,11 +184,12 @@ class AITrainingPlanServiceImpl(
                     // Tạo training day
                     val trainingDay = TrainingDay().apply {
                         this.plan = plan
-                        setSessionAndUpdateRelationship(savedSession)
+                        this.session = savedSession
                         this.week = week
                         this.dayOfWeek = dayOfWeek
                         this.records = emptyList()
                         this.status = ETrainingDayStatus.ACTIVE
+                        this.dateTime = calculateDateTimeForTrainingDay(plan.startDate!!, week, dayOfWeek)
                     }
 
                     savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
@@ -216,11 +220,12 @@ class AITrainingPlanServiceImpl(
                             // Tạo training day nghỉ ngơi
                             val restDay = TrainingDay().apply {
                                 this.plan = plan
-                                setSessionAndUpdateRelationship(savedRestSession)
+                                this.session = savedRestSession
                                 this.week = week
                                 this.dayOfWeek = dayOfWeek
                                 this.records = emptyList()
                                 this.status = ETrainingDayStatus.ACTIVE
+                                this.dateTime = calculateDateTimeForTrainingDay(plan.startDate!!, week, dayOfWeek)
                             }
 
                             trainingMap[key] = restDay
@@ -344,11 +349,12 @@ class AITrainingPlanServiceImpl(
                 // Tạo training day
                 val trainingDay = TrainingDay().apply {
                     this.plan = plan
-                    setSessionAndUpdateRelationship(savedSession)
+                    this.session = savedSession
                     this.week = week
                     this.dayOfWeek = day
                     this.records = emptyList()
                     this.status = ETrainingDayStatus.ACTIVE
+                    this.dateTime = calculateDateTimeForTrainingDay(plan.startDate!!, week, day)
                 }
 
                 trainingDays.add(trainingDay)
@@ -363,5 +369,12 @@ class AITrainingPlanServiceImpl(
         var multiplier = 1.0
         repeat(decimals) { multiplier *= 10 }
         return kotlin.math.round(this * multiplier) / multiplier
+    }
+
+
+    fun calculateDateTimeForTrainingDay(planStartDate: LocalDateTime, week: Int, dayOfWeek: Int): LocalDateTime {
+        // (week - 1) * 7 + (dayOfWeek - 1) để tính tổng số ngày từ planStartDate
+        val daysToAdd = (week - 1) * 7 + (dayOfWeek - 1)
+        return planStartDate.plusDays(daysToAdd.toLong())
     }
 }

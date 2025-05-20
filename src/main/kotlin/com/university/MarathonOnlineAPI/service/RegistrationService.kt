@@ -11,7 +11,7 @@ interface RegistrationService {
     fun getRegistrations(): List<RegistrationDTO>
     fun getRegistrationByJwt(jwt: String): List<RegistrationDTO>
     fun getById(id: Long): RegistrationDTO
-    fun saveRaceIntoRegistration(race: RecordDTO, jwt: String): List<RegistrationDTO>
+    fun saveRecordIntoRegistration(race: RecordDTO, jwt: String): List<RegistrationDTO>
     fun getRevenueByMonth(year: Int): List<Map<String, Any>>
     fun getRevenueByWeek(year: Int): List<Map<String, Any>>
     fun getRevenueByYear(): List<Map<String, Any>>
