@@ -1,14 +1,12 @@
 package com.university.MarathonOnlineAPI.controller.contest
 
-import com.university.MarathonOnlineAPI.controller.DeleteResponse
-import com.university.MarathonOnlineAPI.controller.user.CheckEmailRequest
+import com.university.MarathonOnlineAPI.controller.StringResponse
 import com.university.MarathonOnlineAPI.controller.user.CheckEmailResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.service.ContestService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -36,19 +34,19 @@ class ContestController(private val contestService: ContestService) {
     }
 
     @DeleteMapping("/{id}")
-    fun deleteContest(@PathVariable id: Long): ResponseEntity<DeleteResponse> {
+    fun deleteContest(@PathVariable id: Long): ResponseEntity<StringResponse> {
         return try {
             contestService.deleteContestById(id)
             logger.info("Contest with ID $id deleted successfully")
-            ResponseEntity.ok(DeleteResponse( message = "Contest with ID $id deleted successfully"))
+            ResponseEntity.ok(StringResponse( message = "Contest with ID $id deleted successfully"))
         } catch (e: ContestException) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
+                .body(StringResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
         } catch (e: Exception) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(DeleteResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
+                .body(StringResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
         }
     }
 

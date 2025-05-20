@@ -114,8 +114,7 @@ class RegistrationServiceImpl(
         return registrations.map { registrationMapper.toDto(it) }
     }
 
-
-    override fun saveRaceIntoRegistration(recordDTO: RecordDTO, jwt: String): List<RegistrationDTO> {
+    override fun saveRecordIntoRegistration(recordDTO: RecordDTO, jwt: String): List<RegistrationDTO> {
         return try {
             val userDTO =
                 tokenService.extractEmail(jwt)?.let { email ->
@@ -123,7 +122,7 @@ class RegistrationServiceImpl(
                 } ?: throw AuthenticationException("Email not found in the token")
             val race = recordMapper.toEntity(recordDTO)
             val registrations = userDTO.id?.let { registrationRepository.findActiveRegistration(it) }
-            logger.info("saveRaceIntoRegistration", registrations)
+            logger.info("saveRecordIntoRegistration", registrations)
             registrations!!.forEach { registration ->
                 registration.records?.let { races ->
                     if (races is MutableList) {
@@ -143,6 +142,7 @@ class RegistrationServiceImpl(
             emptyList()
         }
     }
+
     override fun getRevenueByMonth(year: Int): List<Map<String, Any>> {
         return registrationRepository.revenueByMonth(year)
     }

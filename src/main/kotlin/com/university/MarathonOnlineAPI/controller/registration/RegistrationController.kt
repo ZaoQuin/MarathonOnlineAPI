@@ -143,10 +143,10 @@ class RegistrationController(private val registrationService: RegistrationServic
     }
 
     @PostMapping("/record")
-    fun saveRaceIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RegistrationsResponse> {
+    fun saveRecordIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RegistrationsResponse> {
         return try {
             val jwt = token.replace("Bearer ", "")
-            val registrations = registrationService.saveRaceIntoRegistration(recordDTO, jwt)
+            val registrations = registrationService.saveRecordIntoRegistration(recordDTO, jwt)
             ResponseEntity.ok(RegistrationsResponse(registrations))
         } catch (e: RegistrationException) {
             logger.error("Error getting registration by Race ${recordDTO.id}: ${e.message}")

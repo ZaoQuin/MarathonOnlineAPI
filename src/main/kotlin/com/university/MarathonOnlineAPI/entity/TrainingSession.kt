@@ -29,6 +29,13 @@ data class TrainingSession(
     var trainingDays: MutableList<TrainingDay> = mutableListOf()
 )
 
-enum class ETrainingSessionType {
-    LONG_RUN, RECOVERY_RUN, SPEED_WORK, REST
+enum class ETrainingSessionType(val maxRestMinutes: Long) {
+    LONG_RUN(5),
+    RECOVERY_RUN(10),
+    SPEED_WORK(3),
+    REST(Long.MAX_VALUE);
+
+    fun canRestWithin(minutes: Long): Boolean {
+        return minutes <= maxRestMinutes
+    }
 }

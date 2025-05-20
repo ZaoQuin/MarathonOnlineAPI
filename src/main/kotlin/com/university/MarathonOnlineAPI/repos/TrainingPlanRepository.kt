@@ -66,4 +66,6 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
         @Param("endDate") endDate: LocalDateTime?,
         pageable: Pageable
     ): Page<SingleTrainingPlanView>
+
+    fun findTopByUserIdAndStatusOrderByStartDateDesc(userId: Long, status: ETrainingPlanStatus = ETrainingPlanStatus.ACTIVE): TrainingPlan?
 }

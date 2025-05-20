@@ -9,6 +9,5 @@ data class TrainingSessionDTO(
     var type: ETrainingSessionType? = null,
     var distance: Double? = null,
     var pace: Double? = null,
-    var notes: String? = null,
-    var dateTime: LocalDateTime?= null
+    var notes: String? = null
 )

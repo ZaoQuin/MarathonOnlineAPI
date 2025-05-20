@@ -1,5 +1,5 @@
 package com.university.MarathonOnlineAPI.controller
 
-data class DeleteResponse(
+data class StringResponse(
     val message: String
 )
