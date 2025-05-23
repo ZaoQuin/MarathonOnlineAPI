@@ -7,6 +7,7 @@ import com.university.MarathonOnlineAPI.exception.TrainingPlanException
 import com.university.MarathonOnlineAPI.service.TrainingDayService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -26,15 +27,15 @@ class TrainingDayController(
     }
 
     @PostMapping("/record")
-    fun saveRecordIntoTrainingDay(@RequestHeader("Authorization") token: String, @RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<Any> {
+    fun saveRecordIntoTrainingDay(@RequestHeader("Authorization") token: String, @RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<TrainingDayDTO> {
         return try {
             val jwt = token.replace("Bearer ", "")
             val trainingDay = trainingDayService.saveRecordIntoTrainingDay(recordDTO, jwt)
             ResponseEntity.ok(trainingDay)
         } catch (e: TrainingPlanException) {
-            ResponseEntity.badRequest().body(mapOf("message" to (e.message ?: "Lỗi không xác định")))
+            ResponseEntity(HttpStatus.BAD_REQUEST)
         } catch (e: Exception) {
-            ResponseEntity.internalServerError().body(mapOf("message" to "Lỗi hệ thống: ${e.message}"))
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 

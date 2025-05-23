@@ -47,27 +47,41 @@ class TrainingDayServiceImpl(
 
     override fun saveRecordIntoTrainingDay(recordDTO: RecordDTO, jwt: String): TrainingDayDTO {
         return try {
+            val userDTO =
+                tokenService.extractEmail(jwt)?.let { email ->
+                    userService.findByEmail(email)
+                } ?: throw AuthenticationException("Email not found in the token")
+            val now = LocalDateTime.now()
+            val activePlan = trainingPlanRepository
+                .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
+                ?: throw RuntimeException("No active training plan found for the user")
+
+            val currentTrainingDay = activePlan.trainingDays.firstOrNull { day ->
+                val dayDate = day.dateTime
+                dayDate != null && dayDate.toLocalDate() == now.toLocalDate()
+            } ?: throw RuntimeException("No training day found for today")
+
             val record = recordMapper.toEntity(recordDTO)
-            val trainingDay = trainingDayMapper.toEntity(getCurrentTrainingDayByJwt(jwt))
-            logger.info("saveRecordIntoTrainingDay", trainingDay)
-            if (trainingDay.records.isNullOrEmpty()) {
-                trainingDay.records = mutableListOf(record)
+
+            if (currentTrainingDay.records.isNullOrEmpty()) {
+                currentTrainingDay.records = mutableListOf(record)
             } else {
-                val minutesDifference = getMinutesDifferenceFromLatestRecord(trainingDay.records, record)
-                val restMinute = trainingDay.session?.type?.maxRestMinutes
+                val minutesDifference = getMinutesDifferenceFromLatestRecord(currentTrainingDay.records, record)
+                val restMinute = currentTrainingDay.session?.type?.maxRestMinutes
                     ?: throw TrainingPlanException("Không xác định được loại bài tập")
 
                 if (minutesDifference != null && minutesDifference <= restMinute) {
-                    val records = trainingDay.records?.toMutableList() ?: mutableListOf()
+                    val records = currentTrainingDay.records?.toMutableList() ?: mutableListOf()
                     records.add(record)
-                    trainingDay.records = records
+                    currentTrainingDay.records = records
                 } else {
                     throw TrainingPlanException("Không thêm record vì thời gian nghỉ đã vượt quá $restMinute phút, vui lòng luyện tập lại")
                 }
             }
 
-            val trainingPlanSaved = trainingDayRepository.save(trainingDay)
-            trainingDayMapper.toDto(trainingPlanSaved)
+// ✅ currentTrainingDay được quản lý bởi JPA nên không gây lỗi
+            val saved = trainingDayRepository.save(currentTrainingDay)
+            return trainingDayMapper.toDto(saved)
         } catch (e: Exception) {
             throw Exception("Lỗi khi lưu record vào TrainingDay: ${e.message}")
         }
