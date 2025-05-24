@@ -88,10 +88,21 @@ class TrainingDayServiceImpl(
     }
 
     override fun resetTrainingDay(jwt: String): TrainingDayDTO {
-        val trainingDayDTO = getCurrentTrainingDayByJwt(jwt)
-        val trainingDay = trainingDayMapper.toEntity(trainingDayDTO)
-        trainingDay.records = mutableListOf()
-        return trainingDayMapper.toDto(trainingDayRepository.save(trainingDay))
+        val userDTO =
+            tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+        val now = LocalDateTime.now()
+        val activePlan = trainingPlanRepository
+            .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
+            ?: throw RuntimeException("No active training plan found for the user")
+
+        val currentTrainingDay = activePlan.trainingDays.firstOrNull { day ->
+            val dayDate = day.dateTime
+            dayDate != null && dayDate.toLocalDate() == now.toLocalDate()
+        } ?: throw RuntimeException("No training day found for today")
+        currentTrainingDay.records = mutableListOf()
+        return trainingDayMapper.toDto(trainingDayRepository.save(currentTrainingDay))
     }
 
     fun getMinutesDifferenceFromLatestRecord(
