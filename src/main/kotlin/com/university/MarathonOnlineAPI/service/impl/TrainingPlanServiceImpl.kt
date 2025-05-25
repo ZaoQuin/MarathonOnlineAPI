@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.*
 import jakarta.persistence.criteria.Predicate
+import jakarta.transaction.Transactional
 
 @Service
 class TrainingPlanServiceImpl(
@@ -88,6 +89,7 @@ class TrainingPlanServiceImpl(
         return trainingPlanMapper.toDto(plan)
     }
 
+    @Transactional
     override fun getTrainingPlanByJwt(jwt: String): TrainingPlanDTO {
         return try {
             val email = tokenService.extractEmail(jwt)
@@ -96,8 +98,7 @@ class TrainingPlanServiceImpl(
             val userDTO = userService.findByEmail(email)
             val now = LocalDateTime.now()
 
-            val allPlans = trainingPlanRepository.findByUserIdAndStatus(userDTO.id!!, ETrainingPlanStatus.ACTIVE)
-
+            // Lấy trainingPlan (chưa cần fetch trainingDays)
             val plan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
                 userDTO.id!!,
                 ETrainingPlanStatus.ACTIVE,
@@ -105,12 +106,23 @@ class TrainingPlanServiceImpl(
                 now
             ) ?: throw IllegalStateException("No matching training plan found.")
 
-            trainingPlanMapper.toDto(plan)
+            trainingDayRepository.markMissedTrainingDays(plan.id!!, now)
+
+            val refreshedPlan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
+                userDTO.id!!,
+                ETrainingPlanStatus.ACTIVE,
+                now,
+                now
+            ) ?: throw IllegalStateException("Plan not found after update.")
+
+            trainingPlanMapper.toDto(refreshedPlan)
         } catch (e: Exception) {
             println("❌ Error getTrainingPlanByJwt: ${e.message}")
             throw e
         }
     }
+
+
 
     override fun getPlansByStatus(
         pageable: Pageable,
