@@ -1,6 +1,6 @@
 package com.university.MarathonOnlineAPI.dto
 
-import com.university.MarathonOnlineAPI.entity.ETrainingPlanStatus
+import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
 import java.time.LocalDateTime
 
 data class TrainingDayDTO(
@@ -9,6 +9,6 @@ data class TrainingDayDTO(
     var dayOfWeek: Int? = null,
     var session: TrainingSessionDTO? = null,
     var records: List<RecordDTO>? = null,
-    var status: ETrainingPlanStatus? = null,
+    var status: ETrainingDayStatus?= null,
     var dateTime: LocalDateTime?= null
 )
