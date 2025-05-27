@@ -10,6 +10,6 @@ data class RecordDTO(
     var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
     var timestamp: LocalDateTime? = null,
-    var heartRace: Double? = null,
+    var heartRate: Double? = null,
     var approval: RecordApprovalDTO? = null
 )

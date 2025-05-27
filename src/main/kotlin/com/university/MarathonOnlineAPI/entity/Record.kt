@@ -17,7 +17,7 @@ data class Record(
     var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
     var timestamp: LocalDateTime? = null,
-    var heartRace: Double? = null,
+    var heartRate: Double? = null,
 
     @ManyToMany(mappedBy = "records")
     var registrations: List<Registration>? = null,
