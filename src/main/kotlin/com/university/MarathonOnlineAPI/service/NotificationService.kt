@@ -3,9 +3,9 @@ package com.university.MarathonOnlineAPI.service
 import com.university.MarathonOnlineAPI.controller.notification.CreateAllNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateGroupNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateIndividualNotificationRequest
-import com.university.MarathonOnlineAPI.controller.notification.CreateNotificationRequest
+import com.university.MarathonOnlineAPI.controller.notification.UpdateFCMTokenRequest
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.entity.FCMToken
 
 interface NotificationService {
     fun addNotification(newNotification: NotificationDTO): NotificationDTO
@@ -18,4 +18,9 @@ interface NotificationService {
     fun addAllRunnerNotification(notification: CreateAllNotificationRequest): List<NotificationDTO>
     fun addGroupNotification(newNotification: CreateGroupNotificationRequest): List<NotificationDTO>
     fun readNotify(notification: NotificationDTO): NotificationDTO
+    fun updateFCMToken(request: UpdateFCMTokenRequest, jwt: String): FCMToken
+    fun markAllAsRead(jwt: String): List<NotificationDTO>
+    fun getUnreadCount(jwt: String): Int
+    fun sendPushNotification(notification: NotificationDTO)
+    fun sendPushNotificationToUser(userId: Long, title: String, content: String)
 }

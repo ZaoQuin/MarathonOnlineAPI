@@ -4,7 +4,7 @@ plugins {
 	id("org.springframework.boot") version "3.3.4"
 	id("io.spring.dependency-management") version "1.1.6"
 	kotlin("plugin.jpa") version "1.9.25"
-	id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
+	id("org.jetbrains.kotlin.plugin.noarg") version "1.9.25"
 }
 
 group = "com.university"
@@ -28,7 +28,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	implementation("org.jetbrains.kotlin:kotlin-stdlib")
+	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	//Mapper
 	implementation("org.modelmapper:modelmapper:3.1.0")
@@ -63,6 +63,9 @@ dependencies {
 
 	// json
 	implementation("org.json:json:20250107")
+
+	//	Firebase Admin Sdk
+	implementation("com.google.firebase:firebase-admin:9.2.0")
 }
 
 kotlin {

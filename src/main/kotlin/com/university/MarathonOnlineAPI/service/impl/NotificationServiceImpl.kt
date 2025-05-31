@@ -1,21 +1,21 @@
 package com.university.MarathonOnlineAPI.service.impl
 
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import com.google.firebase.messaging.Notification as FCMNotification
 import com.university.MarathonOnlineAPI.controller.notification.CreateAllNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateGroupNotificationRequest
 import com.university.MarathonOnlineAPI.controller.notification.CreateIndividualNotificationRequest
+import com.university.MarathonOnlineAPI.controller.notification.UpdateFCMTokenRequest
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.entity.Contest
-import com.university.MarathonOnlineAPI.entity.ERole
-import com.university.MarathonOnlineAPI.entity.Notification
-import com.university.MarathonOnlineAPI.entity.User
+import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
-import com.university.MarathonOnlineAPI.exception.RecordException
-import com.university.MarathonOnlineAPI.exception.RuleException
 import com.university.MarathonOnlineAPI.mapper.ContestMapper
 import com.university.MarathonOnlineAPI.mapper.NotificationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
 import com.university.MarathonOnlineAPI.repos.ContestRepository
+import com.university.MarathonOnlineAPI.repos.FCMTokenRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.service.NotificationService
@@ -24,18 +24,22 @@ import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
+@Transactional
 class NotificationServiceImpl(
     private val notificationRepository: NotificationRepository,
+    private val fcmTokenRepository: FCMTokenRepository,
     private val notificationMapper: NotificationMapper,
     private val userMapper: UserMapper,
     private val contestMapper: ContestMapper,
     private val contestRepository: ContestRepository,
     private val userRepository: UserRepository,
     private val tokenService: TokenService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val firebaseMessaging: FirebaseMessaging
 ) : NotificationService {
 
     private val logger = LoggerFactory.getLogger(NotificationServiceImpl::class.java)
@@ -47,12 +51,17 @@ class NotificationServiceImpl(
                 contest = newNotification.contest?.let { contestMapper.toEntity(it) },
                 title = newNotification.title,
                 content = newNotification.content,
-                createAt =  newNotification.createAt,
-                isRead = newNotification.isRead,
-                type =  newNotification.type
+                createAt = newNotification.createAt ?: LocalDateTime.now(),
+                isRead = newNotification.isRead ?: false,
+                type = newNotification.type
             )
             val saveNotification = notificationRepository.save(notification)
-            notificationMapper.toDto(saveNotification)
+            val result = notificationMapper.toDto(saveNotification)
+
+            // Send push notification
+            sendPushNotification(result)
+
+            result
         } catch (e: DataAccessException) {
             logger.error("Error saving notification: ${e.message}")
             throw NotificationException("Database error occurred while saving notification: ${e.message}")
@@ -66,12 +75,17 @@ class NotificationServiceImpl(
                 contest = request.contest?.let { contestMapper.toEntity(it) },
                 title = request.title,
                 content = request.content,
-                createAt =  LocalDateTime.now(),
+                createAt = LocalDateTime.now(),
                 isRead = false,
-                type =  request.type
+                type = request.type
             )
             val saveNotification = notificationRepository.save(notification)
-            notificationMapper.toDto(saveNotification)
+            val result = notificationMapper.toDto(saveNotification)
+
+            // Send push notification
+            sendPushNotification(result)
+
+            result
         } catch (e: DataAccessException) {
             logger.error("Error saving notification: ${e.message}")
             throw NotificationException("Database error occurred while saving notification: ${e.message}")
@@ -82,20 +96,27 @@ class NotificationServiceImpl(
         return try {
             val runners = userRepository.findByRole(ERole.RUNNER)
             val notifications = mutableListOf<Notification>()
-            runners.forEach {receiver ->
+
+            runners.forEach { receiver ->
                 val notification = Notification(
                     receiver = receiver,
                     contest = request.contest?.let { contestMapper.toEntity(it) },
                     title = request.title,
                     content = request.content,
-                    createAt =  LocalDateTime.now(),
+                    createAt = LocalDateTime.now(),
                     isRead = false,
-                    type =  request.type
+                    type = request.type
                 )
                 notifications.add(notification)
             }
+
             val savedNotifications = notificationRepository.saveAll(notifications)
-            savedNotifications.map { notificationMapper.toDto(it) }
+            val results = savedNotifications.map { notificationMapper.toDto(it) }
+
+            // Send push notifications to all runners
+            results.forEach { sendPushNotification(it) }
+
+            results
         } catch (e: DataAccessException) {
             logger.error("Error saving notification: ${e.message}")
             throw NotificationException("Database error occurred while saving notification: ${e.message}")
@@ -105,20 +126,27 @@ class NotificationServiceImpl(
     override fun addGroupNotification(request: CreateGroupNotificationRequest): List<NotificationDTO> {
         return try {
             val notifications = mutableListOf<Notification>()
-            request.receivers.forEach {receiver ->
+
+            request.receivers.forEach { receiver ->
                 val notification = Notification(
                     receiver = userMapper.toEntity(receiver),
                     contest = request.contest?.let { contestMapper.toEntity(it) },
                     title = request.title,
                     content = request.content,
-                    createAt =  LocalDateTime.now(),
+                    createAt = LocalDateTime.now(),
                     isRead = false,
-                    type =  request.type
+                    type = request.type
                 )
                 notifications.add(notification)
             }
+
             val savedNotifications = notificationRepository.saveAll(notifications)
-            savedNotifications.map { notificationMapper.toDto(it) }
+            val results = savedNotifications.map { notificationMapper.toDto(it) }
+
+            // Send push notifications to group
+            results.forEach { sendPushNotification(it) }
+
+            results
         } catch (e: DataAccessException) {
             logger.error("Error saving notification: ${e.message}")
             throw NotificationException("Database error occurred while saving notification: ${e.message}")
@@ -127,10 +155,11 @@ class NotificationServiceImpl(
 
     override fun readNotify(notificationDTO: NotificationDTO): NotificationDTO {
         return try {
-            val existingNotification = notificationRepository.findById(notificationDTO.id ?: throw RuleException("Rule ID must not be null"))
-                .orElseThrow { RuleException("Rule with ID ${notificationDTO.id} not found") }
-            existingNotification.isRead = true
+            val existingNotification = notificationRepository.findById(
+                notificationDTO.id ?: throw NotificationException("Notification ID must not be null")
+            ).orElseThrow { NotificationException("Notification with ID ${notificationDTO.id} not found") }
 
+            existingNotification.isRead = true
             val savedNotification = notificationRepository.save(existingNotification)
             notificationMapper.toDto(savedNotification)
         } catch (e: DataAccessException) {
@@ -141,6 +170,9 @@ class NotificationServiceImpl(
 
     override fun deleteNotificationById(id: Long) {
         try {
+            if (!notificationRepository.existsById(id)) {
+                throw NotificationException("Notification with ID $id not found")
+            }
             notificationRepository.deleteById(id)
             logger.info("Notification with ID $id deleted successfully")
         } catch (e: DataAccessException) {
@@ -151,18 +183,22 @@ class NotificationServiceImpl(
 
     override fun updateNotification(notificationDTO: NotificationDTO): NotificationDTO {
         return try {
-            val existingNotification = notificationRepository.findById(notificationDTO.id ?: throw RuleException("Rule ID must not be null"))
-                .orElseThrow { RuleException("Rule with ID ${notificationDTO.id} not found") }
-            existingNotification.receiver = User(1)
-            existingNotification.contest = Contest(32)
-            existingNotification.title = notificationDTO.title
-            existingNotification.content = notificationDTO.content
-            existingNotification.createAt = notificationDTO.createAt
-            existingNotification.isRead = notificationDTO.isRead
-            existingNotification.type = notificationDTO.type
+            val existingNotification = notificationRepository.findById(
+                notificationDTO.id ?: throw NotificationException("Notification ID must not be null")
+            ).orElseThrow { NotificationException("Notification with ID ${notificationDTO.id} not found") }
 
-            notificationRepository.save(existingNotification)
-            notificationMapper.toDto(existingNotification)
+            existingNotification.apply {
+                receiver = notificationDTO.receiver?.let { userMapper.toEntity(it) }
+                contest = notificationDTO.contest?.let { contestMapper.toEntity(it) }
+                title = notificationDTO.title
+                content = notificationDTO.content
+                createAt = notificationDTO.createAt
+                isRead = notificationDTO.isRead
+                type = notificationDTO.type
+            }
+
+            val savedNotification = notificationRepository.save(existingNotification)
+            notificationMapper.toDto(savedNotification)
         } catch (e: DataAccessException) {
             logger.error("Error updating notification: ${e.message}")
             throw NotificationException("Database error occurred while updating notification: ${e.message}")
@@ -191,17 +227,155 @@ class NotificationServiceImpl(
     }
 
     override fun getNotificationsByJwt(jwt: String): List<NotificationDTO> {
-        try {
-            val userDTO =
-                tokenService.extractEmail(jwt)?.let { email ->
-                    userService.findByEmail(email)
-                } ?: throw AuthenticationException("Email not found in the token")
+        return try {
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
 
-            val notifications = userDTO.id?.let { notificationRepository.getByReceiverId(it) }
-            return notifications?.map { notificationMapper.toDto(it) }!!
+            val notifications = userDTO.id?.let {
+                notificationRepository.getByReceiverId(it)
+            } ?: emptyList()
+
+            notifications.map { notificationMapper.toDto(it) }
+                .sortedByDescending { it.createAt }
         } catch (e: DataAccessException) {
-            logger.error("Error saving race: ${e.message}")
-            throw RecordException("Database error occurred while saving race: ${e.message}")
+            logger.error("Error retrieving notifications by JWT: ${e.message}")
+            throw NotificationException("Database error occurred while retrieving notifications: ${e.message}")
+        }
+    }
+
+    override fun updateFCMToken(request: UpdateFCMTokenRequest, jwt: String): FCMToken {
+        return try {
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            val user = userMapper.toEntity(userDTO)
+
+            // Find existing token or create new one
+            val existingToken = fcmTokenRepository.findByUserIdAndDeviceId(
+                user.id!!, request.deviceId!!
+            )
+
+            val fcmToken = existingToken ?: FCMToken(
+                user = user,
+                deviceId = request.deviceId,
+                createdAt = LocalDateTime.now()
+            )
+
+            fcmToken.apply {
+                token = request.fcmToken
+                deviceType = request.deviceType
+                appVersion = request.appVersion
+                updatedAt = LocalDateTime.now()
+            }
+
+            fcmTokenRepository.save(fcmToken)
+        } catch (e: DataAccessException) {
+            logger.error("Error updating FCM token: ${e.message}")
+            throw NotificationException("Database error occurred while updating FCM token: ${e.message}")
+        }
+    }
+
+    override fun markAllAsRead(jwt: String): List<NotificationDTO> {
+        return try {
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            val notifications = userDTO.id?.let {
+                notificationRepository.getByReceiverId(it)
+            } ?: emptyList()
+
+            notifications.forEach { it.isRead = true }
+            val updatedNotifications = notificationRepository.saveAll(notifications)
+
+            updatedNotifications.map { notificationMapper.toDto(it) }
+                .sortedByDescending { it.createAt }
+        } catch (e: DataAccessException) {
+            logger.error("Error marking all notifications as read: ${e.message}")
+            throw NotificationException("Database error occurred while marking notifications as read: ${e.message}")
+        }
+    }
+
+    override fun getUnreadCount(jwt: String): Int {
+        return try {
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            userDTO.id?.let {
+                notificationRepository.countByReceiverIdAndIsReadFalse(it)
+            } ?: 0
+        } catch (e: DataAccessException) {
+            logger.error("Error getting unread count: ${e.message}")
+            throw NotificationException("Database error occurred while getting unread count: ${e.message}")
+        }
+    }
+
+    override fun sendPushNotification(notification: NotificationDTO) {
+        try {
+            val receiverId = notification.receiver?.id ?: return
+            val fcmTokens = fcmTokenRepository.findByUserId(receiverId)
+
+            if (fcmTokens.isEmpty()) {
+                logger.info("No FCM tokens found for user $receiverId")
+                return
+            }
+
+            fcmTokens.forEach { fcmToken ->
+                try {
+                    val message = Message.builder()
+                        .setToken(fcmToken.token)
+                        .setNotification(
+                            FCMNotification.builder()
+                                .setTitle(notification.title ?: "Marathon Notification")
+                                .setBody(notification.content ?: "")
+                                .build()
+                        )
+                        .putData("notificationId", notification.id.toString())
+                        .putData("type", notification.type?.name ?: "")
+                        .build()
+
+                    val response = firebaseMessaging.send(message)
+                    logger.info("Push notification sent successfully: $response")
+                } catch (e: Exception) {
+                    logger.error("Failed to send push notification to token ${fcmToken.token}: ${e.message}")
+                    // Consider removing invalid tokens
+                    if (e.message?.contains("registration-token-not-registered") == true) {
+                        fcmTokenRepository.delete(fcmToken)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error sending push notification: ${e.message}")
+        }
+    }
+
+    override fun sendPushNotificationToUser(userId: Long, title: String, content: String) {
+        try {
+            val fcmTokens = fcmTokenRepository.findByUserId(userId)
+
+            fcmTokens.forEach { fcmToken ->
+                try {
+                    val message = Message.builder()
+                        .setToken(fcmToken.token)
+                        .setNotification(
+                            FCMNotification.builder()
+                                .setTitle(title)
+                                .setBody(content)
+                                .build()
+                        )
+                        .build()
+
+                    val response = firebaseMessaging.send(message)
+                    logger.info("Push notification sent successfully: $response")
+                } catch (e: Exception) {
+                    logger.error("Failed to send push notification: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error sending push notification to user: ${e.message}")
         }
     }
 }
