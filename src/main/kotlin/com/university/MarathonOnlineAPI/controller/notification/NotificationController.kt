@@ -1,7 +1,6 @@
 package com.university.MarathonOnlineAPI.controller.notification
 
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.service.NotificationService
 import jakarta.validation.Valid
@@ -21,7 +20,6 @@ class NotificationController(private val notificationService: NotificationServic
     fun addNotification(@RequestBody @Valid notification: NotificationDTO): ResponseEntity<Any> {
         return try {
             val addedNotification = notificationService.addNotification(notification)
-            //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
             logger.error("Error adding notification: ${e.message}")
@@ -37,7 +35,6 @@ class NotificationController(private val notificationService: NotificationServic
     fun readNotify(@RequestBody @Valid notification: NotificationDTO): ResponseEntity<Any> {
         return try {
             val addedNotification = notificationService.readNotify(notification)
-            //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
             logger.error("Error adding notification: ${e.message}")
@@ -52,7 +49,6 @@ class NotificationController(private val notificationService: NotificationServic
     fun addIndividualNotification(@RequestBody @Valid notification: CreateIndividualNotificationRequest): ResponseEntity<Any> {
         return try {
             val addedNotification = notificationService.addIndividualNotification(notification)
-            //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
             logger.error("Error adding notification: ${e.message}")
@@ -67,7 +63,6 @@ class NotificationController(private val notificationService: NotificationServic
     fun addAllRunnerNotification(@RequestBody @Valid notification: CreateAllNotificationRequest): ResponseEntity<Any> {
         return try {
             val addedNotification = notificationService.addAllRunnerNotification(notification)
-            //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
             logger.error("Error adding notification: ${e.message}")
@@ -82,7 +77,6 @@ class NotificationController(private val notificationService: NotificationServic
     fun addGroupNotification(@RequestBody @Valid newNotification: CreateGroupNotificationRequest): ResponseEntity<Any> {
         return try {
             val addedNotification = notificationService.addGroupNotification(newNotification)
-            //logger.info("Show newNotification: $addedNotification")
             ResponseEntity(addedNotification, HttpStatus.CREATED)
         } catch (e: NotificationException) {
             logger.error("Error adding notification: ${e.message}")
@@ -164,6 +158,64 @@ class NotificationController(private val notificationService: NotificationServic
         } catch (e: Exception) {
             logger.error("Error getting notification by JWT")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping("/fcm-token")
+    fun updateFCMToken(
+        @RequestBody @Valid request: UpdateFCMTokenRequest,
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<Any> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val result = notificationService.updateFCMToken(request, jwt)
+            logger.info("FCM token updated successfully for device: ${request.deviceId}")
+            ResponseEntity.ok(result)
+        } catch (e: NotificationException) {
+            logger.error("Error updating FCM token: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("FCM token update failed: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Error updating FCM token: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error occurred: ${e.message}")
+        }
+    }
+
+    /**
+     * API để đánh dấu tất cả thông báo là đã đọc
+     */
+    @PutMapping("/mark-all-read")
+    fun markAllAsRead(@RequestHeader("Authorization") token: String): ResponseEntity<List<NotificationDTO>> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val updatedNotifications = notificationService.markAllAsRead(jwt)
+            logger.info("All notifications marked as read for user")
+            ResponseEntity.ok(updatedNotifications)
+        } catch (e: NotificationException) {
+            logger.error("Error marking all notifications as read: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        } catch (e: Exception) {
+            logger.error("Error marking all notifications as read: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+    /**
+     * API để lấy số lượng thông báo chưa đọc
+     */
+    @GetMapping("/unread-count")
+    fun getUnreadCount(@RequestHeader("Authorization") token: String): ResponseEntity<Int> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val unreadCount = notificationService.getUnreadCount(jwt)
+            ResponseEntity.ok(unreadCount)
+        } catch (e: NotificationException) {
+            logger.error("Error getting unread count: ${e.message}")
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        } catch (e: Exception) {
+            logger.error("Error getting unread count: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 }
