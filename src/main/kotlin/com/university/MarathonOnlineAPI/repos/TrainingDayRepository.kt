@@ -21,7 +21,7 @@ interface TrainingDayRepository : JpaRepository<TrainingDay, Long> {
         SET td.status = :missedStatus 
         WHERE td.plan.id = :planId 
           AND td.status = :activeStatus 
-          AND td.dateTime < :now
+          AND DATE(td.dateTime) < DATE(:now)
     """)
     fun markMissedTrainingDays(
         @Param("planId") planId: Long,
