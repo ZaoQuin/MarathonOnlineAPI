@@ -150,4 +150,8 @@ class RecordServiceImpl @Autowired constructor(
             averagePace = "%.2f".format(averagePace).toDouble()
         )
     }
+
+    override fun getRecordsByUserId(userId: Long): List<RecordDTO> {
+        return recordRepository.findByUserIdOrderByTimestampDesc(userId).map { recordMapper.toDto(it) }
+    }
 }

@@ -3,6 +3,7 @@ import json
 import sys
 import os
 import warnings
+import requests
 warnings.filterwarnings('ignore')
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -22,16 +23,33 @@ def validate_record(record_json):
         dict: Kết quả đánh giá bao gồm trạng thái, điểm rủi ro gian lận, loại gian lận và ghi chú.
     """
     try:
-        record = json.loads(record_json)
+        # Clean and validate JSON string
+        record_json = record_json.strip()
+        if not record_json:
+            raise ValueError("Empty JSON string")
+
+        # Try to parse JSON with better error handling
+        try:
+            record = json.loads(record_json)
+        except json.JSONDecodeError as e:
+            # Try to fix common JSON issues
+            record_json_fixed = fix_json_string(record_json)
+            record = json.loads(record_json_fixed)
+
+        # Validate record structure
+        if not isinstance(record, dict):
+            raise ValueError("JSON must be an object/dictionary")
+
+        # Extract data with safer methods
         record_df = pd.DataFrame([{
-            'Id': record.get('id', ''),
-            'UserId': record.get('user', {}).get('id', ''),
-            'TotalSteps': record.get('steps', 0),
-            'TotalDistance': record.get('distance', 0.0),
-            'TimeTaken': record.get('timeTaken', 0),
-            'AvgSpeed': record.get('avgSpeed', 0.0),
-            'Timestamp': record.get('timestamp', ''),
-            'heartRate': record.get('heartRate', None)
+            'Id': safe_get(record, 'id', ''),
+            'UserId': safe_get_nested(record, ['user', 'id'], ''),
+            'TotalSteps': safe_get_numeric(record, 'steps', 0),
+            'TotalDistance': safe_get_numeric(record, 'distance', 0.0),
+            'TimeTaken': safe_get_numeric(record, 'timeTaken', 0),
+            'AvgSpeed': safe_get_numeric(record, 'avgSpeed', 0.0),
+            'Timestamp': safe_get(record, 'timestamp', ''),
+            'heartRate': safe_get_numeric(record, 'heartRate', None, allow_none=True)
         }])
 
         if not validate_basic_conditions(record_df):
@@ -44,7 +62,8 @@ def validate_record(record_json):
 
         processed_df = prepare_marathon_data(record_df)
         user_id = processed_df['UserId'].iloc[0]
-        user_history = load_user_history(user_id)
+        # user_history = load_user_history(user_id)
+        user_history = None
 
         if user_history is not None and not user_history.empty:
             analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
@@ -56,14 +75,75 @@ def validate_record(record_json):
         result = validate_with_user_history(analysis_df, last_index, user_stats)
         return result
 
+    except json.JSONDecodeError as e:
+        error_msg = f"Invalid JSON format: {str(e)}"
+        print(f"JSON parsing error: {error_msg}")
+        return {
+            "approvalStatus": "PENDING",
+            "fraudRisk": 50.0,
+            "fraudType": "Lỗi định dạng JSON",
+            "reviewNote": error_msg
+        }
     except Exception as e:
-        print(f"Lỗi khi phân tích bản ghi: {e}")
+        error_msg = f"Có lỗi khi phân tích bản ghi: {str(e)}"
+        print(error_msg)
         return {
             "approvalStatus": "PENDING",
             "fraudRisk": 50.0,
             "fraudType": "Lỗi xử lý",
-            "reviewNote": f"Có lỗi khi phân tích bản ghi: {str(e)}"
+            "reviewNote": error_msg
         }
+
+def fix_json_string(json_str):
+    """
+    Attempt to fix common JSON formatting issues.
+
+    Args:
+        json_str (str): The potentially malformed JSON string
+
+    Returns:
+        str: Fixed JSON string
+    """
+    # Remove any leading/trailing whitespace
+    json_str = json_str.strip()
+
+    # Fix single quotes to double quotes
+    import re
+    json_str = re.sub(r"'([^']*)':", r'"\1":', json_str)
+    json_str = re.sub(r":\s*'([^']*)'", r': "\1"', json_str)
+
+    # Fix unquoted keys (basic fix)
+    json_str = re.sub(r'(\w+):', r'"\1":', json_str)
+
+    # Fix trailing commas
+    json_str = re.sub(r',\s*}', '}', json_str)
+    json_str = re.sub(r',\s*]', ']', json_str)
+
+    return json_str
+
+def safe_get(data, key, default=None):
+    """Safely get value from dictionary."""
+    return data.get(key, default) if isinstance(data, dict) else default
+
+def safe_get_nested(data, keys, default=None):
+    """Safely get nested value from dictionary."""
+    current = data
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    return current
+
+def safe_get_numeric(data, key, default=0, allow_none=False):
+    """Safely get numeric value from dictionary."""
+    value = safe_get(data, key, default)
+    if value is None and allow_none:
+        return None
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
 
 def validate_basic_conditions(record_df):
     """
@@ -248,9 +328,23 @@ def validate_with_user_history(analysis_df, new_record_index, user_stats):
         "reviewNote": review_note
     }
 
+import pandas as pd
+import json
+import sys
+import os
+import warnings
+import requests
+warnings.filterwarnings('ignore')
+sys.stdout.reconfigure(encoding='utf-8')
+
+from modal import (
+    prepare_marathon_data, analyze_per_user, extract_features,
+    detect_anomalies_isolation_forest, detect_anomalies_lof
+)
+
 def load_user_history(user_id):
     """
-    Tải lịch sử hoạt động của người dùng từ tệp CSV.
+    Tải lịch sử hoạt động của người dùng từ API Spring Boot.
 
     Args:
         user_id: ID của người dùng.
@@ -258,52 +352,99 @@ def load_user_history(user_id):
     Returns:
         pd.DataFrame: Lịch sử hoạt động hoặc None nếu không có.
     """
-    history_path = os.getenv('USER_HISTORY_PATH', 'user_history')
-    user_file = os.path.join(history_path, f"user_{user_id}_history.csv")
-
     try:
-        if os.path.exists(user_file):
-            user_history = pd.read_csv(user_file)
-            print(f"Đã đọc {len(user_history)} bản ghi lịch sử của người dùng {user_id}")
-            return user_history
-        else:
-            print(f"Không tìm thấy lịch sử cho người dùng {user_id}")
+        # Use correct endpoint: /api/v1/record
+        api_url = os.getenv('API_URL', 'http://localhost:8080/api/v1/record/user') + f'/{user_id}/history'
+        print(f"Calling API: {api_url}")
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status()  # Raise exception for non-200 status
+
+        records = response.json()
+        if not records:
+            print(f"Không có bản ghi lịch sử cho người dùng {user_id}")
             return None
-    except Exception as e:
-        print(f"Lỗi khi đọc lịch sử người dùng: {e}")
+
+        user_history = pd.DataFrame([{
+            'Id': safe_get(record, 'id', ''),
+            'UserId': safe_get_nested(record, ['user', 'id'], ''),
+            'TotalSteps': safe_get_numeric(record, 'steps', 0),
+            'TotalDistance': safe_get_numeric(record, 'distance', 0.0),
+            'TimeTaken': safe_get_numeric(record, 'timeTaken', 0),
+            'AvgSpeed': safe_get_numeric(record, 'avgSpeed', 0.0),
+            'Timestamp': safe_get(record, 'timestamp', ''),
+            'heartRate': safe_get_numeric(record, 'heartRate', None, allow_none=True)
+        } for record in records])
+
+        print(f"Đã tải {len(user_history)} bản ghi lịch sử của người dùng {user_id}")
+        return user_history
+
+    except requests.RequestException as e:
+        print(f"Lỗi khi gọi API lịch sử người dùng: {e}")
         return None
+    except Exception as e:
+        print(f"Lỗi khi xử lý lịch sử người dùng: {e}")
+        return None
+
+# Rest of the script (validate_record, fix_json_string, etc.) remains unchanged
 
 if __name__ == "__main__":
     try:
         if len(sys.argv) < 2:
-            print("Cách sử dụng: python record_validator.py <chuỗi_json_bản_ghi> [--file]")
+            print("Cách sử dụng: python record_validator.py <chuỗi_json_bản_ghi> [--file] [--userId <user_id>]")
             sys.exit(1)
 
         is_file_path = False
-        if len(sys.argv) > 2 and sys.argv[2] == "--file":
+        user_id = None
+
+        # Parse command line arguments
+        args = sys.argv[1:]
+        if "--file" in args:
             is_file_path = True
+            args.remove("--file")
+
+        if "--userId" in args:
+            user_id_index = args.index("--userId")
+            if user_id_index + 1 < len(args):
+                user_id = args[user_id_index + 1]
+                args.remove("--userId")
+                args.remove(user_id)
+
+        if not args:
+            print("Error: No JSON data provided")
+            sys.exit(1)
 
         if is_file_path:
-            file_path = sys.argv[1]
+            file_path = args[0]
             print(f"Đọc JSON từ tệp: {file_path}")
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     record_json = f.read().strip()
+            except FileNotFoundError:
+                print(f"Error: File not found: {file_path}")
+                sys.exit(1)
             except Exception as e:
-                print(f"Lỗi khi đọc tệp JSON: {e}")
+                print(f"Error reading file: {e}")
                 sys.exit(1)
         else:
-            record_json = sys.argv[1]
+            record_json = args[0]
+
+        if not record_json:
+            print("Error: Empty JSON data")
+            sys.exit(1)
 
         result = validate_record(record_json)
         print("\n--- BEGIN JSON RESULT ---")
-        print(json.dumps(result, ensure_ascii=False))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
         print("--- END JSON RESULT ---")
+
     except Exception as e:
         print(f"Lỗi không mong đợi: {e}")
-        print(json.dumps({
+        error_result = {
             "approvalStatus": "PENDING",
             "fraudRisk": 50.0,
             "fraudType": "Lỗi hệ thống",
             "reviewNote": f"Lỗi không mong đợi: {str(e)}"
-        }, ensure_ascii=False))
+        }
+        print("\n--- BEGIN JSON RESULT ---")
+        print(json.dumps(error_result, ensure_ascii=False, indent=2))
+        print("--- END JSON RESULT ---")

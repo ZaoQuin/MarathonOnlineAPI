@@ -12,4 +12,5 @@ interface RecordService {
     fun getById(id: Long): RecordDTO
     fun getRecordsByToken(jwt: String): List<RecordDTO>
     fun getRunningStatsByUser(userId: Long): RunningStatsDTO?
+    fun getRecordsByUserId(userId: Long): List<RecordDTO>
 }

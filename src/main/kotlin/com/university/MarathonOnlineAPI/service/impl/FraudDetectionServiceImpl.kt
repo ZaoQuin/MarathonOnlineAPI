@@ -24,48 +24,38 @@ class FraudDetectionServiceImpl(private val objectMapper: ObjectMapper): FraudDe
         if (request?.marathonData.isNullOrEmpty()) {
             throw IllegalArgumentException("marathonData must not be null or empty")
         }
-        // Tạo file CSV tạm thời từ dữ liệu đầu vào
         val tempFile: Path = createTempCsvFile(request!!.marathonData!!)
         return try {
-            // Xác định đường dẫn tới Python và thư mục chứa script
-            val pythonPath = System.getenv("PYTHON_PATH") ?: "python"  // Fallback to "python" if not set
-            val scriptDir = File("pythonScripts") // thư mục chứa script Python
-            val scriptPath = File(scriptDir, "fraud_analysis.py").absolutePath
+            val pythonPath = System.getenv("PYTHON_PATH") ?: "python"
+            val scriptDir = File("pythonScripts")
+            val scriptPath = File(scriptDir, "record_validator.py").absolutePath
 
-            // Kiểm tra và đảm bảo thư mục script tồn tại
             if (!scriptDir.exists()) {
                 scriptDir.mkdirs()
             }
 
-            // Log thông tin để debug
-            println("Running Python script: $pythonPath $scriptPath ${tempFile.toAbsolutePath()}")
+            // Lấy userId từ record đầu tiên (nếu cần)
+            val userId = request.marathonData?.first()?.user?.id?.toString() ?: ""
 
-            // Chạy script Python để phân tích
+            println("Running Python script: $pythonPath $scriptPath ${tempFile.toAbsolutePath()} --userId $userId")
             val processBuilder = ProcessBuilder(
                 pythonPath,
                 scriptPath,
-                tempFile.toAbsolutePath().toString()
+                tempFile.toAbsolutePath().toString(),
+                "--userId",
+                userId
             )
 
-            // Đặt thư mục làm việc hiện tại
             processBuilder.directory(scriptDir)
-
-            // Chuyển hướng error stream để có thể đọc
             processBuilder.redirectErrorStream(true)
-
-            // Bắt đầu quá trình
             val process = processBuilder.start()
-
-            // Đọc output từ quá trình với encoding UTF-8
             val reader = BufferedReader(InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
             val output = reader.lines().collect(Collectors.joining("\n"))
-
-            // Đợi quá trình hoàn thành
             val exitCode = process.waitFor()
+
             if (exitCode != 0) {
                 println("Python script exited with code $exitCode")
                 println("Output: $output")
-                // Trả về một response mặc định thay vì throw exception
                 return FraudAnalysisResponse(
                     totalRecords = request.marathonData?.size ?: 0,
                     totalFraudRecords = 0,
@@ -75,19 +65,12 @@ class FraudDetectionServiceImpl(private val objectMapper: ObjectMapper): FraudDe
                 )
             }
 
-            // Phân tích JSON từ output
             val jsonResult = extractJsonFromOutput(output)
             println("Extracted JSON: $jsonResult")
-
-            // Parse kết quả JSON thành đối tượng response
-            val response = parseJsonResults(jsonResult)
-
-            // Kiểm tra kết quả và xử lý trường hợp null
-            handleNullValues(response, request.marathonData?.size ?: 0)
+            parseJsonResults(jsonResult)
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
             println("Process interrupted: ${e.message}")
-            // Trả về response mặc định khi bị interrupt
             FraudAnalysisResponse(
                 totalRecords = request.marathonData?.size ?: 0,
                 totalFraudRecords = 0,
@@ -98,7 +81,6 @@ class FraudDetectionServiceImpl(private val objectMapper: ObjectMapper): FraudDe
         } catch (e: Exception) {
             println("Unexpected error: ${e.message}")
             e.printStackTrace()
-            // Trả về response mặc định khi có lỗi
             FraudAnalysisResponse(
                 totalRecords = request.marathonData?.size ?: 0,
                 totalFraudRecords = 0,
@@ -107,7 +89,6 @@ class FraudDetectionServiceImpl(private val objectMapper: ObjectMapper): FraudDe
                 fraudRecordDetails = emptyList()
             )
         } finally {
-            // Xóa file tạm thời
             Files.deleteIfExists(tempFile)
         }
     }
