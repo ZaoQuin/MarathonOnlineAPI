@@ -7,5 +7,6 @@ data class CreateRecordRequest(
     val distance: Double? = null,
     val timeTaken: Long? = null,
     val avgSpeed: Double? = null,
-    val timestamp: LocalDateTime? = null
+    val timestamp: LocalDateTime? = null,
+    var heartRate: Double? = null,
 )

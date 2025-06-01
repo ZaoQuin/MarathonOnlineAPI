@@ -43,6 +43,7 @@ class RecordServiceImpl @Autowired constructor(
                 timeTaken = newRecord.timeTaken,
                 avgSpeed = newRecord.avgSpeed,
                 timestamp = newRecord.timestamp,
+                heartRate = newRecord.heartRate?: null,
                 user = userDTO
             )
 
