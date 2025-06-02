@@ -27,16 +27,11 @@ class AITrainingPlanServiceImpl(
     private val GROQ_MODEL = "llama3-70b-8192"
 
     override fun generateTrainingDays(input: TrainingPlanInput, plan: TrainingPlan): List<TrainingDay> {
-        // Tạo prompt cho AI dựa trên thông tin đầu vào
+
         val prompt = createPromptForAI(input)
-
-        // Gọi API AI để tạo lịch trình
         val aiResponse = callAIApi(prompt)
-
-        // Xử lý phản hồi từ AI và tạo các ngày luyện tập, bao gồm các ngày nghỉ
         val trainingDays = parseAIResponse(aiResponse, plan)
 
-        // Lưu tất cả training days
         return trainingDayRepository.saveAll(trainingDays)
     }
 

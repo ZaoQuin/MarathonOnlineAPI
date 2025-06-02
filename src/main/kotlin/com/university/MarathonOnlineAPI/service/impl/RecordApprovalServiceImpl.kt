@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.university.MarathonOnlineAPI.dto.RecordApprovalDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
+import com.university.MarathonOnlineAPI.handler.NotificationHandler
 import com.university.MarathonOnlineAPI.mapper.RecordApprovalMapper
-import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.repos.RecordApprovalRepository
-import com.university.MarathonOnlineAPI.repos.RecordRepository
+import com.university.MarathonOnlineAPI.service.NotificationService
 import com.university.MarathonOnlineAPI.service.RecordApprovalService
 import org.springframework.stereotype.Component
 import java.io.BufferedReader
@@ -18,11 +18,11 @@ import java.util.stream.Collectors
 
 @Component
 class RecordApprovalServiceImpl(
-    private val recordRepository: RecordRepository,
-    private val recordMapper: RecordMapper,
     private val recordApprovalRepository: RecordApprovalRepository,
     private val recordApprovalMapper: RecordApprovalMapper,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val notificationHandler: NotificationHandler,
+    private val notificationService: NotificationService
 ): RecordApprovalService {
 
     override fun analyzeRecordApproval(recordDTO: RecordDTO): RecordApprovalDTO {
@@ -37,6 +37,11 @@ class RecordApprovalServiceImpl(
 
         val recordApproval = analyzeRecord(recordDTO)
         val savedRecordApproval = recordApprovalRepository.save(recordApprovalMapper.toEntity(recordApproval))
+
+        if(savedRecordApproval.approvalStatus == ERecordApprovalStatus.REJECTED){
+            val notification = notificationHandler.notifyRejectedRecord(recordDTO)
+            notificationService.addNotification(notification)
+        }
 
         return recordApprovalMapper.toDto(savedRecordApproval)
     }

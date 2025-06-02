@@ -63,12 +63,13 @@ def validate_record(record_json):
         processed_df = prepare_marathon_data(record_df)
         user_id = processed_df['UserId'].iloc[0]
         # user_history = load_user_history(user_id)
-        user_history = None
+        # user_history = None
 
-        if user_history is not None and not user_history.empty:
-            analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
-        else:
-            return validate_single_record(processed_df)
+        # if user_history is not None and not user_history.empty:
+        #     analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
+        # else:
+        #     return validate_single_record(processed_df)
+        validate_single_record(processed_df)
 
         analysis_df, user_stats = analyze_per_user(analysis_df)
         last_index = analysis_df.index[-1]
