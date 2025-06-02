@@ -43,6 +43,7 @@ class RecordServiceImpl @Autowired constructor(
                 timeTaken = newRecord.timeTaken,
                 avgSpeed = newRecord.avgSpeed,
                 timestamp = newRecord.timestamp,
+                heartRate = newRecord.heartRate?: null,
                 user = userDTO
             )
 
@@ -148,5 +149,9 @@ class RecordServiceImpl @Autowired constructor(
             maxDistance = "%.2f".format(maxDistance).toDouble(),
             averagePace = "%.2f".format(averagePace).toDouble()
         )
+    }
+
+    override fun getRecordsByUserId(userId: Long): List<RecordDTO> {
+        return recordRepository.findByUserIdOrderByTimestampDesc(userId).map { recordMapper.toDto(it) }
     }
 }

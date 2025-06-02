@@ -151,4 +151,19 @@ class RecordController(private val recordService: RecordService,
                 ))
         }
     }
+
+    @GetMapping("/user/{userId}/history")
+    fun getUserHistory(@PathVariable userId: Long): ResponseEntity<List<RecordDTO>> {
+        return try {
+            val records = recordService.getRecordsByUserId(userId)
+                .filter { it.approval?.approvalStatus in listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED) }
+
+            logger.info("Đã lấy ${records.size} bản ghi lịch sử cho userId $userId")
+            ResponseEntity.ok(records)
+        } catch (e: Exception) {
+            logger.error("Lỗi khi lấy lịch sử bản ghi cho userId $userId: ${e.message}")
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(emptyList())
+        }
+    }
 }

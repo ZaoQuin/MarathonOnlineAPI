@@ -2,17 +2,23 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
 from sklearn.neighbors import LocalOutlierFactor
 import warnings
 warnings.filterwarnings('ignore')
 
-# Xử lý và chuẩn bị dữ liệu cho định dạng marathon
 def prepare_marathon_data(marathon_df):
+    """
+    Chuẩn bị dữ liệu marathon, chỉ xử lý heartRate khi có giá trị hợp lệ.
+
+    Args:
+        marathon_df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
+
+    Returns:
+        pd.DataFrame: DataFrame đã được xử lý với các đặc trưng bổ sung.
+    """
     # Kiểm tra và xử lý cột Timestamp nếu có
     if 'Timestamp' in marathon_df.columns:
         marathon_df['Timestamp'] = pd.to_datetime(marathon_df['Timestamp'])
-        # Thêm thông tin về ngày trong tuần
         marathon_df['DayOfWeek'] = marathon_df['Timestamp'].dt.dayofweek
         marathon_df['Weekend'] = marathon_df['DayOfWeek'].apply(lambda x: 1 if x >= 5 else 0)
 
@@ -25,25 +31,49 @@ def prepare_marathon_data(marathon_df):
         )
 
     # Tính tốc độ trung bình từ TimeTaken nếu chưa có AvgSpeed
-    if 'TimeTaken' in marathon_df.columns and 'TotalDistance' in marathon_df.columns and 'AvgSpeed' not in marathon_df.columns:
+    if all(col in marathon_df.columns for col in ['TimeTaken', 'TotalDistance']) and 'AvgSpeed' not in marathon_df.columns:
         marathon_df['AvgSpeed'] = np.where(
             marathon_df['TimeTaken'] > 0,
             marathon_df['TotalDistance'] / (marathon_df['TimeTaken'] / 60),  # km/h
             0
         )
 
-    # Thêm cột VeryActiveMinutes từ TimeTaken
+    # Thêm cột VeryActiveMinutes và VeryActiveDistance
     if 'TimeTaken' in marathon_df.columns and 'VeryActiveMinutes' not in marathon_df.columns:
         marathon_df['VeryActiveMinutes'] = marathon_df['TimeTaken']
-
-    # Thêm cột VeryActiveDistance từ TotalDistance
     if 'TotalDistance' in marathon_df.columns and 'VeryActiveDistance' not in marathon_df.columns:
         marathon_df['VeryActiveDistance'] = marathon_df['TotalDistance']
 
+    # Xử lý heartRate chỉ khi có giá trị hợp lệ
+    if 'heartRate' in marathon_df.columns and marathon_df['heartRate'].notna().any():
+        # Tính đặc trưng bổ sung từ heartRate, chỉ cho các hàng có heartRate hợp lệ
+        marathon_df['HeartRatePerStep'] = np.where(
+            (marathon_df['TotalSteps'] > 0) & (marathon_df['heartRate'].notna()),
+            marathon_df['heartRate'] / marathon_df['TotalSteps'],
+            np.nan
+        )
+        marathon_df['HeartRatePerSpeed'] = np.where(
+            (marathon_df['AvgSpeed'] > 0) & (marathon_df['heartRate'].notna()),
+            marathon_df['heartRate'] / marathon_df['AvgSpeed'],
+            np.nan
+        )
+    else:
+        # Nếu không có heartRate hợp lệ, không thêm các cột liên quan
+        if 'heartRate' in marathon_df.columns:
+            marathon_df['heartRate'] = np.nan
+
     return marathon_df.copy()
 
-# Phân tích theo từng người dùng
 def analyze_per_user(df):
+    """
+    Phân tích dữ liệu theo từng người dùng, chỉ tính toán heartRate nếu có giá trị hợp lệ.
+
+    Args:
+        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
+
+    Returns:
+        tuple: (DataFrame đã phân tích, thống kê người dùng).
+    """
     user_stats = {}
     user_id_col = 'UserId' if 'UserId' in df.columns else 'Id'
     user_ids = df[user_id_col].unique()
@@ -52,199 +82,157 @@ def analyze_per_user(df):
         user_data = df[df[user_id_col] == user_id]
         if len(user_data) >= 2:  # Chỉ phân tích người dùng có ít nhất 2 bản ghi
             user_stats[user_id] = {}
-
-            # Tính toán thống kê cho các cột có sẵn
+            # Tính thống kê cho các cột có sẵn
             for col in ['TotalSteps', 'TotalDistance', 'AvgSpeed', 'DistancePerStep']:
                 if col in user_data.columns:
                     user_stats[user_id][f'avg_{col.lower()}'] = user_data[col].mean()
                     user_stats[user_id][f'std_{col.lower()}'] = user_data[col].std()
-
+            # Chỉ tính thống kê heartRate nếu có giá trị hợp lệ
+            if 'heartRate' in user_data.columns and user_data['heartRate'].notna().any():
+                valid_heart_rates = user_data['heartRate'][user_data['heartRate'].notna()]
+                user_stats[user_id]['avg_heartrate'] = valid_heart_rates.mean()
+                user_stats[user_id]['std_heartrate'] = valid_heart_rates.std()
             user_stats[user_id]['record_count'] = len(user_data)
+
+            # Tính tương quan giữa TotalSteps và các đặc trưng khác
+            if len(user_data) >= 5:
+                correlations = user_data[['TotalSteps', 'TotalDistance', 'AvgSpeed', 'TimeTaken']].corr()['TotalSteps'].drop('TotalSteps')
+                user_stats[user_id]['step_correlations'] = correlations.to_dict()
+                if 'heartRate' in user_data.columns and user_data['heartRate'].notna().any():
+                    valid_data = user_data[['TotalSteps', 'heartRate']].dropna()
+                    if len(valid_data) >= 2:
+                        heart_rate_corr = valid_data.corr().iloc[0, 1]
+                        user_stats[user_id]['step_heart_rate_correlation'] = heart_rate_corr
 
     # Xác định mức độ bất thường của từng bản ghi
     for col, prefix in zip(
-            ['TotalSteps', 'AvgSpeed', 'DistancePerStep'],
-            ['StepDeviation', 'SpeedDeviation', 'DistPerStepDeviation']
+            ['TotalSteps', 'AvgSpeed', 'DistancePerStep', 'heartRate'],
+            ['StepDeviation', 'SpeedDeviation', 'DistPerStepDeviation', 'HeartRateDeviation']
     ):
-        if col in df.columns:
-            df[prefix] = 0.0
-
+        if col in df.columns and (col != 'heartRate' or df['heartRate'].notna().any()):
+            df[prefix] = np.nan
             for user_id, stats in user_stats.items():
                 user_indices = df[df[user_id_col] == user_id].index
                 if len(user_indices) > 0 and f'avg_{col.lower()}' in stats and f'std_{col.lower()}' in stats:
-                    df.loc[user_indices, prefix] = (
-                                                           df.loc[user_indices, col] - stats[f'avg_{col.lower()}']
-                                                   ) / (stats[f'std_{col.lower()}'] + 1e-6)
+                    valid_rows = user_indices if col != 'heartRate' else user_indices[df.loc[user_indices, 'heartRate'].notna()]
+                    df.loc[valid_rows, prefix] = (
+                                                         df.loc[valid_rows, col] - stats[f'avg_{col.lower()}']
+                                                 ) / (stats[f'std_{col.lower()}'] + 1e-6)
 
     return df, user_stats
 
-# Trích xuất đặc trưng để phát hiện bất thường
 def extract_features(df):
-    # Xác định các đặc trưng có sẵn trong dữ liệu
+    """
+    Trích xuất đặc trưng, chỉ sử dụng heartRate nếu có giá trị hợp lệ.
+
+    Args:
+        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
+
+    Returns:
+        tuple: (Dữ liệu đặc trưng đã chuẩn hóa, DataFrame đặc trưng gốc).
+    """
     available_basic_features = [col for col in [
         'TotalSteps', 'TotalDistance', 'VeryActiveDistance',
         'VeryActiveMinutes', 'AvgSpeed', 'DistancePerStep'
     ] if col in df.columns]
 
-    available_advanced_features = [col for col in [
-        'Weekend', 'DayOfWeek'
-    ] if col in df.columns]
+    # Chỉ thêm các đặc trưng heartRate nếu có giá trị hợp lệ
+    heart_rate_features = []
+    if 'heartRate' in df.columns and df['heartRate'].notna().any():
+        heart_rate_features = [col for col in ['heartRate', 'HeartRatePerStep', 'HeartRatePerSpeed'] if col in df.columns]
 
+    available_advanced_features = [col for col in ['Weekend', 'DayOfWeek'] if col in df.columns]
     available_user_features = [col for col in [
         'StepDeviation', 'SpeedDeviation', 'DistPerStepDeviation'
     ] if col in df.columns]
+    if 'heartRate' in df.columns and df['heartRate'].notna().any():
+        if 'HeartRateDeviation' in df.columns:
+            available_user_features.append('HeartRateDeviation')
 
-    # Kết hợp tất cả đặc trưng có sẵn
-    all_available_features = available_basic_features + available_advanced_features + available_user_features
+    all_available_features = available_basic_features + heart_rate_features + available_advanced_features + available_user_features
 
     if not all_available_features:
         raise ValueError("Không có đặc trưng nào khả dụng để phân tích")
 
     features = df[all_available_features].copy()
-    features = features.fillna(0)
+    features = features.fillna(0)  # Chỉ điền 0 cho các cột không phải heartRate
 
-    # Chuẩn hóa dữ liệu
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
 
     return features_scaled, features
 
-# Mô hình phát hiện bất thường - Isolation Forest
 def detect_anomalies_isolation_forest(features_scaled, contamination=0.05):
     model = IsolationForest(contamination=contamination, random_state=42, n_estimators=100)
     predictions = model.fit_predict(features_scaled)
-    # Chuyển -1 (bất thường) thành 1 (gian lận) và 1 (bình thường) thành 0 (không gian lận)
     fraud_predictions = np.where(predictions == -1, 1, 0)
     return fraud_predictions, model
 
-# Mô hình phân cụm để phát hiện nhóm dữ liệu bất thường
-def detect_anomalies_kmeans(features_scaled, n_clusters=4):
-    # Đảm bảo số cụm không lớn hơn số mẫu
-    n_samples = features_scaled.shape[0]
-    n_clusters = min(n_clusters, n_samples - 1)
-
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-    cluster_labels = kmeans.fit_predict(features_scaled)
-
-    # Tính khoảng cách từ mỗi điểm đến tâm cụm
-    distances = np.zeros(len(features_scaled))
-    for i in range(len(features_scaled)):
-        cluster = cluster_labels[i]
-        distances[i] = np.linalg.norm(features_scaled[i] - kmeans.cluster_centers_[cluster])
-
-    # Xác định ngưỡng cho khoảng cách bất thường
-    threshold = np.percentile(distances, 95)  # 5% cao nhất
-
-    # Đánh dấu bản ghi có khoảng cách lớn là gian lận
-    fraud_predictions = np.where(distances > threshold, 1, 0)
-
-    return fraud_predictions, kmeans, distances
-
-# Sử dụng Local Outlier Factor để phát hiện bất thường
 def detect_anomalies_lof(features_scaled, contamination=0.05):
-    # Đảm bảo số n_neighbors không lớn hơn số mẫu
     n_samples = features_scaled.shape[0]
     n_neighbors = min(20, n_samples - 1)
-
     lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination)
     predictions = lof.fit_predict(features_scaled)
-    # Chuyển -1 (bất thường) thành 1 (gian lận) và 1 (bình thường) thành 0 (không gian lận)
     fraud_predictions = np.where(predictions == -1, 1, 0)
-
-    # Tính điểm bất thường
     lof_scores = -lof.negative_outlier_factor_
-
     return fraud_predictions, lof_scores
 
-# Chức năng visualize_results đã được sửa đổi để loại bỏ phần tạo biểu đồ
-def visualize_results(df, features, predictions_dict):
-    # Kết hợp các phương pháp phát hiện
-    df['CombinedFraudFlag'] = 0
-    fraud_count_per_record = np.zeros(len(df))
-
-    for method_name, predictions in predictions_dict.items():
-        # Skip non-prediction items in the dictionary
-        if method_name.endswith('_model') or not isinstance(predictions, np.ndarray):
-            continue
-
-        # Make sure predictions are numeric arrays
-        try:
-            predictions_array = np.array(predictions, dtype=np.int32)
-            df[f'FraudFlag_{method_name}'] = predictions_array
-            fraud_count_per_record += predictions_array
-        except (TypeError, ValueError) as e:
-            print(f"Warning: Could not process predictions for {method_name}: {e}")
-            continue
-
-    # Gắn nhãn gian lận nếu ít nhất 2 phương pháp cùng phát hiện
-    df['CombinedFraudFlag'] = np.where(fraud_count_per_record >= 2, 1, 0)
-
-    return df
-
-# Phân loại giai đoạn hoạt động của marathon
-def classify_marathon_phase(df):
-    if 'VeryActiveMinutes' in df.columns:
-        df['MarathonPhase'] = pd.cut(
-            df['VeryActiveMinutes'],
-            bins=[0, 60, 120, 180, 300, float('inf')],
-            labels=['Start', 'Early', 'Middle', 'Late', 'Extended']
-        )
-    return df
-
-# Tạo các đặc trưng bổ sung
-def create_advanced_features(df):
-    if all(x in df.columns for x in ['Calories', 'TotalDistance']):
-        df['EnergyDensity'] = df['Calories'] / (df['TotalDistance'] + 0.001)
-
-    if all(x in df.columns for x in ['TotalSteps', 'VeryActiveMinutes']):
-        df['StepConsistency'] = df['TotalSteps'] / (df['VeryActiveMinutes'] + 0.001)
-
-    return df
-
-# Phân tích chi tiết các trường hợp gian lận
 def detailed_fraud_analysis(df):
+    """
+    Phân tích chi tiết các trường hợp gian lận, bỏ qua heartRate nếu không có.
+
+    Args:
+        df (pd.DataFrame): DataFrame chứa dữ liệu marathon với cột IsFraud.
+
+    Returns:
+        pd.DataFrame: DataFrame với cột FraudType được cập nhật.
+    """
     fraud_cases = df[df['IsFraud'] == 1]
     print(f"\n=== Phân tích chi tiết {len(fraud_cases)} trường hợp gian lận ===")
 
     if len(fraud_cases) == 0:
         print("Không có trường hợp gian lận được phát hiện.")
-        return
+        return df
 
-    # Phân loại các loại gian lận
     df['FraudType'] = "Unknown"
 
+    vehicle_fraud_mask = pd.Series(False, index=df.index)
     if 'AvgSpeed' in df.columns:
-        # 1. Sử dụng phương tiện (tốc độ cao bất thường)
         vehicle_fraud_mask = (df['AvgSpeed'] > 12) & (df['IsFraud'] == 1)
         df.loc[vehicle_fraud_mask, 'FraudType'] = "Sử dụng phương tiện"
-    else:
-        vehicle_fraud_mask = pd.Series(False, index=df.index)
 
-    # 2. Đi tắt đường
     shortcut_fraud_mask = pd.Series(False, index=df.index)
     if all(x in df.columns for x in ['SpeedDeviation', 'DistPerStepDeviation']):
         shortcut_fraud_mask = (df['SpeedDeviation'] > 2) & (df['DistPerStepDeviation'] > 2) & (df['IsFraud'] == 1)
         df.loc[shortcut_fraud_mask & ~vehicle_fraud_mask, 'FraudType'] = "Đi tắt đường"
 
-    # 3. Khai báo sai
     step_fraud_mask = pd.Series(False, index=df.index)
-    if all(x in df.columns for x in ['DistancePerStep']):
+    if 'DistancePerStep' in df.columns:
         step_fraud_mask = (df['DistancePerStep'] > 0.001) & (df['IsFraud'] == 1) & (~vehicle_fraud_mask)
         if 'DistPerStepDeviation' in df.columns:
             step_fraud_mask = step_fraud_mask & (df['DistPerStepDeviation'] > 2)
         df.loc[step_fraud_mask & ~shortcut_fraud_mask & ~vehicle_fraud_mask, 'FraudType'] = "Khai báo sai số bước"
 
-    # 4. Dữ liệu giả
+    heart_rate_fraud_mask = pd.Series(False, index=df.index)
+    if 'heartRate' in df.columns and df['heartRate'].notna().any():
+        heart_rate_fraud_mask = (df['heartRate'] < 60) & (df['TotalSteps'] > 10000) & (df['IsFraud'] == 1)
+        df.loc[heart_rate_fraud_mask & ~step_fraud_mask & ~shortcut_fraud_mask & ~vehicle_fraud_mask, 'FraudType'] = "Nhịp tim bất thường"
+
+    correlation_fraud_mask = pd.Series(False, index=df.index)
+    if all(x in df.columns for x in ['TotalSteps', 'TotalDistance']):
+        correlations = df[['TotalSteps', 'TotalDistance']].corr().iloc[0, 1]
+        if correlations < 0.5:
+            correlation_fraud_mask = (df['IsFraud'] == 1) & (~heart_rate_fraud_mask) & (~step_fraud_mask) & (~shortcut_fraud_mask) & (~vehicle_fraud_mask)
+            df.loc[correlation_fraud_mask, 'FraudType'] = "Tương quan bất thường"
+
     unknown_fraud_mask = (df['IsFraud'] == 1) & (df['FraudType'] == "Unknown")
     df.loc[unknown_fraud_mask, 'FraudType'] = "Dữ liệu bất thường"
 
-    # Thống kê theo loại gian lận
     fraud_type_counts = df[df['IsFraud'] == 1]['FraudType'].value_counts()
     print("\nPhân loại các trường hợp gian lận:")
     for fraud_type, count in fraud_type_counts.items():
         print(f"- {fraud_type}: {count} trường hợp")
 
-    # Phân tích theo người dùng
     user_id_col = 'UserId' if 'UserId' in df.columns else 'Id'
     fraud_users = df[df['IsFraud'] == 1][user_id_col].unique()
     print(f"\nSố người dùng có dấu hiệu gian lận: {len(fraud_users)}")
@@ -252,26 +240,35 @@ def detailed_fraud_analysis(df):
     for user_id in fraud_users:
         user_fraud = df[(df[user_id_col] == user_id) & (df['IsFraud'] == 1)]
         fraud_types = user_fraud['FraudType'].value_counts()
-
         print(f"\nNgười dùng {user_id}:")
         print(f"- Tổng số hoạt động: {len(df[df[user_id_col] == user_id])}")
         print(f"- Số hoạt động gian lận: {len(user_fraud)} ({len(user_fraud)/len(df[df[user_id_col] == user_id])*100:.1f}%)")
         for fraud_type, count in fraud_types.items():
             print(f"  + {fraud_type}: {count} trường hợp")
-
-        # Thông số trung bình
         print("- Thông số trung bình trong các hoạt động gian lận:")
         for col, format_str in [
             ('AvgSpeed', "  + Tốc độ: {:.2f} km/h"),
             ('DistancePerStep', "  + Khoảng cách/bước: {:.5f} km"),
             ('TotalSteps', "  + Số bước: {:.0f}"),
-            ('TotalDistance', "  + Quãng đường: {:.2f} km")
+            ('TotalDistance', "  + Quãng đường: {:.2f} km"),
+            ('heartRate', "  + Nhịp tim: {:.1f} bpm")
         ]:
-            if col in user_fraud.columns:
-                print(format_str.format(user_fraud[col].mean()))
+            if col in user_fraud.columns and (col != 'heartRate' or user_fraud['heartRate'].notna().any()):
+                print(format_str.format(user_fraud[col][user_fraud[col].notna()].mean()))
 
-# Tạo báo cáo cuối cùng
+    return df
+
 def generate_final_report(df, fraud_cases):
+    """
+    Tạo báo cáo cuối cùng về gian lận.
+
+    Args:
+        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
+        fraud_cases (pd.DataFrame): DataFrame chứa các trường hợp gian lận.
+
+    Returns:
+        dict: Báo cáo rủi ro theo người dùng.
+    """
     total_records = len(df)
     user_id_col = 'UserId' if 'UserId' in df.columns else 'Id'
     total_users = len(df[user_id_col].unique())
@@ -284,45 +281,36 @@ def generate_final_report(df, fraud_cases):
     print(f"Số bản ghi gian lận: {fraud_records} ({fraud_records/total_records*100:.2f}%)")
     print(f"Số người dùng gian lận: {fraud_users} ({fraud_users/total_users*100:.2f}%)")
 
-    # Phân loại theo loại gian lận
     if fraud_records > 0:
         print("\nThống kê theo loại gian lận:")
         fraud_types = fraud_cases['FraudType'].value_counts()
         for fraud_type, count in fraud_types.items():
             print(f"- {fraud_type}: {count} trường hợp ({count/fraud_records*100:.2f}%)")
 
-    # Tạo bảng điểm đánh giá rủi ro cho từng người dùng
     user_risk_scores = {}
     for user_id in df[user_id_col].unique():
         user_data = df[df[user_id_col] == user_id]
         fraud_data = user_data[user_data['IsFraud'] == 1]
-
-        # Tính điểm rủi ro dựa trên tỷ lệ gian lận và loại gian lận
         fraud_ratio = len(fraud_data) / len(user_data) if len(user_data) > 0 else 0
 
-        # Trọng số cho từng loại gian lận
         fraud_weights = {
             "Sử dụng phương tiện": 1.0,
             "Đi tắt đường": 0.8,
             "Khai báo sai số bước": 0.6,
+            "Nhịp tim bất thường": 0.7,
+            "Tương quan bất thường": 0.5,
             "Dữ liệu bất thường": 0.4
         }
 
-        # Điểm rủi ro ban đầu dựa trên tỷ lệ gian lận
         risk_score = fraud_ratio * 100
-
-        # Điều chỉnh dựa trên loại gian lận nghiêm trọng nhất
         if len(fraud_data) > 0:
             fraud_type_counts = fraud_data['FraudType'].value_counts()
             if len(fraud_type_counts) > 0:
                 worst_fraud_type = fraud_type_counts.index[0]
                 worst_fraud_weight = fraud_weights.get(worst_fraud_type, 0.5)
                 risk_score = risk_score * (1 + worst_fraud_weight)
-
-        # Giới hạn điểm rủi ro từ 0-100
         risk_score = min(100, max(0, risk_score))
 
-        # Phân loại mức độ rủi ro
         risk_level = "Thấp"
         if risk_score >= 70:
             risk_level = "Cao"
@@ -337,7 +325,6 @@ def generate_final_report(df, fraud_cases):
             "fraud_ratio": fraud_ratio
         }
 
-    # In báo cáo rủi ro cho từng người dùng
     print("\nBáo cáo rủi ro theo người dùng:")
     for user_id, risk_data in user_risk_scores.items():
         if risk_data['fraud_count'] > 0:
