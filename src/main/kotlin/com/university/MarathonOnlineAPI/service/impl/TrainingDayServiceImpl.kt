@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.TrainingDayDTO
+import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
 import com.university.MarathonOnlineAPI.entity.Record
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.TrainingPlanException
@@ -47,11 +48,12 @@ class TrainingDayServiceImpl(
 
     override fun saveRecordIntoTrainingDay(recordDTO: RecordDTO, jwt: String): TrainingDayDTO {
         return try {
-            val userDTO =
-                tokenService.extractEmail(jwt)?.let { email ->
-                    userService.findByEmail(email)
-                } ?: throw AuthenticationException("Email not found in the token")
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
             val now = LocalDateTime.now()
+
             val activePlan = trainingPlanRepository
                 .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
                 ?: throw RuntimeException("No active training plan found for the user")
@@ -63,27 +65,31 @@ class TrainingDayServiceImpl(
 
             val record = recordMapper.toEntity(recordDTO)
 
-            if (currentTrainingDay.records.isNullOrEmpty()) {
-                currentTrainingDay.records = mutableListOf(record)
-            } else {
-                val minutesDifference = getMinutesDifferenceFromLatestRecord(currentTrainingDay.records, record)
-                val restMinute = currentTrainingDay.session?.type?.maxRestMinutes
-                    ?: throw TrainingPlanException("Không xác định được loại bài tập")
-
-                if (minutesDifference != null && minutesDifference <= restMinute) {
-                    val records = currentTrainingDay.records?.toMutableList() ?: mutableListOf()
-                    records.add(record)
-                    currentTrainingDay.records = records
-                } else {
-                    throw TrainingPlanException("Không thêm record vì thời gian nghỉ đã vượt quá $restMinute phút, vui lòng luyện tập lại")
-                }
+            if (currentTrainingDay.status != ETrainingDayStatus.ACTIVE) {
+                throw RuntimeException("Training day is not active")
             }
 
-// ✅ currentTrainingDay được quản lý bởi JPA nên không gây lỗi
+            val records = currentTrainingDay.records?.toMutableList() ?: mutableListOf()
+            records.add(record)
+            currentTrainingDay.records = records
+
+            val session = currentTrainingDay.session ?: throw RuntimeException("No session associated with training day")
+            val targetDistance = session.distance ?: throw RuntimeException("Session distance not specified")
+            val actualDistance = record.distance ?: throw RuntimeException("Record distance not specified")
+
+            val completionPercentage = (actualDistance / targetDistance * 100).coerceIn(0.0, 100.0)
+            currentTrainingDay.completionPercentage = completionPercentage
+
+            currentTrainingDay.status = when {
+                completionPercentage >= 100 -> ETrainingDayStatus.COMPLETED
+                completionPercentage > 0 -> ETrainingDayStatus.PARTIALLY_COMPLETED
+                else -> ETrainingDayStatus.ACTIVE
+            }
+
             val saved = trainingDayRepository.save(currentTrainingDay)
-            return trainingDayMapper.toDto(saved)
+            trainingDayMapper.toDto(saved)
         } catch (e: Exception) {
-            throw Exception("Lỗi khi lưu record vào TrainingDay: ${e.message}")
+            throw Exception("Error saving record into TrainingDay: ${e.message}")
         }
     }
 
@@ -103,18 +109,5 @@ class TrainingDayServiceImpl(
         } ?: throw RuntimeException("No training day found for today")
         currentTrainingDay.records = mutableListOf()
         return trainingDayMapper.toDto(trainingDayRepository.save(currentTrainingDay))
-    }
-
-    fun getMinutesDifferenceFromLatestRecord(
-        existingRecords: List<Record>?,
-        newRecord: Record
-    ): Long? {
-        if (existingRecords.isNullOrEmpty() || newRecord.timestamp == null) return null
-
-        val latestRecord = existingRecords.maxByOrNull { it.timestamp ?: LocalDateTime.MIN }
-
-        return latestRecord?.timestamp?.let { latestTimestamp ->
-            java.time.Duration.between(latestTimestamp, newRecord.timestamp).toMinutes()
-        }
     }
 }

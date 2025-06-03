@@ -30,4 +30,6 @@ interface TrainingDayRepository : JpaRepository<TrainingDay, Long> {
         @Param("missedStatus") missedStatus: ETrainingDayStatus = ETrainingDayStatus.MISSED
     ): Int
 
+    fun findByPlanIdAndDateTimeBefore(id: Long, date: LocalDateTime): List<TrainingDay>
+    fun findByPlanIdAndDateTime(id: Long, now: LocalDateTime?): TrainingDay
 }

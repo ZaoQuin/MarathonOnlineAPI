@@ -36,11 +36,19 @@ data class TrainingDay(
     var status: ETrainingDayStatus?= null,
 
     @Column
-    var dateTime: LocalDateTime? = null
+    var dateTime: LocalDateTime? = null,
+
+    @OneToOne(mappedBy = "trainingDay", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    var trainingFeedback: TrainingFeedback? = null,
+
+    @Column
+    var completionPercentage: Double? = null
 )
 
 enum class ETrainingDayStatus {
     ACTIVE,
     COMPLETED,
+    PARTIALLY_COMPLETED,
+    SKIPPED,
     MISSED
 }
