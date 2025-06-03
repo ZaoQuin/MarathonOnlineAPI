@@ -19,16 +19,16 @@ data class TrainingPlan(
     var input: TrainingPlanInput,
 
     @Column(nullable = false)
-    var name: String, // Tên kế hoạch, ví dụ: "Marathon Plan 2025"
+    var name: String,
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(nullable = true)
-    var startDate: LocalDateTime? = null, // Ngày bắt đầu kế hoạch
+    var startDate: LocalDateTime? = null,
 
     @Column(nullable = true)
-    var endDate: LocalDateTime? = null, // Ngày kết thúc (dự kiến)
+    var endDate: LocalDateTime? = null,
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

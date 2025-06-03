@@ -10,11 +10,9 @@ import com.university.MarathonOnlineAPI.repos.*
 import com.university.MarathonOnlineAPI.view.SingleTrainingPlanView
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.*
-import jakarta.persistence.criteria.Predicate
 import jakarta.transaction.Transactional
 
 @Service
@@ -31,10 +29,9 @@ class TrainingPlanServiceImpl(
     private val recordService: RecordService
 ): TrainingPlanService {
     override fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, jwt: String): TrainingPlanDTO {
-        val userDTO =
-            tokenService.extractEmail(jwt)?.let { email ->
-                userService.findByEmail(email)
-            } ?: throw AuthenticationException("Email not found in the token")
+        val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+            userService.findByEmail(email)
+        } ?: throw AuthenticationException("Email not found in the token")
 
         val currentUser = userMapper.toEntity(userDTO)
 
@@ -45,7 +42,7 @@ class TrainingPlanServiceImpl(
             goal = inputDTO.goal
             maxDistance = runningStat?.maxDistance
             averagePace = runningStat?.averagePace
-            daysPerWeek = inputDTO.daysPerWeek
+            trainingWeeks = inputDTO.trainingWeeks
             user = currentUser
         }
 
@@ -58,20 +55,18 @@ class TrainingPlanServiceImpl(
             createdAt = LocalDateTime.now(),
             status = ETrainingPlanStatus.ACTIVE,
             startDate = LocalDateTime.now(),
-            endDate = LocalDateTime.now().plusWeeks(4)
+            endDate = LocalDateTime.now().plusWeeks(input.trainingWeeks?.toLong() ?: 4)
         )
 
         val activePlans = trainingPlanRepository.findByUserIdAndStatus(currentUser.id!!, ETrainingPlanStatus.ACTIVE)
-        activePlans.forEach {
-            it.status = ETrainingPlanStatus.ARCHIVED
-        }
+        activePlans.forEach { it.status = ETrainingPlanStatus.ARCHIVED }
         trainingPlanRepository.saveAll(activePlans)
 
         val savedPlan = trainingPlanRepository.save(plan)
 
-        val trainingDays = aiTrainingPlanService.generateTrainingDays(savedInput, savedPlan)
-
-        savedPlan.trainingDays = trainingDays
+        // Tạo TrainingDay cho ngày đầu tiên
+        val firstDay = aiTrainingPlanService.generateTrainingDayForDate(savedInput, savedPlan, savedPlan.startDate!!)
+        savedPlan.trainingDays = mutableListOf(firstDay)
 
         val final = trainingPlanRepository.findById(savedPlan.id!!)
         return trainingPlanMapper.toDto(final.orElseThrow())
@@ -98,7 +93,6 @@ class TrainingPlanServiceImpl(
             val userDTO = userService.findByEmail(email)
             val now = LocalDateTime.now()
 
-            // Lấy trainingPlan (chưa cần fetch trainingDays)
             val plan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
                 userDTO.id!!,
                 ETrainingPlanStatus.ACTIVE,
@@ -106,23 +100,12 @@ class TrainingPlanServiceImpl(
                 now
             ) ?: throw IllegalStateException("No matching training plan found.")
 
-            trainingDayRepository.markMissedTrainingDays(plan.id!!, now)
-
-            val refreshedPlan = trainingPlanRepository.findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
-                userDTO.id!!,
-                ETrainingPlanStatus.ACTIVE,
-                now,
-                now
-            ) ?: throw IllegalStateException("Plan not found after update.")
-
-            trainingPlanMapper.toDto(refreshedPlan)
+            trainingPlanMapper.toDto(plan)
         } catch (e: Exception) {
             println("❌ Error getTrainingPlanByJwt: ${e.message}")
             throw e
         }
     }
-
-
 
     override fun getPlansByStatus(
         pageable: Pageable,

@@ -18,16 +18,16 @@ data class TrainingPlanInput(
     var level: ETrainingPlanInputLevel? = null,
 
     @Column(nullable = false)
-    var goal: ETrainingPlanInputGoal? = null, // finish, time (e.g., "4:00")
+    var goal: ETrainingPlanInputGoal? = null,
 
     @Column(name = "max_distance", nullable = false)
-    var maxDistance: Double? = null, // km
+    var maxDistance: Double? = null,
 
     @Column(name = "average_pace", nullable = false)
-    var averagePace: Double? = null, // minutes/km
+    var averagePace: Double? = null,
 
-    @Column(name = "days_per_week", nullable = false)
-    var daysPerWeek: Int? = null,
+    @Column(name = "training_weeks", nullable = false)
+    var trainingWeeks: Int? = null,
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),

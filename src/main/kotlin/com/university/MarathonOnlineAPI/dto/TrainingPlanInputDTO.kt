@@ -8,5 +8,5 @@ data class TrainingPlanInputDTO(
     var goal: ETrainingPlanInputGoal? = null,
     var maxDistance: Double?= null,
     var averagePace: Double?= null,
-    var daysPerWeek: Int? = null
+    var trainingWeeks: Int? = null
 )

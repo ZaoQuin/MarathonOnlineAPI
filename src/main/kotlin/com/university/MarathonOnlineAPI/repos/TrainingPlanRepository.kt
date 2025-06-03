@@ -68,4 +68,9 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
     ): Page<SingleTrainingPlanView>
 
     fun findTopByUserIdAndStatusOrderByStartDateDesc(userId: Long, status: ETrainingPlanStatus = ETrainingPlanStatus.ACTIVE): TrainingPlan?
+    fun findByStatusAndStartDateBeforeAndEndDateAfter(
+        status: ETrainingPlanStatus,
+        startDate: LocalDateTime,
+        endDate: LocalDateTime
+    ): List<TrainingPlan>
 }
