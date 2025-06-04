@@ -15,10 +15,13 @@ class TrainingPlanMapper(
         val dto = modelMapper.map(entity, TrainingPlanDTO::class.java)
         dto.trainingDays = entity.trainingDays.map { trainingDayMapper.toDto(it) }
 
-        val completedDays = entity.trainingDays.count { it.status == ETrainingDayStatus.COMPLETED }
-        val remainingDays = entity.trainingDays.count { it.status == ETrainingDayStatus.ACTIVE }
+        val completedDays = entity.trainingDays.count {
+            it.status == ETrainingDayStatus.COMPLETED ||
+                    it.status == ETrainingDayStatus.PARTIALLY_COMPLETED }
+        val totalDays = entity.input!!.trainingWeeks!! * 7
+        val remainingDays = totalDays - entity.trainingDays.count {
+            it.status != ETrainingDayStatus.ACTIVE }
         val totalDistance = entity.trainingDays.mapNotNull { it.session?.distance }.sum()
-        val totalDays = entity.trainingDays.size
         val progress = if (totalDays > 0) (completedDays.toDouble() / totalDays) * 100 else 0.0
 
         dto.completedDays = completedDays

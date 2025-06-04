@@ -165,7 +165,7 @@ class TrainingPlanServiceImpl(
             else -> "mục tiêu khác"
         }
 
-        val weeks = 4
+        val weeks = input.trainingWeeks
         val year = LocalDateTime.now().year
 
         return "$userName - $level, $weeks tuần, mục tiêu $goal ($year)"
