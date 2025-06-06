@@ -3,9 +3,7 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.TrainingDayDTO
 import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
-import com.university.MarathonOnlineAPI.entity.Record
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
-import com.university.MarathonOnlineAPI.exception.TrainingPlanException
 import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.TrainingDayMapper
 import com.university.MarathonOnlineAPI.repos.TrainingDayRepository
@@ -69,9 +67,8 @@ class TrainingDayServiceImpl(
                 throw RuntimeException("Training day is not active")
             }
 
-            val records = currentTrainingDay.records?.toMutableList() ?: mutableListOf()
-            records.add(record)
-            currentTrainingDay.records = records
+            if(currentTrainingDay.record == null)
+                currentTrainingDay.record = record
 
             val session = currentTrainingDay.session ?: throw RuntimeException("No session associated with training day")
             val targetDistance = session.distance ?: throw RuntimeException("Session distance not specified")
@@ -91,23 +88,5 @@ class TrainingDayServiceImpl(
         } catch (e: Exception) {
             throw Exception("Error saving record into TrainingDay: ${e.message}")
         }
-    }
-
-    override fun resetTrainingDay(jwt: String): TrainingDayDTO {
-        val userDTO =
-            tokenService.extractEmail(jwt)?.let { email ->
-                userService.findByEmail(email)
-            } ?: throw AuthenticationException("Email not found in the token")
-        val now = LocalDateTime.now()
-        val activePlan = trainingPlanRepository
-            .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
-            ?: throw RuntimeException("No active training plan found for the user")
-
-        val currentTrainingDay = activePlan.trainingDays.firstOrNull { day ->
-            val dayDate = day.dateTime
-            dayDate != null && dayDate.toLocalDate() == now.toLocalDate()
-        } ?: throw RuntimeException("No training day found for today")
-        currentTrainingDay.records = mutableListOf()
-        return trainingDayMapper.toDto(trainingDayRepository.save(currentTrainingDay))
     }
 }

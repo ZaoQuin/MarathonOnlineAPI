@@ -38,11 +38,4 @@ class TrainingDayController(
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
-
-    @PostMapping("/reset")
-    fun resetTrainingDay(@RequestHeader("Authorization") token: String): ResponseEntity<StringResponse> {
-        val jwt = token.replace("Bearer ", "")
-        trainingDayService.resetTrainingDay(jwt)
-        return ResponseEntity.ok(StringResponse("Đã reset bài tập thành công"))
-    }
 }

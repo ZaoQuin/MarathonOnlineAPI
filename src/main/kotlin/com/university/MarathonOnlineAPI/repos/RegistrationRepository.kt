@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 interface RegistrationRepository : JpaRepository<Registration, Long>{
@@ -59,4 +60,7 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
         ORDER BY YEAR(r.registrationDate)
     """)
     fun revenueByYear(): List<Map<String, Any>>
+
+    @Query("SELECT r FROM Registration r JOIN r.contest c WHERE r.runner.id = :userId AND c.startDate <= :endDate AND c.endDate >= :startDate")
+    fun findByRunnerIdAndContestDateRange(userId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<Registration>
 }

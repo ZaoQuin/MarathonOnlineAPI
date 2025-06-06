@@ -28,7 +28,7 @@ class AITrainingPlanServiceImpl(
         // Lấy dữ liệu feedback và record từ các ngày trước
         val previousDays = trainingDayRepository.findByPlanIdAndDateTimeBefore(plan.id!!, date)
         val feedbackData = previousDays.mapNotNull { it.trainingFeedback }
-        val recordData = previousDays.flatMap { it.records ?: emptyList() }
+        val recordData: List<Record> = previousDays.mapNotNull { it.record }
 
         // Tạo prompt AI với thông tin từ feedback và record
         val prompt = createPromptForDailyTraining(input, plan, date, feedbackData, recordData)
@@ -162,7 +162,7 @@ class AITrainingPlanServiceImpl(
                     this.session = savedSession
                     this.week = week
                     this.dayOfWeek = dayOfWeek
-                    this.records = emptyList()
+                    this.record = null
                     this.status = ETrainingDayStatus.ACTIVE
                     this.dateTime = date
                 }
@@ -201,7 +201,7 @@ class AITrainingPlanServiceImpl(
             this.session = savedRestSession
             this.week = week.toInt()
             this.dayOfWeek = dayOfWeek
-            this.records = emptyList()
+            this.record = null
             this.status = ETrainingDayStatus.ACTIVE
             this.dateTime = date
         }

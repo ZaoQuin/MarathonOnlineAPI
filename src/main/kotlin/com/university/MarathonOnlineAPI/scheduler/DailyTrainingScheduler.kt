@@ -39,7 +39,7 @@ class DailyTrainingScheduler(
     private fun markMissedTrainingDays(planId: Long, currentDate: LocalDateTime) {
         val previousDays = trainingDayRepository.findByPlanIdAndDateTimeBefore(planId, currentDate)
         previousDays.forEach { day ->
-            if (day.status == ETrainingDayStatus.ACTIVE && day.trainingFeedback == null && (day.records.isNullOrEmpty())) {
+            if (day.status == ETrainingDayStatus.ACTIVE && day.trainingFeedback == null && (day.record == null)) {
                 day.status = ETrainingDayStatus.MISSED
                 trainingDayRepository.save(day)
             }

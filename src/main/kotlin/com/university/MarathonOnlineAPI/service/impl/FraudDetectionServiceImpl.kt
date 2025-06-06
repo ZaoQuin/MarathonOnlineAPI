@@ -138,7 +138,8 @@ class FraudDetectionServiceImpl(private val objectMapper: ObjectMapper): FraudDe
                     record.distance,
                     record.timeTaken,
                     record.avgSpeed,
-                    record.timestamp
+                    record.startTime,
+                    record.endTime
                 )
             )
         }

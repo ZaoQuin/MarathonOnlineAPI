@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 class NotificationHandler {
     fun notifyRejectedRecord(record: RecordDTO): NotificationDTO {
         val title = "Phát hiện gian lận."
-        val content = "Record \"${record.timestamp}\" của bạn đã bị từ chối. Vui lòng kiểm tra lại."
+        val content = "Record \"${record.startTime}\" của bạn đã bị từ chối. Vui lòng kiểm tra lại."
 
         val notification = NotificationDTO(
             receiver = record.user,

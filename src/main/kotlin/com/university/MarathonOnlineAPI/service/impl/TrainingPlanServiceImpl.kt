@@ -28,6 +28,7 @@ class TrainingPlanServiceImpl(
     private val userMapper: UserMapper,
     private val recordService: RecordService
 ): TrainingPlanService {
+
     override fun createTrainingPlan(inputDTO: TrainingPlanInputDTO, jwt: String): TrainingPlanDTO {
         val userDTO = tokenService.extractEmail(jwt)?.let { email ->
             userService.findByEmail(email)
@@ -40,11 +41,12 @@ class TrainingPlanServiceImpl(
         val input = TrainingPlanInput().apply {
             level = inputDTO.level
             goal = inputDTO.goal
-            maxDistance = runningStat?.maxDistance
-            averagePace = runningStat?.averagePace
+            maxDistance = runningStat?.maxDistance ?: 0.0
+            averagePace = runningStat?.averagePace ?: 0.0
             trainingWeeks = inputDTO.trainingWeeks
             user = currentUser
         }
+
 
         val savedInput = trainingPlanInputRepository.save(input)
 

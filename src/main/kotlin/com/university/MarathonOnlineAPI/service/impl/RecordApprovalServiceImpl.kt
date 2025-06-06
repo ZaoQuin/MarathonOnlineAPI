@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.university.MarathonOnlineAPI.dto.RecordApprovalDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
+import com.university.MarathonOnlineAPI.entity.ERecordSource
 import com.university.MarathonOnlineAPI.handler.NotificationHandler
 import com.university.MarathonOnlineAPI.mapper.RecordApprovalMapper
 import com.university.MarathonOnlineAPI.repos.RecordApprovalRepository
@@ -26,7 +27,7 @@ class RecordApprovalServiceImpl(
 ): RecordApprovalService {
 
     override fun analyzeRecordApproval(recordDTO: RecordDTO): RecordApprovalDTO {
-        if (recordDTO.steps == null || recordDTO.distance == null || recordDTO.timeTaken == null) {
+        if (recordDTO.steps == null || recordDTO.distance == null) {
             return RecordApprovalDTO(
                 approvalStatus = ERecordApprovalStatus.REJECTED,
                 fraudRisk = 100.0,
@@ -38,7 +39,8 @@ class RecordApprovalServiceImpl(
         val recordApproval = analyzeRecord(recordDTO)
         val savedRecordApproval = recordApprovalRepository.save(recordApprovalMapper.toEntity(recordApproval))
 
-        if(savedRecordApproval.approvalStatus == ERecordApprovalStatus.REJECTED){
+        if(savedRecordApproval.approvalStatus == ERecordApprovalStatus.REJECTED &&
+            recordDTO.source == ERecordSource.DEVICE){
             val notification = notificationHandler.notifyRejectedRecord(recordDTO)
             notificationService.addNotification(notification)
         }

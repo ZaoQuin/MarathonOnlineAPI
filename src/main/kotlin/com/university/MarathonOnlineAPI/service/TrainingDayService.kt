@@ -6,5 +6,4 @@ import com.university.MarathonOnlineAPI.dto.TrainingDayDTO
 interface TrainingDayService {
     fun getCurrentTrainingDayByJwt(jwt: String): TrainingDayDTO
     fun saveRecordIntoTrainingDay(recordDTO: RecordDTO, jwt: String): TrainingDayDTO
-    fun resetTrainingDay(jwt: String): TrainingDayDTO
 }

@@ -9,7 +9,7 @@ data class TrainingDayDTO(
     var week: Int? = null,
     var dayOfWeek: Int? = null,
     var session: TrainingSessionDTO? = null,
-    var records: List<RecordDTO>? = null,
+    var record: RecordDTO? = null,
     var status: ETrainingDayStatus?= null,
     var dateTime: LocalDateTime?= null,
     var trainingFeedback: TrainingFeedbackDTO? = null,

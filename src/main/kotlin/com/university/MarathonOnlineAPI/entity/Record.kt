@@ -14,18 +14,20 @@ data class Record(
     var user: User? = null,
     var steps: Int? = null,
     var distance: Double? = null,
-    var timeTaken: Long? = null,
     var avgSpeed: Double? = null,
-    var timestamp: LocalDateTime? = null,
     var heartRate: Double? = null,
+    var startTime: LocalDateTime? = null,
+    var endTime: LocalDateTime? = null,
+    var source: ERecordSource?= null,
 
     @ManyToMany(mappedBy = "records")
     var registrations: List<Registration>? = null,
 
-    @OneToOne
+    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
     @JoinColumn(name = "approval_id", referencedColumnName = "id")
     var approval: RecordApproval? = null,
-
-    @ManyToMany(mappedBy = "records")
-    var trainingDays: List<TrainingDay>? = null
 )
+
+enum class ERecordSource {
+    DEVICE, THIRD, MERGED
+}
