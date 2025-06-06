@@ -18,6 +18,7 @@ import com.university.MarathonOnlineAPI.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.LocalDateTime
 
 @Service
@@ -175,11 +176,11 @@ class RegistrationServiceImpl(
             ?.filter { it.status == ERegistrationStatus.COMPLETED }
             ?.sortedWith(
                 compareByDescending<Registration> { reg ->
-                    reg.records?.sumOf { it.distance?.toDouble() ?: 0.0 } ?: 0.0
+                    reg.records?.sumOf { it.distance ?: 0.0 } ?: 0.0
                 }.thenBy { reg ->
-                    reg.records?.sumOf { it.timeTaken?.toLong() ?: 0L } ?: 0L
+                    reg.records?.sumOf { Duration.between(it.startTime, it.endTime).seconds } ?: 0L
                 }.thenBy { reg ->
-                    reg.records?.map { it.avgSpeed?.toDouble() ?: 0.0 }?.average() ?: 0.0
+                    reg.records?.map { it.avgSpeed ?: 0.0 }?.average() ?: 0.0
                 }.thenBy { reg ->
                     reg.registrationDate
                 }
