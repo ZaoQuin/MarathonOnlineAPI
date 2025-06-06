@@ -1,5 +1,6 @@
 package com.university.MarathonOnlineAPI.controller.record
 
+import com.university.MarathonOnlineAPI.controller.StringResponse
 import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordApprovalDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
@@ -11,18 +12,24 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/record")
-class RecordController(private val recordService: RecordService,
-    private val recordApprovalService: RecordApprovalService) {
+class RecordController(
+    private val recordService: RecordService,
+    private val recordApprovalService: RecordApprovalService
+) {
 
     private val logger = LoggerFactory.getLogger(RecordController::class.java)
 
     @PostMapping
-    fun addRaceAndSaveIntoRegistration(@RequestHeader("Authorization") token: String, @RequestBody @Valid newRecord: CreateRecordRequest): ResponseEntity<Any> {
+    fun addRaceAndSaveIntoRegistration(
+        @RequestHeader("Authorization") token: String,
+        @RequestBody @Valid newRecord: CreateRecordRequest
+    ): ResponseEntity<Any> {
         return try {
             val jwt = token.replace("Bearer ", "")
             val addedRecord = recordService.addRecord(newRecord, jwt)
@@ -118,12 +125,14 @@ class RecordController(private val recordService: RecordService,
             logger.error("Lỗi khi xác thực bản ghi", e)
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(RecordApprovalDTO(
-                    approvalStatus = ERecordApprovalStatus.PENDING,
-                    fraudRisk = 50.0,
-                    fraudType = "Lỗi hệ thống",
-                    reviewNote = "Lỗi khi xử lý yêu cầu: ${e.message}"
-                ))
+                .body(
+                    RecordApprovalDTO(
+                        approvalStatus = ERecordApprovalStatus.PENDING,
+                        fraudRisk = 50.0,
+                        fraudType = "Lỗi hệ thống",
+                        reviewNote = "Lỗi khi xử lý yêu cầu: ${e.message}"
+                    )
+                )
         }
     }
 
@@ -143,12 +152,14 @@ class RecordController(private val recordService: RecordService,
             logger.error("Lỗi khi cập nhật trạng thái phê duyệt", e)
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(RecordApprovalDTO(
-                    approvalStatus = ERecordApprovalStatus.PENDING,
-                    fraudRisk = null,
-                    fraudType = null,
-                    reviewNote = "Lỗi khi cập nhật trạng thái phê duyệt: ${e.message}"
-                ))
+                .body(
+                    RecordApprovalDTO(
+                        approvalStatus = ERecordApprovalStatus.PENDING,
+                        fraudRisk = null,
+                        fraudType = null,
+                        reviewNote = "Lỗi khi cập nhật trạng thái phê duyệt: ${e.message}"
+                    )
+                )
         }
     }
 
@@ -156,7 +167,12 @@ class RecordController(private val recordService: RecordService,
     fun getUserHistory(@PathVariable userId: Long): ResponseEntity<List<RecordDTO>> {
         return try {
             val records = recordService.getRecordsByUserId(userId)
-                .filter { it.approval?.approvalStatus in listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED) }
+                .filter {
+                    it.approval?.approvalStatus in listOf(
+                        ERecordApprovalStatus.PENDING,
+                        ERecordApprovalStatus.APPROVED
+                    )
+                }
 
             logger.info("Đã lấy ${records.size} bản ghi lịch sử cho userId $userId")
             ResponseEntity.ok(records)
@@ -164,6 +180,24 @@ class RecordController(private val recordService: RecordService,
             logger.error("Lỗi khi lấy lịch sử bản ghi cho userId $userId: ${e.message}")
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(emptyList())
+        }
+    }
+
+    @PostMapping("/sync")
+    fun syncRecords(
+        @RequestHeader("Authorization") token: String,
+        @RequestBody recordDTOs: List<CreateRecordRequest>
+    ): ResponseEntity<StringResponse> {
+        return try {
+            val jwt = token.replace("Bearer ", "")
+            val savedRecords = recordService.sync(recordDTOs, jwt)
+            logger.info("Đồng bộ thành công" + savedRecords)
+            ResponseEntity.ok(StringResponse("Đồng bộ thành công"))
+        } catch (e: Exception) {
+            logger.error("Lỗi khi đồng bộ dữ liệu: ${e.message}")
+            ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(StringResponse(e.message!!))
         }
     }
 }

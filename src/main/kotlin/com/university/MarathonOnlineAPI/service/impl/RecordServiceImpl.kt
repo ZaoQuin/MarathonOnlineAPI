@@ -3,19 +3,31 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.RunningStatsDTO
+import com.university.MarathonOnlineAPI.dto.UserDTO
+import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
+import com.university.MarathonOnlineAPI.entity.ERecordSource
+import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
+import com.university.MarathonOnlineAPI.entity.Record
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.RecordException
+import com.university.MarathonOnlineAPI.handler.RecordMergerHandler
 import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
+import com.university.MarathonOnlineAPI.repos.RecordApprovalRepository
 import com.university.MarathonOnlineAPI.repos.RecordRepository
+import com.university.MarathonOnlineAPI.repos.RegistrationRepository
+import com.university.MarathonOnlineAPI.repos.TrainingDayRepository
 import com.university.MarathonOnlineAPI.service.RecordApprovalService
 import com.university.MarathonOnlineAPI.service.RecordService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import java.time.Duration
+import java.time.LocalDateTime
 
 @Service
 class RecordServiceImpl @Autowired constructor(
@@ -24,7 +36,11 @@ class RecordServiceImpl @Autowired constructor(
     private val userService: UserService,
     private val recordMapper: RecordMapper,
     private val userMapper: UserMapper,
-    private val recordApprovalService: RecordApprovalService
+    private val recordApprovalService: RecordApprovalService,
+    private val recordApprovalRepository: RecordApprovalRepository,
+    private val recordMergerHandler: RecordMergerHandler,
+    private val registrationRepository: RegistrationRepository,
+    private val trainingDayRepository: TrainingDayRepository
 ) : RecordService {
 
     private val logger = LoggerFactory.getLogger(RecordServiceImpl::class.java)
@@ -37,22 +53,29 @@ class RecordServiceImpl @Autowired constructor(
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
 
-            val record = RecordDTO(
+            val recordDTO = RecordDTO(
                 steps = newRecord.steps,
                 distance = newRecord.distance,
-                timeTaken = newRecord.timeTaken,
                 avgSpeed = newRecord.avgSpeed,
-                timestamp = newRecord.timestamp,
                 heartRate = newRecord.heartRate?: null,
-                user = userDTO
+                user = userDTO,
+                startTime = newRecord.startTime,
+                endTime = newRecord.endTime,
+                timeTaken = java.time.Duration.between(newRecord.startTime, newRecord.endTime).seconds,
+                source = newRecord.source
             )
 
-            logger.info("Map to Entity: $record")
+            // Phân tích và lưu approval trước
+            val savedRecordApproval = recordApprovalService.analyzeRecordApproval(recordDTO)
 
-            val savedRecordApproval = recordApprovalService.analyzeRecordApproval(record)
+            // Lấy entity approval từ database thay vì map từ DTO
+            val approvalEntity = recordApprovalRepository.findById(savedRecordApproval.id!!)
+                .orElseThrow { RuntimeException("Approval not found") }
 
-            record.approval = savedRecordApproval
-            val savedRecord = recordRepository.save(recordMapper.toEntity(record))
+            var record = recordMapper.toEntity(recordDTO)
+            record.approval = approvalEntity;
+
+            val savedRecord = recordRepository.save(record)
             return recordMapper.toDto(savedRecord)
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
@@ -101,16 +124,10 @@ class RecordServiceImpl @Autowired constructor(
 
     override fun getById(id: Long): RecordDTO {
         return try {
-            val race = recordRepository.findById(id)
+            val record = recordRepository.findById(id)
                 .orElseThrow { RecordException("Record with ID $id not found") }
 
-            RecordDTO(
-                id = race.id,
-                distance = race.distance,
-                timeTaken = race.timeTaken,
-                avgSpeed = race.avgSpeed,
-                timestamp = race.timestamp
-            )
+            recordMapper.toDto(record)
         } catch (e: DataAccessException) {
             logger.error("Error fetching race with ID $id: ${e.message}")
             throw RecordException("Database error occurred while fetching race: ${e.message}")
@@ -134,14 +151,16 @@ class RecordServiceImpl @Autowired constructor(
 
     override fun getRunningStatsByUser(userId: Long): RunningStatsDTO? {
         val records = recordRepository.getByUserId(userId)
-            .filter { it.distance != null && it.timeTaken != null && it.distance!! > 0 }
+            .filter { it.approval!!.approvalStatus != ERecordApprovalStatus.REJECTED }
 
         if (records.isEmpty()) return null
 
-        val maxDistance = records.maxOf { it.distance ?: 0.0 }
+        val recordDTOs = records.map { recordMapper.toDto(it) }
 
-        val totalDistance = records.sumOf { it.distance ?: 0.0 }
-        val totalTimeInMinutes = records.sumOf { (it.timeTaken ?: 0L) } / 60.0
+        val maxDistance = recordDTOs.maxOf { it.distance ?: 0.0 }
+
+        val totalDistance = recordDTOs.sumOf { it.distance ?: 0.0 }
+        val totalTimeInMinutes = recordDTOs.sumOf { (it.timeTaken ?: 0L) } / 60.0
 
         val averagePace = if (totalDistance > 0) totalTimeInMinutes / totalDistance else 0.0
 
@@ -152,6 +171,209 @@ class RecordServiceImpl @Autowired constructor(
     }
 
     override fun getRecordsByUserId(userId: Long): List<RecordDTO> {
-        return recordRepository.findByUserIdOrderByTimestampDesc(userId).map { recordMapper.toDto(it) }
+        return recordRepository.findByUserIdOrderByStartTimeDesc(userId).map { recordMapper.toDto(it) }
+    }
+
+    // Cập nhật phần sync trong RecordServiceImpl.kt
+
+    override fun sync(recordDTOs: List<CreateRecordRequest>, jwt: String): List<RecordDTO> {
+        return try {
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            logger.info("Starting sync for user ${userDTO.id} with ${recordDTOs.size} records")
+
+            // Merge records sẽ tự động xử lý overlap và tạo merged records
+            val mergedRecords = recordMergerHandler.mergeRecords(recordDTOs, userDTO)
+            logger.info("After merge: ${mergedRecords.size} records to sync")
+
+            val syncedRecords = mutableListOf<RecordDTO>()
+
+            mergedRecords.forEach { recordDTO ->
+                try {
+                    val syncedRecord = syncOneRecord(recordDTO, userDTO)
+                    syncedRecords.add(syncedRecord)
+                    logger.info("Successfully synced record: ${syncedRecord.id}")
+                } catch (e: Exception) {
+                    logger.error("Error syncing record: ${e.message}", e)
+                    // Continue with other records instead of failing completely
+                }
+            }
+
+            logger.info("Sync completed: ${syncedRecords.size}/${mergedRecords.size} records synced successfully")
+            syncedRecords
+        } catch (e: AuthenticationException) {
+            logger.error("Authentication failed: ${e.message}", e)
+            emptyList()
+        } catch (e: Exception) {
+            logger.error("Unexpected error during sync: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    @Transactional
+    fun syncOneRecord(recordDTO: RecordDTO, userDTO: UserDTO): RecordDTO {
+        logger.info("Syncing record: startTime=${recordDTO.startTime}, endTime=${recordDTO.endTime}")
+
+        // Tìm kiếm record có exact match về thời gian
+        val exactMatch = findExactMatchRecord(recordDTO, userDTO)
+
+        val savedRecord = if (exactMatch != null) {
+            logger.info("Found exact match record, updating: ${exactMatch.id}")
+            updateExistingRecord(exactMatch, recordDTO, userDTO)
+        } else {
+            // Trước khi tạo mới, kiểm tra xem có records overlap không
+            val overlappingRecords = findOverlappingRecordsInDB(recordDTO, userDTO)
+
+            if (overlappingRecords.isNotEmpty()) {
+                logger.info("Found ${overlappingRecords.size} overlapping records, will replace them")
+
+                // Xóa các records overlap
+                unlinkFromRegistrationAndTrainingDay(overlappingRecords)
+                recordRepository.deleteAll(overlappingRecords)
+                logger.info("Deleted ${overlappingRecords.size} overlapping records")
+            }
+
+            logger.info("Creating new record")
+            createNewRecord(recordDTO, userDTO)
+        }
+
+        // Link với Registration và TrainingDay
+        linkToRegistrationAndTrainingDay(savedRecord)
+
+        val result = recordMapper.toDto(savedRecord)
+        logger.info("Sync completed for record: ${result.id}")
+        return result
+    }
+
+    private fun findExactMatchRecord(recordDTO: RecordDTO, userDTO: UserDTO): Record? {
+        return recordRepository.findByUserIdAndStartTimeAndEndTime(
+            userId = userDTO.id!!,
+            startTime = recordDTO.startTime!!,
+            endTime = recordDTO.endTime!!
+        ).firstOrNull()
+    }
+
+    private fun findOverlappingRecordsInDB(recordDTO: RecordDTO, userDTO: UserDTO): List<Record> {
+        return recordRepository.findPotentialDuplicates(
+            runnerId = userDTO.id!!,
+            referenceStartTime = recordDTO.startTime!!,
+            referenceEndTime = recordDTO.endTime!!
+        ).filter { existingRecord ->
+            hasTimeOverlap(
+                existingRecord.startTime!!,
+                existingRecord.endTime!!,
+                recordDTO.startTime!!,
+                recordDTO.endTime!!
+            )
+        }
+    }
+
+    private fun hasTimeOverlap(
+        start1: LocalDateTime, end1: LocalDateTime,
+        start2: LocalDateTime, end2: LocalDateTime
+    ): Boolean {
+        return start1 < end2 && start2 < end1
+    }
+
+    private fun unlinkFromRegistrationAndTrainingDay(records: List<Record>) {
+        records.forEach { record ->
+            try {
+                // Unlink từ registrations
+                record.registrations?.forEach { registration ->
+                    registration.records = registration.records?.filter { it.id != record.id }
+                    registrationRepository.save(registration)
+                }
+
+                // Unlink từ training days
+                val trainingDays = trainingDayRepository.findByRecordId(record.id!!)
+                trainingDays.forEach { trainingDay ->
+                    trainingDay.record = null
+                    trainingDay.status = ETrainingDayStatus.ACTIVE
+                    trainingDay.completionPercentage = 0.0
+                    trainingDayRepository.save(trainingDay)
+                }
+            } catch (e: Exception) {
+                logger.error("Error unlinking record ${record.id}: ${e.message}")
+            }
+        }
+    }
+
+    private fun updateExistingRecord(existingRecord: Record, recordDTO: RecordDTO, userDTO: UserDTO): Record {
+        logger.info("Updating existing record: ${existingRecord.id}")
+
+        existingRecord.apply {
+            steps = recordDTO.steps ?: steps
+            distance = recordDTO.distance ?: distance
+            avgSpeed = recordDTO.avgSpeed ?: avgSpeed
+            heartRate = recordDTO.heartRate ?: heartRate
+            source = recordDTO.source ?: source
+
+            // Cập nhật approval
+            val savedRecordApproval = recordApprovalService.analyzeRecordApproval(recordDTO)
+            val approvalEntity = recordApprovalRepository.findById(savedRecordApproval.id!!)
+                .orElseThrow { RuntimeException("Approval not found") }
+            approval = approvalEntity
+        }
+
+        return recordRepository.save(existingRecord)
+    }
+
+    private fun createNewRecord(recordDTO: RecordDTO, userDTO: UserDTO): Record {
+        logger.info("Creating new record")
+
+        val savedRecordApproval = recordApprovalService.analyzeRecordApproval(recordDTO)
+        val approvalEntity = recordApprovalRepository.findById(savedRecordApproval.id!!)
+            .orElseThrow { RuntimeException("Approval not found") }
+
+        val record = recordMapper.toEntity(recordDTO).apply {
+            approval = approvalEntity
+            user = userMapper.toEntity(userDTO)
+        }
+
+        return recordRepository.save(record)
+    }
+
+    private fun linkToRegistrationAndTrainingDay(record: Record) {
+        // Liên kết với Registration
+        val userId = record.user?.id ?: throw RecordException("User ID is required")
+        val startTime = record.startTime ?: throw RecordException("Start time is required")
+        val endTime = record.endTime ?: throw RecordException("End time is required")
+
+        // Tìm các Registration có contest diễn ra trong khoảng thời gian của Record
+        val registrations = registrationRepository.findByRunnerIdAndContestDateRange(
+            userId = userId,
+            startDate = startTime.toLocalDate().atStartOfDay(),
+            endDate = endTime.toLocalDate().plusDays(1).atStartOfDay()
+        )
+
+        registrations.forEach { registration ->
+            registration.records = (registration.records ?: emptyList()) + record
+            registrationRepository.save(registration)
+        }
+
+        // Liên kết với TrainingDay (chỉ 1 Record)
+        val trainingDay = trainingDayRepository.findByUserIdAndDateTimeRange(
+            userId = userId,
+            start = startTime,
+            end = endTime
+        ).firstOrNull()
+
+        trainingDay?.let {
+            if (it.record == null) {
+                it.record = record
+                it.completionPercentage = record.distance?.let { d -> (d / 5.0 * 100).coerceIn(0.0, 100.0) } ?: 0.0 // Giả định mục tiêu 5km
+                it.status = when {
+                    it.completionPercentage!! >= 100.0 -> ETrainingDayStatus.COMPLETED
+                    it.completionPercentage!! > 0.0 -> ETrainingDayStatus.PARTIALLY_COMPLETED
+                    else -> ETrainingDayStatus.ACTIVE
+                }
+                trainingDayRepository.save(it)
+            } else {
+                logger.warn("TrainingDay ${it.id} already has a Record, cannot assign another.")
+                throw IllegalStateException("TrainingDay ${it.id} đã có Record, không thể gán thêm.")
+            }
+        }
     }
 }

@@ -48,7 +48,7 @@ def validate_record(record_json):
             'TotalDistance': safe_get_numeric(record, 'distance', 0.0),
             'TimeTaken': safe_get_numeric(record, 'timeTaken', 0),
             'AvgSpeed': safe_get_numeric(record, 'avgSpeed', 0.0),
-            'Timestamp': safe_get(record, 'timestamp', ''),
+            'EndTime': safe_get(record, 'endTime', ''),
             'heartRate': safe_get_numeric(record, 'heartRate', None, allow_none=True)
         }])
 
@@ -63,12 +63,12 @@ def validate_record(record_json):
         processed_df = prepare_marathon_data(record_df)
         user_id = processed_df['UserId'].iloc[0]
         # user_history = load_user_history(user_id)
-        # user_history = None
+        user_history = None
 
-        # if user_history is not None and not user_history.empty:
-        #     analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
-        # else:
-        #     return validate_single_record(processed_df)
+        if user_history is not None and not user_history.empty:
+            analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
+        else:
+            return validate_single_record(processed_df)
         validate_single_record(processed_df)
 
         analysis_df, user_stats = analyze_per_user(analysis_df)
@@ -372,7 +372,7 @@ def load_user_history(user_id):
             'TotalDistance': safe_get_numeric(record, 'distance', 0.0),
             'TimeTaken': safe_get_numeric(record, 'timeTaken', 0),
             'AvgSpeed': safe_get_numeric(record, 'avgSpeed', 0.0),
-            'Timestamp': safe_get(record, 'timestamp', ''),
+            'Timestamp': safe_get(record, 'endTime', ''),
             'heartRate': safe_get_numeric(record, 'heartRate', None, allow_none=True)
         } for record in records])
 

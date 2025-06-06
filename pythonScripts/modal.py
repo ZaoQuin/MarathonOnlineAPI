@@ -16,11 +16,6 @@ def prepare_marathon_data(marathon_df):
     Returns:
         pd.DataFrame: DataFrame đã được xử lý với các đặc trưng bổ sung.
     """
-    # Kiểm tra và xử lý cột Timestamp nếu có
-    if 'Timestamp' in marathon_df.columns:
-        marathon_df['Timestamp'] = pd.to_datetime(marathon_df['Timestamp'])
-        marathon_df['DayOfWeek'] = marathon_df['Timestamp'].dt.dayofweek
-        marathon_df['Weekend'] = marathon_df['DayOfWeek'].apply(lambda x: 1 if x >= 5 else 0)
 
     # Tính tỷ lệ giữa quãng đường và số bước
     if all(col in marathon_df.columns for col in ['TotalDistance', 'TotalSteps']):

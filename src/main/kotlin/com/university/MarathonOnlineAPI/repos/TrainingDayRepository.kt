@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 
@@ -32,4 +33,10 @@ interface TrainingDayRepository : JpaRepository<TrainingDay, Long> {
 
     fun findByPlanIdAndDateTimeBefore(id: Long, date: LocalDateTime): List<TrainingDay>
     fun findByPlanIdAndDateTime(id: Long, now: LocalDateTime?): TrainingDay
+
+    @Query("SELECT t FROM TrainingDay t WHERE t.plan.user.id = :userId AND t.dateTime BETWEEN :start AND :end")
+    fun findByUserIdAndDateTimeRange(userId: Long, start: LocalDateTime, end: LocalDateTime): List<TrainingDay>
+
+    @Query("SELECT td FROM TrainingDay td WHERE td.record.id = :recordId")
+    fun findByRecordId(recordId: Long): List<TrainingDay>
 }
