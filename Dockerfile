@@ -1,24 +1,9 @@
 # Giai đoạn build
 FROM gradle:7.6.0-jdk17 AS build
 WORKDIR /app
-
-# Copy gradle wrapper files first
-COPY gradle/ gradle/
-COPY gradlew .
-COPY gradle.properties .
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
-
-# Make gradlew executable
+COPY . .
 RUN chmod +x gradlew
-
-# Copy source code
-COPY src/ src/
-COPY pythonScripts/ pythonScripts/
-COPY requirements.txt .
-
-# Build the application with more verbose output and proper daemon handling
-RUN ./gradlew clean bootJar --no-daemon --stacktrace --info
+RUN ./gradlew bootJar --no-daemon
 
 # Giai đoạn runtime
 FROM openjdk:17.0.1-jdk-slim
