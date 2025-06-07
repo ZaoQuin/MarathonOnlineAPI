@@ -13,5 +13,13 @@ data class Payment(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
     var amount: BigDecimal? = null,
-    var paymentDate: LocalDateTime? = null
+    var paymentDate: LocalDateTime? = null,
+    val transactionRef: String,
+    val responseCode: String?= null,
+    val bankCode: String?= null,
+    var status: EPaymentStatus?= null
 )
+
+enum class EPaymentStatus {
+    SUCCESS, FAILED, PENDING
+}

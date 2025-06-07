@@ -12,7 +12,6 @@ import com.university.MarathonOnlineAPI.service.PaymentService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 
 @Service
@@ -27,21 +26,25 @@ class PaymentServiceImpl(
     override fun addPayment(newPayment: CreatePaymentRequest): PaymentDTO {
         logger.info("Received PaymentDTO: $newPayment")
         try {
-            val payment = Payment().apply {
-                amount = newPayment.amount
-                paymentDate = LocalDateTime.now()
-            }
+            val payment = Payment(
+                amount = newPayment.amount,
+                transactionRef = newPayment.transactionRef,
+                responseCode = newPayment.responseCode,
+                bankCode = newPayment.bankCode,
+                paymentDate = newPayment.paymentDate,
+                status = newPayment.status
+            )
 
             paymentRepository.save(payment)
 
-            val registration = registrationRepository.findById(newPayment.registration?.id ?: throw IllegalArgumentException("Registration ID is required"))
+            val registration = registrationRepository.findById(newPayment.registrationId?: throw IllegalArgumentException("Registration ID is required"))
                 .orElseThrow { IllegalArgumentException("Registration not found") }
 
             registration.payment = payment
             registration.status = ERegistrationStatus.ACTIVE
-            registrationRepository.save(registration)
+            val savedRegistration = registrationRepository.save(registration)
 
-            return paymentMapper.toDto(payment)
+            return paymentMapper.toDto(savedRegistration.payment!!)
         } catch (e: Exception){
             throw PaymentException("Error adding payment: ${e.message}")
         }
@@ -74,13 +77,7 @@ class PaymentServiceImpl(
 
             logger.info("Retrieved payments from database: $payments")
 
-            val paymentDTOs = payments.map { payment ->
-                PaymentDTO(
-                    id = payment.id,
-                    amount = payment.amount,
-                    paymentDate = payment.paymentDate,
-                )
-            }
+            val paymentDTOs = payments.map { paymentMapper.toDto(it) }
 
             logger.info("Mapped PaymentDTOs: $paymentDTOs")
 
