@@ -1,6 +1,7 @@
 package com.university.MarathonOnlineAPI.controller.payment
 
 import com.university.MarathonOnlineAPI.config.VnPayProperties
+import com.university.MarathonOnlineAPI.controller.StringResponse
 import com.university.MarathonOnlineAPI.dto.CreatePaymentRequest
 import com.university.MarathonOnlineAPI.dto.PaymentDTO
 import com.university.MarathonOnlineAPI.entity.EPaymentStatus
@@ -107,7 +108,7 @@ class PaymentController(private val paymentService: PaymentService,
         @RequestParam amount: Int,
         @RequestParam registrationId: Long,
         request: HttpServletRequest
-    ): ResponseEntity<String> {
+    ): ResponseEntity<StringResponse> {
         val vnp_Version = "2.1.0"
         val vnp_Command = "pay"
         val vnp_TxnRef = UUID.randomUUID().toString().substring(0, 8)
@@ -171,9 +172,9 @@ class PaymentController(private val paymentService: PaymentService,
         }
 
         val secureHash = hmacSHA512(vnPayProperties.hashSecret, hashData.toString())
-        val paymentUrl = "${vnPayProperties.payUrl}?${query}&vnp_SecureHash=$secureHash"
+        val paymentUrl = "${vnPayProperties.payUrl}?    ${query}&vnp_SecureHash=$secureHash"
 
-        return ResponseEntity.ok(paymentUrl)
+        return ResponseEntity.ok(StringResponse(paymentUrl))
     }
 
     // Hàm lấy IP client thực tế

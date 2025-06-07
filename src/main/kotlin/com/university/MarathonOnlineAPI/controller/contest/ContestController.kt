@@ -38,15 +38,15 @@ class ContestController(private val contestService: ContestService) {
         return try {
             contestService.deleteContestById(id)
             logger.info("Contest with ID $id deleted successfully")
-            ResponseEntity.ok(StringResponse( message = "Contest with ID $id deleted successfully"))
+            ResponseEntity.ok(StringResponse( str = "Contest with ID $id deleted successfully"))
         } catch (e: ContestException) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(StringResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
+                .body(StringResponse(str = "Failed to delete contest with ID $id: ${e.message}"))
         } catch (e: Exception) {
             logger.error("Failed to delete contest with ID $id: ${e.message}")
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(StringResponse(message = "Failed to delete contest with ID $id: ${e.message}"))
+                .body(StringResponse(str = "Failed to delete contest with ID $id: ${e.message}"))
         }
     }
 
