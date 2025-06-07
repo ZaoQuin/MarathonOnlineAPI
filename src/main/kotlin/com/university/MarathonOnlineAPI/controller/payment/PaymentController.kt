@@ -172,7 +172,7 @@ class PaymentController(private val paymentService: PaymentService,
         }
 
         val secureHash = hmacSHA512(vnPayProperties.hashSecret, hashData.toString())
-        val paymentUrl = "${vnPayProperties.payUrl}?    ${query}&vnp_SecureHash=$secureHash"
+        val paymentUrl = "${vnPayProperties.payUrl}${query}&vnp_SecureHash=$secureHash"
 
         return ResponseEntity.ok(StringResponse(paymentUrl))
     }
