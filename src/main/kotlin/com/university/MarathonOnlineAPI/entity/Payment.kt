@@ -14,7 +14,7 @@ data class Payment(
     var id: Long? = null,
     var amount: BigDecimal? = null,
     var paymentDate: LocalDateTime? = null,
-    val transactionRef: String,
+    val transactionRef: String? = null,
     val responseCode: String?= null,
     val bankCode: String?= null,
     var status: EPaymentStatus?= null
