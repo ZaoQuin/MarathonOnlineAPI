@@ -200,7 +200,7 @@ class PaymentController(private val paymentService: PaymentService,
     }
 
     @GetMapping("/vnpay-return")
-    fun vnPayReturn(@RequestParam allParams: Map<String, String>): ResponseEntity<PaymentDTO> {
+    fun vnPayReturn(@RequestParam allParams: Map<String, String>): ResponseEntity<CreatePaymentRequest> {
         val secureHash = allParams["vnp_SecureHash"]
 
         // Lọc và sắp xếp parameters (loại bỏ vnp_SecureHash và vnp_SecureHashType)
@@ -258,7 +258,7 @@ class PaymentController(private val paymentService: PaymentService,
             registrationId = orderInfo.toLong()
         )
 
-        val addedPayment = paymentService.addPayment(dto)
-        return ResponseEntity.ok(addedPayment)
+//        val addedPayment = paymentService.addPayment(dto)
+        return ResponseEntity.ok(dto)
     }
 }
