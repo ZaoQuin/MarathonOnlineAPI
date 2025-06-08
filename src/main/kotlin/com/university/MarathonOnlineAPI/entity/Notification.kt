@@ -12,9 +12,7 @@ data class Notification(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
     var receiver: User? = null,
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contest_id")
-    var contest: Contest? = null,
+    var objectId: Long? = null,
     var title: String? = null,
     var content: String? = null,
     var createAt: LocalDateTime? = null,

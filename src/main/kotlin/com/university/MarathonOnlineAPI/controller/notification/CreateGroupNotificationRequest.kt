@@ -11,7 +11,7 @@ data class CreateGroupNotificationRequest(
     @field:NotEmpty(message = "Receivers list cannot be empty")
     var receivers: List<UserDTO> = emptyList(),
 
-    var contest: ContestDTO? = null,
+    var objectId: Long? = null,
 
     @field:NotBlank(message = "Title cannot be blank")
     var title: String? = null,
