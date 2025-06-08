@@ -29,7 +29,7 @@ class RegistrationServiceImpl(
     private val recordMapper: RecordMapper,
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
-    private val userService: UserService
+    private val userService: UserService,
 ) : RegistrationService {
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)
@@ -37,11 +37,24 @@ class RegistrationServiceImpl(
     override fun registerForContest(contestDTO: ContestDTO, jwt: String): RegistrationDTO {
         return try {
             val contest = contestRepository.findById(contestDTO.id!!)
-                .orElseThrow { ContestException("Contest with ID ${contestDTO.id!!} not found") }
-            val userDTO =
-                tokenService.extractEmail(jwt)?.let { email ->
-                    userService.findByEmail(email)
-                } ?: throw AuthenticationException("Email not found in the token")
+                .orElseThrow { ContestException("Contest with ID ${contestDTO.id} not found") }
+
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            val userId = userDTO.id!!
+
+            // Kiểm tra xem đã tồn tại đăng ký chưa
+            val existingRegistration = registrationRepository
+                .findByRunnerIdAndContestId(userId, contest.id!!)
+
+            if (existingRegistration != null) {
+                logger.info("Runner already registered for this contest.")
+                return registrationMapper.toDto(existingRegistration)
+            }
+
+            // Tạo mới nếu chưa có
             val registration = Registration(
                 runner = userMapper.toEntity(userDTO),
                 contest = contest,
@@ -49,8 +62,10 @@ class RegistrationServiceImpl(
                 records = emptyList(),
                 status = ERegistrationStatus.PENDING
             )
+
             registrationRepository.save(registration)
             registrationMapper.toDto(registration)
+
         } catch (e: DataAccessException) {
             logger.error("Error saving registration: ${e.message}")
             throw RegistrationException("Database error occurred while saving registration: ${e.message}")

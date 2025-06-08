@@ -1,9 +1,6 @@
 package com.university.MarathonOnlineAPI.repos
 
-import com.university.MarathonOnlineAPI.entity.Contest
-import com.university.MarathonOnlineAPI.entity.EContestStatus
-import com.university.MarathonOnlineAPI.entity.ERegistrationStatus
-import com.university.MarathonOnlineAPI.entity.Registration
+import com.university.MarathonOnlineAPI.entity.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -63,4 +60,6 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
 
     @Query("SELECT r FROM Registration r JOIN r.contest c WHERE r.runner.id = :userId AND c.startDate <= :endDate AND c.endDate >= :startDate")
     fun findByRunnerIdAndContestDateRange(userId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<Registration>
+
+    fun findByRunnerIdAndContestId(userId: Long, id: Long): Registration?
 }
