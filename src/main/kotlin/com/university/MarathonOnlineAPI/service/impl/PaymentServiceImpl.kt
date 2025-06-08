@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.service.impl
 
 import com.university.MarathonOnlineAPI.dto.CreatePaymentRequest
 import com.university.MarathonOnlineAPI.dto.PaymentDTO
+import com.university.MarathonOnlineAPI.entity.EPaymentStatus
 import com.university.MarathonOnlineAPI.entity.ERegistrationStatus
 import com.university.MarathonOnlineAPI.entity.Payment
 import com.university.MarathonOnlineAPI.exception.PaymentException
@@ -41,7 +42,8 @@ class PaymentServiceImpl(
                 .orElseThrow { IllegalArgumentException("Registration not found") }
 
             registration.payment = payment
-            registration.status = ERegistrationStatus.ACTIVE
+            if(payment.status == EPaymentStatus.SUCCESS)
+                registration.status = ERegistrationStatus.ACTIVE
             val savedRegistration = registrationRepository.save(registration)
 
             return paymentMapper.toDto(savedRegistration.payment!!)
