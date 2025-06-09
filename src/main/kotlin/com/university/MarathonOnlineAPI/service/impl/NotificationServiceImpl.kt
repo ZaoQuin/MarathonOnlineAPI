@@ -11,10 +11,8 @@ import com.university.MarathonOnlineAPI.dto.NotificationDTO
 import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
-import com.university.MarathonOnlineAPI.mapper.ContestMapper
 import com.university.MarathonOnlineAPI.mapper.NotificationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
-import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.FCMTokenRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
@@ -41,6 +39,12 @@ class NotificationServiceImpl(
 ) : NotificationService {
 
     private val logger = LoggerFactory.getLogger(NotificationServiceImpl::class.java)
+
+    companion object {
+        private const val KEY_NOTIFICATION_ID = "notification-id"
+        private const val KEY_NOTIFICATION_TYPE = "notification-type"
+        private const val KEY_OBJECT_ID = "object-id"
+    }
 
     override fun addNotification(newNotification: NotificationDTO): NotificationDTO {
         return try {
@@ -79,7 +83,6 @@ class NotificationServiceImpl(
             val saveNotification = notificationRepository.save(notification)
             val result = notificationMapper.toDto(saveNotification)
 
-            // Send push notification
             sendPushNotification(result)
 
             result
@@ -110,7 +113,6 @@ class NotificationServiceImpl(
             val savedNotifications = notificationRepository.saveAll(notifications)
             val results = savedNotifications.map { notificationMapper.toDto(it) }
 
-            // Send push notifications to all runners
             results.forEach { sendPushNotification(it) }
 
             results
@@ -140,7 +142,6 @@ class NotificationServiceImpl(
             val savedNotifications = notificationRepository.saveAll(notifications)
             val results = savedNotifications.map { notificationMapper.toDto(it) }
 
-            // Send push notifications to group
             results.forEach { sendPushNotification(it) }
 
             results
@@ -202,7 +203,7 @@ class NotificationServiceImpl(
         }
     }
 
-    override fun getNotifications(): List<NotificationDTO> {
+    override fun getAllNotifications(): List<NotificationDTO> {
         return try {
             val notifications = notificationRepository.findAll()
             notifications.map { notificationMapper.toDto(it) }
@@ -212,7 +213,7 @@ class NotificationServiceImpl(
         }
     }
 
-    override fun getById(id: Long): NotificationDTO {
+    override fun getNotificationById(id: Long): NotificationDTO {
         return try {
             val notification = notificationRepository.findById(id)
                 .orElseThrow { NotificationException("Notification with ID $id not found") }
@@ -249,7 +250,6 @@ class NotificationServiceImpl(
 
             val user = userMapper.toEntity(userDTO)
 
-            // Find existing token or create new one
             val existingToken = fcmTokenRepository.findByUserIdAndDeviceId(
                 user.id!!, request.deviceId!!
             )
@@ -322,7 +322,7 @@ class NotificationServiceImpl(
 
             fcmTokens.forEach { fcmToken ->
                 try {
-                    val message = Message.builder()
+                    val messageBuilder = Message.builder()
                         .setToken(fcmToken.token)
                         .setNotification(
                             FCMNotification.builder()
@@ -330,15 +330,18 @@ class NotificationServiceImpl(
                                 .setBody(notification.content ?: "")
                                 .build()
                         )
-                        .putData("notificationId", notification.id.toString())
-                        .putData("type", notification.type?.name ?: "")
-                        .build()
+                        .putData(KEY_NOTIFICATION_ID, notification.id.toString())
+                        .putData(KEY_NOTIFICATION_TYPE, notification.type?.name ?: "")
 
+                    notification.objectId?.let {
+                        messageBuilder.putData(KEY_OBJECT_ID, it.toString())
+                    }
+
+                    val message = messageBuilder.build()
                     val response = firebaseMessaging.send(message)
                     logger.info("Push notification sent successfully: $response")
                 } catch (e: Exception) {
                     logger.error("Failed to send push notification to token ${fcmToken.token}: ${e.message}")
-                    // Consider removing invalid tokens
                     if (e.message?.contains("registration-token-not-registered") == true) {
                         fcmTokenRepository.delete(fcmToken)
                     }
@@ -369,6 +372,9 @@ class NotificationServiceImpl(
                     logger.info("Push notification sent successfully: $response")
                 } catch (e: Exception) {
                     logger.error("Failed to send push notification: ${e.message}")
+                    if (e.message?.contains("registration-token-not-registered") == true) {
+                        fcmTokenRepository.delete(fcmToken)
+                    }
                 }
             }
         } catch (e: Exception) {

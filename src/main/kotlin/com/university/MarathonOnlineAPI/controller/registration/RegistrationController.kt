@@ -102,17 +102,6 @@ class RegistrationController(private val registrationService: RegistrationServic
         }
     }
 
-//    @GetMapping
-//    fun getRegistrations(): ResponseEntity<List<RegistrationDTO>> {
-//        return try {
-//            val registrations = registrationService.getRegistrations()
-//            ResponseEntity(registrations, HttpStatus.OK)
-//        } catch (e: Exception) {
-//            logger.error("Error in getRegistrations: ${e.message}")
-//            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
-//        }
-//    }
-
     @GetMapping
     fun getRegistrationByJwt(@RequestHeader("Authorization") token: String): ResponseEntity<Any> {
         return try {

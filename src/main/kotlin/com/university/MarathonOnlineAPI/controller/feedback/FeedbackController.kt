@@ -18,14 +18,14 @@ class FeedbackController(private val feedbackService: FeedbackService) {
     private val logger = LoggerFactory.getLogger(FeedbackController::class.java)
 
     @PostMapping("/record/{recordId}")
-    fun createFeedback(
+    fun createRecordFeedback(
         @PathVariable recordId: Long,
         @RequestBody @Valid request: CreateFeedbackRequest,
         @RequestHeader("Authorization") authorization: String
     ): ResponseEntity<Any> {
         return try {
             val jwt = authorization.replace("Bearer ", "")
-            val feedback = feedbackService.createFeedback(recordId, request.message, jwt)
+            val feedback = feedbackService.createRecordFeedback(recordId, request.message, jwt)
 
             logger.info("Feedback created successfully for record ID: $recordId")
             ResponseEntity(feedback, HttpStatus.CREATED)
@@ -119,7 +119,7 @@ class FeedbackController(private val feedbackService: FeedbackService) {
     @GetMapping("/{id}")
     fun getFeedbackById(@PathVariable id: Long): ResponseEntity<FeedbackDTO> {
         return try {
-            val foundFeedback = feedbackService.getById(id)
+            val foundFeedback = feedbackService.getFeedbackById(id)
             ResponseEntity.ok(foundFeedback)
         } catch (e: FeedbackException) {
             logger.error("Error getting feedback by ID $id: ${e.message}")
@@ -141,6 +141,41 @@ class FeedbackController(private val feedbackService: FeedbackService) {
             ResponseEntity(HttpStatus.NOT_FOUND)
         } catch (e: Exception) {
             logger.error("Error getting feedbacks by JWT")
+            ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping("/registration/{registrationId}")
+    fun createRegistrationFeedback(
+        @PathVariable registrationId: Long,
+        @RequestBody @Valid request: CreateFeedbackRequest,
+        @RequestHeader("Authorization") authorization: String
+    ): ResponseEntity<Any> {
+        return try {
+            val jwt = authorization.replace("Bearer ", "")
+            val feedback = feedbackService.createRegistrationFeedback(registrationId, request.message, jwt)
+
+            logger.info("Feedback created successfully for record ID: $registrationId")
+            ResponseEntity(feedback, HttpStatus.CREATED)
+        } catch (e: FeedbackException) {
+            logger.error("Error creating feedback: ${e.message}")
+            ResponseEntity("Feedback error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        } catch (e: Exception) {
+            logger.error("General error occurred: ${e.message}")
+            ResponseEntity("Error occurred: ${e.message}", HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    @GetMapping("/registration/{registrationId}")
+    fun getFeedbacksByRegistration(@PathVariable registrationId: Long): ResponseEntity<List<FeedbackDTO>> {
+        return try {
+            val feedbacks = feedbackService.getFeedbacksByRegistrationId(registrationId)
+            ResponseEntity(feedbacks, HttpStatus.OK)
+        } catch (e: FeedbackException) {
+            logger.error("Error retrieving feedbacks for registration ID $registrationId: ${e.message}")
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        } catch (e: Exception) {
+            logger.error("Error retrieving feedbacks for registration ID $registrationId: ${e.message}")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }

@@ -34,12 +34,24 @@ class FeedbackServiceImpl(
     private val tokenService: TokenService,
     private val userService: UserService,
     private val notificationService: NotificationService,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
+    private val registrationRepository: RegistrationRepository
 ) : FeedbackService {
 
     private val logger = LoggerFactory.getLogger(FeedbackServiceImpl::class.java)
 
-    override fun createFeedback(
+    companion object {
+        private const val KEY_NOTIFICATION_ID = "notification-id"
+        private const val KEY_FEEDBACK_ID = "feedback-id"
+        private const val KEY_RECORD_ID = "record-id"
+        private const val KEY_USER_ID = "user-id"
+        private const val KEY_REGISTRATION_ID = "registration-id"
+        private const val KEY_FEEDBACK_TYPE = "feedback-type"
+        private const val ADMIN_FEEDBACK = "ADMIN_FEEDBACK"
+        private const val RUNNER_FEEDBACK = "RUNNER_FEEDBACK"
+    }
+
+    override fun createRecordFeedback(
         recordId: Long,
         message: String,
         jwt: String
@@ -67,7 +79,37 @@ class FeedbackServiceImpl(
             val savedFeedback = feedbackRepository.save(feedback)
             val feedbackDTO = feedbackMapper.toDto(savedFeedback)
 
-            sendFeedbackNotifications(feedbackDTO, record, senderDTO)
+            sendRecordFeedbackNotifications(feedbackDTO, record, senderDTO)
+
+            feedbackDTO
+        } catch (e: DataAccessException) {
+            logger.error("Error creating feedback: ${e.message}")
+            throw FeedbackException("Database error occurred while creating feedback: ${e.message}")
+        }
+    }
+
+    override fun createRegistrationFeedback(registrationId: Long, message: String, jwt: String): FeedbackDTO {
+        return try {
+            val senderDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
+
+            val sender = userMapper.toEntity(senderDTO)
+
+            val registration = registrationRepository.findById(registrationId)
+                .orElseThrow { FeedbackException("Registration with ID $registrationId not found") }
+
+            val feedback = Feedback(
+                sender = sender,
+                message = message,
+                sentAt = LocalDateTime.now(),
+                registration = registration
+            )
+
+            val savedFeedback = feedbackRepository.save(feedback)
+            val feedbackDTO = feedbackMapper.toDto(savedFeedback)
+
+            sendRegistrationFeedbackNotifications(feedbackDTO, registration, senderDTO)
 
             feedbackDTO
         } catch (e: DataAccessException) {
@@ -102,6 +144,16 @@ class FeedbackServiceImpl(
         }
     }
 
+    override fun getFeedbacksByRegistrationId(registrationId: Long): List<FeedbackDTO> {
+        return try {
+            val feedbacks =  feedbackRepository.findByRegistrationIdOrderBySentAtDesc(registrationId)
+            feedbacks.map { feedbackMapper.toDto(it) }
+        } catch (e: DataAccessException) {
+            logger.error("Error retrieving feedbacks for registration $registrationId: ${e.message}")
+            throw FeedbackException("Database error occurred while retrieving feedbacks: ${e.message}")
+        }
+    }
+
     override fun deleteFeedback(feedbackId: Long, jwt: String) {
         try {
             val userDTO = tokenService.extractEmail(jwt)?.let { email ->
@@ -123,7 +175,7 @@ class FeedbackServiceImpl(
         }
     }
 
-    private fun sendFeedbackNotifications(
+    private fun sendRecordFeedbackNotifications(
         feedback: FeedbackDTO,
         record: Record,
         sender: UserDTO
@@ -143,9 +195,9 @@ class FeedbackServiceImpl(
                     pushTitle = "Phản hồi về Record",
                     pushContent = content,
                     data = mapOf(
-                        "feedbackId" to feedback.id.toString(),
-                        "recordId" to record.id.toString(),
-                        "type" to "ADMIN_FEEDBACK"
+                        KEY_FEEDBACK_ID to feedback.id.toString(),
+                        KEY_RECORD_ID to record.id.toString(),
+                        KEY_FEEDBACK_TYPE to ADMIN_FEEDBACK
                     )
                 )
             } else {
@@ -163,10 +215,64 @@ class FeedbackServiceImpl(
                         pushTitle = "Phản hồi mới",
                         pushContent = content,
                         data = mapOf(
-                            "feedbackId" to feedback.id.toString(),
-                            "recordId" to record.id.toString(),
-                            "runnerId" to sender.id.toString(),
-                            "type" to "RUNNER_FEEDBACK"
+                            KEY_FEEDBACK_ID to feedback.id.toString(),
+                            KEY_RECORD_ID to record.id.toString(),
+                            KEY_USER_ID to sender.id.toString(),
+                            KEY_FEEDBACK_TYPE to RUNNER_FEEDBACK
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error sending feedback notifications: ${e.message}")
+        }
+    }
+
+    private fun sendRegistrationFeedbackNotifications(
+        feedback: FeedbackDTO,
+        registration: Registration,
+        sender: UserDTO
+    ) {
+        try {
+            val isAdminSender = sender.role == ERole.ADMIN
+            val runner = registration.runner!!
+
+            if (isAdminSender) {
+                val title = "Phản hồi từ cuộc thi ${registration.contest!!.name}"
+                val content = "Nhà tổ chức đã phản hồi: ${feedback.message?.take(100)}"
+                createNotificationAndSendPush(
+                    receiver = userMapper.toDto(runner),
+                    title = title,
+                    content = content,
+                    objectId = registration.id,
+                    type = ENotificationType.BLOCK_CONTEST,
+                    pushTitle = title,
+                    pushContent = content,
+                    data = mapOf(
+                        KEY_FEEDBACK_ID to feedback.id.toString(),
+                        KEY_REGISTRATION_ID to registration.id.toString(),
+                        KEY_FEEDBACK_TYPE to ADMIN_FEEDBACK
+                    )
+                )
+            } else {
+                val title = "Phản hồi từ cuộc thi ${registration.contest!!.name}"
+                val content = "${sender.fullName} đã gửi phản hồi: ${feedback.message?.take(100)}"
+                val admins = userRepository.findByRole(ERole.ADMIN)
+
+                admins.forEach { admin ->
+                    createNotificationAndSendPush(
+                        receiver = userMapper.toDto(admin),
+                        title = title,
+                        content = content,
+                        objectId = registration.id,
+                        type = ENotificationType.RECORD_FEEDBACK,
+                        pushTitle = title,
+                        pushContent = content,
+                        data = mapOf(
+                            KEY_FEEDBACK_ID to feedback.id.toString(),
+                            KEY_REGISTRATION_ID to registration.id.toString(),
+                            KEY_USER_ID to sender.id.toString(),
+                            KEY_FEEDBACK_TYPE to RUNNER_FEEDBACK
                         )
                     )
                 }
@@ -203,7 +309,7 @@ class FeedbackServiceImpl(
                 userId = receiver.id!!,
                 title = pushTitle,
                 content = pushContent,
-                data = data + mapOf("notificationId" to savedNotification.id.toString())
+                data = data + mapOf(KEY_NOTIFICATION_ID to savedNotification.id.toString())
             )
 
         } catch (e: Exception) {
@@ -286,7 +392,7 @@ class FeedbackServiceImpl(
         }
     }
 
-    override fun getById(id: Long): FeedbackDTO {
+    override fun getFeedbackById(id: Long): FeedbackDTO {
         return try {
             val feedback = feedbackRepository.findById(id)
                 .orElseThrow { FeedbackException("Feedback with ID $id not found") }

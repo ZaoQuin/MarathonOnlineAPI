@@ -45,6 +45,9 @@ data class Registration(
     @JoinColumn(name = "contest_id")
     @JsonBackReference
     var contest: Contest? = null,
+
+    @OneToMany(mappedBy = "registration", cascade = [CascadeType.ALL])
+    var feedbacks: List<Feedback> = mutableListOf()
 )
 
 enum class ERegistrationStatus {

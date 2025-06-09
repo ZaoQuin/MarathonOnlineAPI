@@ -11,8 +11,6 @@ interface NotificationService {
     fun addNotification(newNotification: NotificationDTO): NotificationDTO
     fun deleteNotificationById(id: Long)
     fun updateNotification(notificationDTO: NotificationDTO): NotificationDTO
-    fun getNotifications(): List<NotificationDTO>
-    fun getById(id: Long): NotificationDTO
     fun getNotificationsByJwt(jwt: String): List<NotificationDTO>
     fun addIndividualNotification(notification: CreateIndividualNotificationRequest): NotificationDTO
     fun addAllRunnerNotification(notification: CreateAllNotificationRequest): List<NotificationDTO>
@@ -23,4 +21,6 @@ interface NotificationService {
     fun getUnreadCount(jwt: String): Int
     fun sendPushNotification(notification: NotificationDTO)
     fun sendPushNotificationToUser(userId: Long, title: String, content: String)
+    fun getAllNotifications(): List<NotificationDTO>
+    fun getNotificationById(id: Long): NotificationDTO
 }
