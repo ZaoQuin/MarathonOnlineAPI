@@ -1,15 +1,27 @@
 package com.university.MarathonOnlineAPI.repos
 
+import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
 import com.university.MarathonOnlineAPI.entity.Record
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
 interface RecordRepository : JpaRepository<Record, Long> {
-    fun getByUserId(id: Long): List<Record>
-    fun findByUserIdOrderByStartTimeDesc(userId: Long): List<Record>
+    @EntityGraph(attributePaths = ["approval"])
+    fun findByUserIdAndApprovalApprovalStatusIn(
+        userId: Long,
+        statuses: List<ERecordApprovalStatus>
+    ): List<Record>
+
+    @EntityGraph(attributePaths = ["approval"])
+    fun findByUserIdAndApprovalApprovalStatusInOrderByStartTimeDesc(
+        userId: Long,
+        statuses: List<ERecordApprovalStatus>
+    ): List<Record>
 
     @Query("""
         SELECT r FROM Record r 
@@ -17,6 +29,7 @@ interface RecordRepository : JpaRepository<Record, Long> {
         AND ((r.startTime <= :referenceEndTime AND r.endTime >= :referenceStartTime))
         ORDER BY r.startTime ASC
     """)
+
     fun findPotentialDuplicates(
         runnerId: Long,
         referenceStartTime: LocalDateTime,

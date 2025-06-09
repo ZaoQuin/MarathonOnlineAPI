@@ -56,7 +56,6 @@ class NotificationServiceImpl(
             val saveNotification = notificationRepository.save(notification)
             val result = notificationMapper.toDto(saveNotification)
 
-            // Send push notification
             sendPushNotification(result)
 
             result
