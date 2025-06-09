@@ -1,6 +1,5 @@
 package com.university.MarathonOnlineAPI.service
 
-import com.university.MarathonOnlineAPI.dto.NotificationDTO
 import com.university.MarathonOnlineAPI.entity.User
 
 interface FirebaseMessagingService {

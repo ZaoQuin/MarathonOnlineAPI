@@ -124,7 +124,7 @@ class NotificationController(private val notificationService: NotificationServic
     @GetMapping
     fun getNotifications(): ResponseEntity<List<NotificationDTO>> {
         return try {
-            val notifications = notificationService.getNotifications()
+            val notifications = notificationService.getAllNotifications()
             ResponseEntity(notifications, HttpStatus.OK)
         } catch (e: Exception) {
             logger.error("Error in getNotifications: ${e.message}")
@@ -135,7 +135,7 @@ class NotificationController(private val notificationService: NotificationServic
     @GetMapping("/{id}")
     fun getNotificationById(@PathVariable id: Long): ResponseEntity<NotificationDTO> {
         return try {
-            val foundNotification = notificationService.getById(id)
+            val foundNotification = notificationService.getNotificationById(id)
             ResponseEntity.ok(foundNotification)
         } catch (e: NotificationException) {
             logger.error("Error getting notification by ID $id: ${e.message}")

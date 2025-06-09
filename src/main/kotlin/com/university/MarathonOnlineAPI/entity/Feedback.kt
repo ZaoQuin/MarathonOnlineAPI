@@ -21,6 +21,10 @@ data class Feedback(
     var sentAt: LocalDateTime = LocalDateTime.now(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approval_id", nullable = false)
-    var approval: RecordApproval,
+    @JoinColumn(name = "approval_id")
+    var approval: RecordApproval?= null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registration_id")
+    var registration: Registration?= null,
 )
