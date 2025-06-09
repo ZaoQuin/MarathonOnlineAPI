@@ -8,16 +8,10 @@ import org.springframework.stereotype.Component
 @Component
 class NotificationMapper(private val modelMapper: ModelMapper, private val contestMapper: ContestMapper, private val userMapper: UserMapper): Mapper<NotificationDTO, Notification> {
     override fun toDto(entity: Notification): NotificationDTO {
-        val notificationDTO = modelMapper.map(entity, NotificationDTO::class.java)
-        notificationDTO.contest = entity.contest?.let {contestMapper.toDto(it)}
-        notificationDTO.receiver = entity.receiver?.let {userMapper.toDto(it)}
-        return notificationDTO
+        return modelMapper.map(entity, NotificationDTO::class.java)
     }
 
     override fun toEntity(dto: NotificationDTO): Notification {
-        val notification = modelMapper.map(dto, Notification::class.java)
-        notification.contest = dto.contest?.let {contestMapper.toEntity(it)}
-        notification.receiver = dto.receiver?.let {userMapper.toEntity(it)}
-        return notification
+        return modelMapper.map(dto, Notification::class.java)
     }
 }

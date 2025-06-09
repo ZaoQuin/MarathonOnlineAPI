@@ -65,18 +65,16 @@ class RecordServiceImpl @Autowired constructor(
                 source = newRecord.source
             )
 
-            // Phân tích và lưu approval trước
-            val savedRecordApproval = recordApprovalService.analyzeRecordApproval(recordDTO)
-
-            // Lấy entity approval từ database thay vì map từ DTO
+            var record = recordRepository.save(recordMapper.toEntity(recordDTO))
+            val savedRecordApproval = recordApprovalService.analyzeRecordApproval(
+                recordMapper.toDto(record)
+            )
             val approvalEntity = recordApprovalRepository.findById(savedRecordApproval.id!!)
                 .orElseThrow { RuntimeException("Approval not found") }
 
-            var record = recordMapper.toEntity(recordDTO)
             record.approval = approvalEntity;
 
-            val savedRecord = recordRepository.save(record)
-            return recordMapper.toDto(savedRecord)
+            return recordMapper.toDto(recordRepository.save(record))
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RecordException("Database error occurred while saving race: ${e.message}")
@@ -141,7 +139,10 @@ class RecordServiceImpl @Autowired constructor(
                     userService.findByEmail(email)
                 } ?: throw AuthenticationException("Email not found in the token")
 
-            val races = userDTO.id?.let { recordRepository.getByUserId(it) }
+            val races = userDTO.id?.let { recordRepository.findByUserIdAndApprovalApprovalStatusIn(
+                userDTO.id!!,
+                listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
+            ) }
             return races?.map { recordMapper.toDto(it) }!!
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
@@ -150,8 +151,10 @@ class RecordServiceImpl @Autowired constructor(
     }
 
     override fun getRunningStatsByUser(userId: Long): RunningStatsDTO? {
-        val records = recordRepository.getByUserId(userId)
-            .filter { it.approval!!.approvalStatus != ERecordApprovalStatus.REJECTED }
+        val records = recordRepository.findByUserIdAndApprovalApprovalStatusInOrderByStartTimeDesc(
+            userId,
+            listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
+        )
 
         if (records.isEmpty()) return null
 
@@ -171,7 +174,10 @@ class RecordServiceImpl @Autowired constructor(
     }
 
     override fun getRecordsByUserId(userId: Long): List<RecordDTO> {
-        return recordRepository.findByUserIdOrderByStartTimeDesc(userId).map { recordMapper.toDto(it) }
+        return recordRepository.findByUserIdAndApprovalApprovalStatusInOrderByStartTimeDesc(
+            userId,
+            listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
+        ).map { recordMapper.toDto(it) }
     }
 
     // Cập nhật phần sync trong RecordServiceImpl.kt

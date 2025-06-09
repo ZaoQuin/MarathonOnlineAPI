@@ -34,8 +34,6 @@ class NotificationServiceImpl(
     private val fcmTokenRepository: FCMTokenRepository,
     private val notificationMapper: NotificationMapper,
     private val userMapper: UserMapper,
-    private val contestMapper: ContestMapper,
-    private val contestRepository: ContestRepository,
     private val userRepository: UserRepository,
     private val tokenService: TokenService,
     private val userService: UserService,
@@ -48,7 +46,7 @@ class NotificationServiceImpl(
         return try {
             val notification = Notification(
                 receiver = newNotification.receiver?.let { userMapper.toEntity(it) },
-                contest = newNotification.contest?.let { contestMapper.toEntity(it) },
+                objectId = newNotification.objectId,
                 title = newNotification.title,
                 content = newNotification.content,
                 createAt = newNotification.createAt ?: LocalDateTime.now(),
@@ -58,7 +56,6 @@ class NotificationServiceImpl(
             val saveNotification = notificationRepository.save(notification)
             val result = notificationMapper.toDto(saveNotification)
 
-            // Send push notification
             sendPushNotification(result)
 
             result
@@ -72,7 +69,7 @@ class NotificationServiceImpl(
         return try {
             val notification = Notification(
                 receiver = request.receiver?.let { userMapper.toEntity(it) },
-                contest = request.contest?.let { contestMapper.toEntity(it) },
+                objectId = request.objectId,
                 title = request.title,
                 content = request.content,
                 createAt = LocalDateTime.now(),
@@ -100,7 +97,7 @@ class NotificationServiceImpl(
             runners.forEach { receiver ->
                 val notification = Notification(
                     receiver = receiver,
-                    contest = request.contest?.let { contestMapper.toEntity(it) },
+                    objectId = request.objectId,
                     title = request.title,
                     content = request.content,
                     createAt = LocalDateTime.now(),
@@ -130,7 +127,7 @@ class NotificationServiceImpl(
             request.receivers.forEach { receiver ->
                 val notification = Notification(
                     receiver = userMapper.toEntity(receiver),
-                    contest = request.contest?.let { contestMapper.toEntity(it) },
+                    objectId = request.objectId,
                     title = request.title,
                     content = request.content,
                     createAt = LocalDateTime.now(),
@@ -189,7 +186,7 @@ class NotificationServiceImpl(
 
             existingNotification.apply {
                 receiver = notificationDTO.receiver?.let { userMapper.toEntity(it) }
-                contest = notificationDTO.contest?.let { contestMapper.toEntity(it) }
+                objectId = notificationDTO.objectId
                 title = notificationDTO.title
                 content = notificationDTO.content
                 createAt = notificationDTO.createAt

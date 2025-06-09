@@ -101,7 +101,7 @@ class ContestServiceImpl(
 
     override fun deleteContestById(id: Long) {
         try {
-            notificationRepository.deleteByContestId(id)
+            notificationRepository.deleteByObjectIdIfContestType(id)
             rewardRepository.deleteByContestId(id)
             ruleRepository.deleteByContestId(id)
             contestRepository.deleteById(id)

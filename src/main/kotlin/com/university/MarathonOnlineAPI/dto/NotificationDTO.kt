@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 data class NotificationDTO(
     var id: Long? = null,
     var receiver: UserDTO? = null,
-    var contest: ContestDTO? = null,
+    var objectId: Long? = null,
     var title: String? = null,
     var content: String? = null,
     var createAt: LocalDateTime? = null,

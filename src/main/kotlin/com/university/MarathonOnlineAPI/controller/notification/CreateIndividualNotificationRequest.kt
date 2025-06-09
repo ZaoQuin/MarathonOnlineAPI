@@ -10,7 +10,7 @@ data class CreateIndividualNotificationRequest(
     @field:NotNull(message = "Receiver cannot be null")
     var receiver: UserDTO? = null,
 
-    var contest: ContestDTO? = null,
+    var objectId: Long? = null,
 
     @field:NotBlank(message = "Title cannot be blank")
     var title: String? = null,

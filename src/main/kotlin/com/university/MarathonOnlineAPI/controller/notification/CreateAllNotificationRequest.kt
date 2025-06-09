@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 
 data class CreateAllNotificationRequest(
-    var contest: ContestDTO? = null,
+    var objectId: Long? = null,
 
     @field:NotBlank(message = "Title cannot be blank")
     var title: String? = null,
