@@ -52,7 +52,6 @@ class TrainingPlanServiceImpl(
 
         val plan = TrainingPlan(
             name = generatePlanName(input, currentUser.fullName ?: "Runner"),
-            user = currentUser,
             input = savedInput,
             createdAt = LocalDateTime.now(),
             status = ETrainingPlanStatus.ACTIVE,

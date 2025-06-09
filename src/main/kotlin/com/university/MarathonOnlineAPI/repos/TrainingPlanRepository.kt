@@ -15,35 +15,34 @@ import java.time.LocalDateTime
 
 @Repository
 interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
-    fun findByUserId(userId: Long): List<TrainingPlan>
-    fun findByUserIdOrderByCreatedAtDesc(id: Long): List<TrainingPlan>
+    @Query("SELECT tp FROM TrainingPlan tp WHERE tp.input.user.id = :userId")
+    fun findByUserId(@Param("userId") userId: Long): List<TrainingPlan>
+
+    @Query("SELECT tp FROM TrainingPlan tp WHERE tp.input.user.id = :userId ORDER BY tp.createdAt DESC")
+    fun findByUserIdOrderByCreatedAtDesc(@Param("userId") userId: Long): List<TrainingPlan>
 
     @Query("""
-        SELECT tp FROM TrainingPlan tp 
-        WHERE tp.user.id = :userId 
-          AND tp.status = :status 
-          AND tp.startDate <= :now 
-          AND tp.endDate >= :now
-    """)
-    fun findActivePlanNow(
+    SELECT tp FROM TrainingPlan tp 
+    WHERE tp.input.user.id = :userId 
+    AND tp.status = :status 
+    AND tp.startDate <= :start AND tp.endDate >= :end
+""")
+    fun findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
         @Param("userId") userId: Long,
         @Param("status") status: ETrainingPlanStatus,
-        @Param("now") now: LocalDateTime
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime
     ): TrainingPlan?
 
-    fun findByUserIdAndStatusAndStartDateBeforeAndEndDateAfter(
-        userId: Long,
-        status: ETrainingPlanStatus,
-        start: LocalDateTime,
-        end: LocalDateTime
-    ): TrainingPlan?
-
-    fun findByUserIdAndStatus(userId: Long, status: ETrainingPlanStatus): List<TrainingPlan>
+    @Query("""
+    SELECT tp FROM TrainingPlan tp
+    WHERE tp.input.user.id = :userId AND tp.status = :status
+""")
     fun findByUserIdAndStatus(
-        userId: Long,
-        status: ETrainingPlanStatus,
-        pageable: Pageable
-    ): Page<SingleTrainingPlanView>
+        @Param("userId") userId: Long,
+        @Param("status") status: ETrainingPlanStatus
+    ): List<TrainingPlan>
+
 
     @Query("""
     SELECT 
@@ -54,7 +53,7 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
         tp.status AS status 
     FROM TrainingPlan tp 
     WHERE 
-        tp.user.id = :userId AND 
+        tp.input.user.id = :userId AND 
         tp.status = :status AND 
         (:startDate IS NULL OR tp.endDate  >= :startDate) AND 
         (:endDate IS NULL OR tp.startDate <= :endDate)
@@ -67,7 +66,17 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
         pageable: Pageable
     ): Page<SingleTrainingPlanView>
 
-    fun findTopByUserIdAndStatusOrderByStartDateDesc(userId: Long, status: ETrainingPlanStatus = ETrainingPlanStatus.ACTIVE): TrainingPlan?
+    @Query("""
+    SELECT t FROM TrainingPlan t 
+    WHERE t.input.user.id = :userId 
+    AND t.status = :status 
+    ORDER BY t.startDate DESC
+""")
+    fun findTopByUserIdAndStatusOrderByStartDateDesc(
+        @Param("userId") userId: Long,
+        @Param("status") status: ETrainingPlanStatus
+    ): TrainingPlan?
+
     fun findByStatusAndStartDateBeforeAndEndDateAfter(
         status: ETrainingPlanStatus,
         startDate: LocalDateTime,
