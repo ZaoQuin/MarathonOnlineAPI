@@ -10,10 +10,6 @@ data class TrainingPlan(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "runner_id", nullable = false)
-    var user: User,
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "input_id", nullable = false)
     var input: TrainingPlanInput,

@@ -3,6 +3,7 @@ package com.university.MarathonOnlineAPI.service.impl
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.TrainingDayDTO
 import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
+import com.university.MarathonOnlineAPI.entity.ETrainingPlanStatus
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.mapper.RecordMapper
 import com.university.MarathonOnlineAPI.mapper.TrainingDayMapper
@@ -33,7 +34,7 @@ class TrainingDayServiceImpl(
                 userService.findByEmail(email)
             } ?: throw AuthenticationException("Email not found in the token")
         val now = LocalDateTime.now()
-        val activePlan = trainingPlanRepository.findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
+        val activePlan = trainingPlanRepository.findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!, ETrainingPlanStatus.ACTIVE)
             ?: throw RuntimeException("No active training plan found for the user")
         val currentTrainingDay = activePlan.trainingDays.firstOrNull { day ->
             val dayDate = day.dateTime
@@ -53,7 +54,7 @@ class TrainingDayServiceImpl(
             val now = LocalDateTime.now()
 
             val activePlan = trainingPlanRepository
-                .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!)
+                .findTopByUserIdAndStatusOrderByStartDateDesc(userDTO.id!!, ETrainingPlanStatus.ACTIVE)
                 ?: throw RuntimeException("No active training plan found for the user")
 
             val currentTrainingDay = activePlan.trainingDays.firstOrNull { day ->

@@ -35,7 +35,7 @@ interface TrainingDayRepository : JpaRepository<TrainingDay, Long> {
 
     fun findByPlanIdAndDateTime(id: Long, now: LocalDateTime): TrainingDay?
 
-    @Query("SELECT t FROM TrainingDay t WHERE t.plan.user.id = :userId AND t.dateTime BETWEEN :start AND :end")
+    @Query("SELECT t FROM TrainingDay t WHERE t.plan.input.user.id = :userId AND t.dateTime BETWEEN :start AND :end")
     fun findByUserIdAndDateTimeRange(userId: Long, start: LocalDateTime, end: LocalDateTime): List<TrainingDay>
 
     @Query("SELECT td FROM TrainingDay td WHERE td.record.id = :recordId")
