@@ -39,7 +39,8 @@ class RecordApprovalServiceImpl(
         val recordApproval = analyzeRecord(recordDTO)
         val savedRecordApproval = recordApprovalRepository.save(recordApprovalMapper.toEntity(recordApproval))
 
-        if(savedRecordApproval.approvalStatus == ERecordApprovalStatus.REJECTED &&
+        if((savedRecordApproval.approvalStatus == ERecordApprovalStatus.REJECTED ||
+                    savedRecordApproval.approvalStatus == ERecordApprovalStatus.PENDING)&&
             recordDTO.source == ERecordSource.DEVICE){
             val notification = notificationHandler.notifyRejectedRecord(recordDTO)
             notificationService.addNotification(notification)
