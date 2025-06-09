@@ -9,9 +9,12 @@ data class RecordApproval (
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
     var approvalStatus: ERecordApprovalStatus? = null,
-    var fraudRisk: Double? = null,           // 0-100
+    var fraudRisk: Double? = null,
     var fraudType: String? = null,
-    var reviewNote: String? = null
+    var reviewNote: String? = null,
+
+    @OneToMany(mappedBy = "approval", cascade = [CascadeType.ALL])
+    var feedbacks: List<Feedback> = mutableListOf()
 )
 
 enum class ERecordApprovalStatus {

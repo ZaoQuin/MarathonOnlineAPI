@@ -1,7 +1,9 @@
 package com.university.MarathonOnlineAPI.handler
 
+import com.university.MarathonOnlineAPI.dto.FeedbackDTO
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
 import com.university.MarathonOnlineAPI.dto.RecordDTO
+import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.entity.ENotificationType
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -18,7 +20,8 @@ class NotificationHandler {
             content = content,
             createAt = LocalDateTime.now(),
             isRead = false,
-            type = ENotificationType.REJECTED_RECORD
+            type = ENotificationType.REJECTED_RECORD,
+            objectId = record.id
         )
 
         return notification
