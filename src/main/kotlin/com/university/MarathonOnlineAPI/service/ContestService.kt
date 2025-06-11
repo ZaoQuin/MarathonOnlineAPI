@@ -14,7 +14,7 @@ interface ContestService {
     fun getById(id: Long): ContestDTO
     fun getHomeContests(): List<ContestDTO>
     fun getContestsByRunner(jwt: String): List<ContestDTO>
-    fun getActiveAndFinished(): List<ContestDTO>
+    fun getActiveAndFinishedAnComepleted(): List<ContestDTO>
     fun cancelContest(contestDTO: ContestDTO): ContestDTO
     fun awardPrizes(contestDTO: ContestDTO): ContestDTO
     fun checkNameExist(name: String): Boolean

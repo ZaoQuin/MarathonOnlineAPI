@@ -211,7 +211,7 @@ class ContestController(private val contestService: ContestService) {
     @GetMapping("/active-and-finish")
     fun getActiveAndFinish(): ResponseEntity<*> {
         return try {
-            val contests = contestService.getActiveAndFinished()
+            val contests = contestService.getActiveAndFinishedAnComepleted()
             ResponseEntity.ok(GetContestsResponse(contests.ifEmpty { emptyList() }))
         } catch (e: ContestException) {
             logger.error("Contest retrieval error", e)

@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
 
@@ -47,14 +46,16 @@ interface ContestRepository : JpaRepository<Contest, Long> {
         SELECT c FROM Contest c
         WHERE c.status = :activeStatus
           OR c.status = :finishedStatus
+          OR c.status = :completedStatus
         ORDER BY 
           c.startDate ASC,   
           SIZE(c.registrations) DESC, 
           c.fee ASC          
     """)
-    fun getActiveAndFinished(
+    fun getActiveAndFinishedAndCompleted(
         @Param("activeStatus") activeStatus: EContestStatus = EContestStatus.ACTIVE,
-        @Param("finishedStatus") finishedStatus: EContestStatus = EContestStatus.FINISHED
+        @Param("finishedStatus") finishedStatus: EContestStatus = EContestStatus.FINISHED,
+        @Param("completedStatus") completedStatus: EContestStatus = EContestStatus.COMPLETED
     ): List<Contest>
 
     @Query("""

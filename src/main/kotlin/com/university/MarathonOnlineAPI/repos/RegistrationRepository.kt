@@ -58,8 +58,18 @@ interface RegistrationRepository : JpaRepository<Registration, Long>{
     """)
     fun revenueByYear(): List<Map<String, Any>>
 
-    @Query("SELECT r FROM Registration r JOIN r.contest c WHERE r.runner.id = :userId AND c.startDate <= :endDate AND c.endDate >= :startDate")
-    fun findByRunnerIdAndContestDateRange(userId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<Registration>
+    @Query("""
+    SELECT r FROM Registration r
+    WHERE r.runner.id = :userId 
+      AND r.registrationDate <= :startTime
+      AND r.contest.startDate <= :startTime 
+      AND r.contest.endDate >= :endTime
+""")
+    fun findValidRegistrationsByUserIdAndRecordTimeRange(
+        @Param("userId") userId: Long,
+        @Param("startTime") startTime: LocalDateTime,
+        @Param("endTime") endTime: LocalDateTime
+    ): List<Registration>
 
     fun findByRunnerIdAndContestId(userId: Long, id: Long): Registration?
 }
