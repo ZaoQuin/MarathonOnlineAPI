@@ -234,10 +234,10 @@ class FeedbackServiceImpl(
         sender: UserDTO
     ) {
         try {
-            val isAdminSender = sender.role == ERole.ADMIN
+            val isOrganizer = sender.id == registration.contest!!.organizer!!.id
             val runner = registration.runner!!
 
-            if (isAdminSender) {
+            if (isOrganizer) {
                 val title = "Phản hồi từ cuộc thi ${registration.contest!!.name}"
                 val content = "Nhà tổ chức đã phản hồi: ${feedback.message?.take(100)}"
                 createNotificationAndSendPush(
