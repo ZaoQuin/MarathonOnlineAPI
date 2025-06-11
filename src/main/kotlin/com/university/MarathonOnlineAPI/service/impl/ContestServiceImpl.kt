@@ -223,9 +223,9 @@ class ContestServiceImpl(
         }
     }
 
-    override fun getActiveAndFinished(): List<ContestDTO> {
+    override fun getActiveAndFinishedAnComepleted(): List<ContestDTO> {
         return try {
-            val contests = contestRepository.getActiveAndFinished()
+            val contests = contestRepository.getActiveAndFinishedAndCompleted()
             contests.map { contestMapper.toDto(it) }
         } catch (e: DataAccessException) {
             logger.error("Error retrieving contests: ${e.message}", e)

@@ -4,10 +4,7 @@ import com.university.MarathonOnlineAPI.dto.CreateRecordRequest
 import com.university.MarathonOnlineAPI.dto.RecordDTO
 import com.university.MarathonOnlineAPI.dto.RunningStatsDTO
 import com.university.MarathonOnlineAPI.dto.UserDTO
-import com.university.MarathonOnlineAPI.entity.ERecordApprovalStatus
-import com.university.MarathonOnlineAPI.entity.ERecordSource
-import com.university.MarathonOnlineAPI.entity.ETrainingDayStatus
-import com.university.MarathonOnlineAPI.entity.Record
+import com.university.MarathonOnlineAPI.entity.*
 import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.RecordException
 import com.university.MarathonOnlineAPI.handler.RecordMergerHandler
@@ -180,8 +177,6 @@ class RecordServiceImpl @Autowired constructor(
         ).map { recordMapper.toDto(it) }
     }
 
-    // Cập nhật phần sync trong RecordServiceImpl.kt
-
     override fun sync(recordDTOs: List<CreateRecordRequest>, jwt: String): List<RecordDTO> {
         return try {
             val userDTO = tokenService.extractEmail(jwt)?.let { email ->
@@ -190,7 +185,6 @@ class RecordServiceImpl @Autowired constructor(
 
             logger.info("Starting sync for user ${userDTO.id} with ${recordDTOs.size} records")
 
-            // Merge records sẽ tự động xử lý overlap và tạo merged records
             val mergedRecords = recordMergerHandler.mergeRecords(recordDTOs, userDTO)
             logger.info("After merge: ${mergedRecords.size} records to sync")
 
@@ -203,7 +197,6 @@ class RecordServiceImpl @Autowired constructor(
                     logger.info("Successfully synced record: ${syncedRecord.id}")
                 } catch (e: Exception) {
                     logger.error("Error syncing record: ${e.message}", e)
-                    // Continue with other records instead of failing completely
                 }
             }
 
@@ -222,20 +215,17 @@ class RecordServiceImpl @Autowired constructor(
     fun syncOneRecord(recordDTO: RecordDTO, userDTO: UserDTO): RecordDTO {
         logger.info("Syncing record: startTime=${recordDTO.startTime}, endTime=${recordDTO.endTime}")
 
-        // Tìm kiếm record có exact match về thời gian
         val exactMatch = findExactMatchRecord(recordDTO, userDTO)
 
         val savedRecord = if (exactMatch != null) {
             logger.info("Found exact match record, updating: ${exactMatch.id}")
             updateExistingRecord(exactMatch, recordDTO, userDTO)
         } else {
-            // Trước khi tạo mới, kiểm tra xem có records overlap không
             val overlappingRecords = findOverlappingRecordsInDB(recordDTO, userDTO)
 
             if (overlappingRecords.isNotEmpty()) {
                 logger.info("Found ${overlappingRecords.size} overlapping records, will replace them")
 
-                // Xóa các records overlap
                 unlinkFromRegistrationAndTrainingDay(overlappingRecords)
                 recordRepository.deleteAll(overlappingRecords)
                 logger.info("Deleted ${overlappingRecords.size} overlapping records")
@@ -245,7 +235,6 @@ class RecordServiceImpl @Autowired constructor(
             createNewRecord(recordDTO, userDTO)
         }
 
-        // Link với Registration và TrainingDay
         linkToRegistrationAndTrainingDay(savedRecord)
 
         val result = recordMapper.toDto(savedRecord)
@@ -286,19 +275,19 @@ class RecordServiceImpl @Autowired constructor(
     private fun unlinkFromRegistrationAndTrainingDay(records: List<Record>) {
         records.forEach { record ->
             try {
-                // Unlink từ registrations
                 record.registrations?.forEach { registration ->
                     registration.records = registration.records?.filter { it.id != record.id }
                     registrationRepository.save(registration)
                 }
 
-                // Unlink từ training days
                 val trainingDays = trainingDayRepository.findByRecordId(record.id!!)
                 trainingDays.forEach { trainingDay ->
-                    trainingDay.record = null
-                    trainingDay.status = ETrainingDayStatus.ACTIVE
-                    trainingDay.completionPercentage = 0.0
-                    trainingDayRepository.save(trainingDay)
+                    if(trainingDay.session!!.type != ETrainingSessionType.REST) {
+                        trainingDay.record = null
+                        trainingDay.status = ETrainingDayStatus.ACTIVE
+                        trainingDay.completionPercentage = 0.0
+                        trainingDayRepository.save(trainingDay)
+                    }
                 }
             } catch (e: Exception) {
                 logger.error("Error unlinking record ${record.id}: ${e.message}")
@@ -316,7 +305,6 @@ class RecordServiceImpl @Autowired constructor(
             heartRate = recordDTO.heartRate ?: heartRate
             source = recordDTO.source ?: source
 
-            // Cập nhật approval
             val savedRecordApproval = recordApprovalService.analyzeRecordApproval(recordDTO)
             val approvalEntity = recordApprovalRepository.findById(savedRecordApproval.id!!)
                 .orElseThrow { RuntimeException("Approval not found") }
@@ -342,16 +330,14 @@ class RecordServiceImpl @Autowired constructor(
     }
 
     private fun linkToRegistrationAndTrainingDay(record: Record) {
-        // Liên kết với Registration
         val userId = record.user?.id ?: throw RecordException("User ID is required")
         val startTime = record.startTime ?: throw RecordException("Start time is required")
         val endTime = record.endTime ?: throw RecordException("End time is required")
 
-        // Tìm các Registration có contest diễn ra trong khoảng thời gian của Record
-        val registrations = registrationRepository.findByRunnerIdAndContestDateRange(
+        val registrations = registrationRepository.findValidRegistrationsByUserIdAndRecordTimeRange(
             userId = userId,
-            startDate = startTime.toLocalDate().atStartOfDay(),
-            endDate = endTime.toLocalDate().plusDays(1).atStartOfDay()
+            startTime = startTime,
+            endTime = endTime
         )
 
         registrations.forEach { registration ->
@@ -359,7 +345,6 @@ class RecordServiceImpl @Autowired constructor(
             registrationRepository.save(registration)
         }
 
-        // Liên kết với TrainingDay (chỉ 1 Record)
         val trainingDay = trainingDayRepository.findByUserIdAndDateTimeRange(
             userId = userId,
             start = startTime,
