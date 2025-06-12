@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 
 data class ContestDTO(
     var id: Long? = null,
+    var imgUrl: String? = null,
     var organizer: UserDTO? = null,
     var rules: List<RuleDTO>? = null,
     var rewards: List<RewardDTO>? = null,
