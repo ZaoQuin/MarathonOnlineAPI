@@ -1,12 +1,6 @@
 package com.university.MarathonOnlineAPI.controller.notification
 
 import com.university.MarathonOnlineAPI.dto.NotificationDTO
-<<<<<<< HEAD
-=======
-import com.university.MarathonOnlineAPI.dto.RuleDTO
-import com.university.MarathonOnlineAPI.entity.ERole
-import com.university.MarathonOnlineAPI.entity.Rule
->>>>>>> e2fe799 (Complete send notification to runner)
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.service.NotificationService
 import jakarta.validation.Valid
@@ -93,12 +87,13 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-<<<<<<< HEAD
     @PostMapping("/notifications/send")
     fun sendNotificationToRole(@RequestBody request: NotificationRequest) {
         if (request.targetRole == "RUNNER") {
             notificationService.sendNotificationToRunners(request.contestId, request.title, request.content)
-=======
+        }
+    }
+
     @PostMapping("/send/users")
     fun sendAcceptContestNotificationToUser(@RequestBody request: NotificationRequest) {
         if (request.targetRole == "RUNNER") {
@@ -108,8 +103,7 @@ class NotificationController(private val notificationService: NotificationServic
                 content = request.content
             )
         }
-        if(request.type == "NOT_APPROVAL_CONTEST")
-        {
+        if (request.type == "NOT_APPROVAL_CONTEST") {
             notificationService.sendRejectContestNotificationToOrganizer(
                 contestId = request.contestId,
                 title = request.title,
@@ -117,15 +111,13 @@ class NotificationController(private val notificationService: NotificationServic
                 organizerId = request.userId
             )
         }
-        if (request.type == "ACCEPT_CONTEST")
-        {
+        if (request.type == "ACCEPT_CONTEST") {
             notificationService.sendAcceptContestNotificationToOrganizer(
                 contestId = request.contestId,
                 title = request.title,
                 content = request.content,
                 organizerId = request.userId
             )
->>>>>>> 252b016 (Done send to runner, organizer)
         }
     }
 
@@ -224,9 +216,6 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-    /**
-     * API để đánh dấu tất cả thông báo là đã đọc
-     */
     @PutMapping("/mark-all-read")
     fun markAllAsRead(@RequestHeader("Authorization") token: String): ResponseEntity<List<NotificationDTO>> {
         return try {
@@ -243,9 +232,6 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-    /**
-     * API để lấy số lượng thông báo chưa đọc
-     */
     @GetMapping("/unread-count")
     fun getUnreadCount(@RequestHeader("Authorization") token: String): ResponseEntity<Int> {
         return try {

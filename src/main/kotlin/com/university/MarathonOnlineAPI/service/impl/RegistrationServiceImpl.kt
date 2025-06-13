@@ -45,7 +45,6 @@ class RegistrationServiceImpl(
 
             val userId = userDTO.id!!
 
-            // Kiểm tra xem đã tồn tại đăng ký chưa
             val existingRegistration = registrationRepository
                 .findByRunnerIdAndContestId(userId, contest.id!!)
 
@@ -194,15 +193,7 @@ class RegistrationServiceImpl(
                 compareByDescending<Registration> { reg ->
                     reg.records?.sumOf { it.distance ?: 0.0 } ?: 0.0
                 }.thenBy { reg ->
-<<<<<<< HEAD
                     reg.records?.sumOf { Duration.between(it.startTime, it.endTime).seconds } ?: 0L
-=======
-                    reg.records?.sumOf { record ->
-                        if (record.startTime != null && record.endTime != null) {
-                            java.time.Duration.between(record.startTime, record.endTime).seconds
-                        } else 0L
-                    } ?: 0L
->>>>>>> 232abb1 (md)
                 }.thenBy { reg ->
                     reg.records?.map { it.avgSpeed ?: 0.0 }?.average() ?: 0.0
                 }.thenBy { reg ->
