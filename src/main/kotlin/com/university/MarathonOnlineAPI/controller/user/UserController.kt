@@ -2,6 +2,7 @@ package com.university.MarathonOnlineAPI.controller.user
 
 import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
+import com.university.MarathonOnlineAPI.controller.StringResponse
 import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.UserException
@@ -212,6 +213,54 @@ class UserController(
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Upload failed: ${e.message}")
+        }
+    }
+    @PostMapping("/{id}/avatar-mobile")
+    fun uploadAvatarMobile(
+        @PathVariable id: Long,
+        @RequestParam("file") file: MultipartFile
+    ): ResponseEntity<StringResponse> {
+        return try {
+            println("Received request to upload avatar for user ID: $id")
+            println("File name: ${file.originalFilename}")
+            println("File content type: ${file.contentType}")
+            println("File size: ${file.size}")
+
+            if (file.isEmpty) {
+                println("File is empty")
+                return ResponseEntity.badRequest().body(StringResponse("File is empty"))
+            }
+
+            val allowedTypes = listOf("image/jpeg", "image/png", "image/jpg", "image/gif")
+            if (!allowedTypes.contains(file.contentType)) {
+                println("File type is not allowed: ${file.contentType}")
+                return ResponseEntity.badRequest().body(StringResponse("Only image files are allowed"))
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                println("File is too large: ${file.size}")
+                return ResponseEntity.badRequest().body(StringResponse("File size must be less than 5MB"))
+            }
+
+            val uploadOptions = ObjectUtils.asMap(
+                "folder", "user_avatars",
+                "public_id", "user_${id}_avatar",
+                "overwrite", true,
+                "resource_type", "image"
+            )
+
+            println("Uploading to Cloudinary...")
+            val uploadResult = cloudinary.uploader().upload(file.bytes, uploadOptions)
+            val avatarUrl = uploadResult["secure_url"] as String
+            println("Upload successful. URL: $avatarUrl")
+
+            userService.updateAvatar(id, avatarUrl)
+            ResponseEntity.ok(StringResponse(avatarUrl))
+        } catch (e: Exception) {
+            println("Exception occurred during avatar upload:")
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(StringResponse("Upload failed: ${e.message}"))
         }
     }
 }

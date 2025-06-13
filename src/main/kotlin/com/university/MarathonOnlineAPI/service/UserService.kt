@@ -17,4 +17,5 @@ interface UserService {
     fun unblockUser(id: Long)
     fun checkUsernameExists(username: String): Boolean
     fun checkPhoneNumberExists(phoneNumber: String): Boolean
+    fun updateAvatar(userId: Long, avatarUrl: String): UserDTO
 }
