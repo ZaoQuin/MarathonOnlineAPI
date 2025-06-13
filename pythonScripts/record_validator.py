@@ -3,44 +3,29 @@ import json
 import sys
 import os
 import warnings
-import requests
 warnings.filterwarnings('ignore')
 sys.stdout.reconfigure(encoding='utf-8')
 
-from modal import (
+from module import (
     prepare_marathon_data, analyze_per_user, extract_features,
     detect_anomalies_isolation_forest, detect_anomalies_lof
 )
 
 def validate_record(record_json):
-    """
-    Kiểm tra tính hợp lệ của một bản ghi marathon trước khi lưu vào cơ sở dữ liệu.
-
-    Args:
-        record_json (str): Chuỗi JSON chứa thông tin của bản ghi cần kiểm tra.
-
-    Returns:
-        dict: Kết quả đánh giá bao gồm trạng thái, điểm rủi ro gian lận, loại gian lận và ghi chú.
-    """
     try:
-        # Clean and validate JSON string
         record_json = record_json.strip()
         if not record_json:
             raise ValueError("Empty JSON string")
 
-        # Try to parse JSON with better error handling
         try:
             record = json.loads(record_json)
         except json.JSONDecodeError as e:
-            # Try to fix common JSON issues
             record_json_fixed = fix_json_string(record_json)
             record = json.loads(record_json_fixed)
 
-        # Validate record structure
         if not isinstance(record, dict):
             raise ValueError("JSON must be an object/dictionary")
 
-        # Extract data with safer methods
         record_df = pd.DataFrame([{
             'Id': safe_get(record, 'id', ''),
             'UserId': safe_get_nested(record, ['user', 'id'], ''),
@@ -62,14 +47,12 @@ def validate_record(record_json):
 
         processed_df = prepare_marathon_data(record_df)
         user_id = processed_df['UserId'].iloc[0]
-        # user_history = load_user_history(user_id)
-        user_history = None
+        user_history = load_user_history(user_id)
 
         if user_history is not None and not user_history.empty:
             analysis_df = pd.concat([user_history, processed_df], ignore_index=True)
         else:
             return validate_single_record(processed_df)
-        validate_single_record(processed_df)
 
         analysis_df, user_stats = analyze_per_user(analysis_df)
         last_index = analysis_df.index[-1]
@@ -96,38 +79,23 @@ def validate_record(record_json):
         }
 
 def fix_json_string(json_str):
-    """
-    Attempt to fix common JSON formatting issues.
-
-    Args:
-        json_str (str): The potentially malformed JSON string
-
-    Returns:
-        str: Fixed JSON string
-    """
-    # Remove any leading/trailing whitespace
     json_str = json_str.strip()
 
-    # Fix single quotes to double quotes
     import re
     json_str = re.sub(r"'([^']*)':", r'"\1":', json_str)
     json_str = re.sub(r":\s*'([^']*)'", r': "\1"', json_str)
 
-    # Fix unquoted keys (basic fix)
     json_str = re.sub(r'(\w+):', r'"\1":', json_str)
 
-    # Fix trailing commas
     json_str = re.sub(r',\s*}', '}', json_str)
     json_str = re.sub(r',\s*]', ']', json_str)
 
     return json_str
 
 def safe_get(data, key, default=None):
-    """Safely get value from dictionary."""
     return data.get(key, default) if isinstance(data, dict) else default
 
 def safe_get_nested(data, keys, default=None):
-    """Safely get nested value from dictionary."""
     current = data
     for key in keys:
         if isinstance(current, dict) and key in current:
@@ -137,7 +105,6 @@ def safe_get_nested(data, keys, default=None):
     return current
 
 def safe_get_numeric(data, key, default=0, allow_none=False):
-    """Safely get numeric value from dictionary."""
     value = safe_get(data, key, default)
     if value is None and allow_none:
         return None
@@ -147,15 +114,6 @@ def safe_get_numeric(data, key, default=0, allow_none=False):
         return default
 
 def validate_basic_conditions(record_df):
-    """
-    Kiểm tra các điều kiện cơ bản của bản ghi.
-
-    Args:
-        record_df (pd.DataFrame): DataFrame chứa bản ghi.
-
-    Returns:
-        bool: True nếu hợp lệ, False nếu không.
-    """
     if record_df['TotalSteps'].iloc[0] < 0 or pd.isna(record_df['TotalSteps'].iloc[0]):
         return False
     if record_df['TotalDistance'].iloc[0] < 0 or pd.isna(record_df['TotalDistance'].iloc[0]):
@@ -185,15 +143,6 @@ def validate_basic_conditions(record_df):
     return True
 
 def validate_single_record(processed_df):
-    """
-    Kiểm tra bản ghi đơn lẻ khi không có lịch sử.
-
-    Args:
-        processed_df (pd.DataFrame): DataFrame đã xử lý.
-
-    Returns:
-        dict: Kết quả đánh giá.
-    """
     steps = processed_df['TotalSteps'].iloc[0]
     distance = processed_df['TotalDistance'].iloc[0]
     time_taken = processed_df['TimeTaken'].iloc[0]
@@ -249,17 +198,6 @@ def validate_single_record(processed_df):
     }
 
 def validate_with_user_history(analysis_df, new_record_index, user_stats):
-    """
-    Kiểm tra bản ghi mới dựa trên lịch sử của người dùng.
-
-    Args:
-        analysis_df (pd.DataFrame): DataFrame chứa dữ liệu lịch sử và bản ghi mới.
-        new_record_index (int): Chỉ số của bản ghi mới.
-        user_stats (dict): Thống kê người dùng.
-
-    Returns:
-        dict: Kết quả đánh giá.
-    """
     new_record = analysis_df.iloc[new_record_index]
     user_id = new_record['UserId']
     fraud_risk = 0
@@ -338,31 +276,27 @@ import requests
 warnings.filterwarnings('ignore')
 sys.stdout.reconfigure(encoding='utf-8')
 
-from modal import (
+from module import (
     prepare_marathon_data, analyze_per_user, extract_features,
     detect_anomalies_isolation_forest, detect_anomalies_lof
 )
 
-def load_user_history(user_id):
-    """
-    Tải lịch sử hoạt động của người dùng từ API Spring Boot.
-
-    Args:
-        user_id: ID của người dùng.
-
-    Returns:
-        pd.DataFrame: Lịch sử hoạt động hoặc None nếu không có.
-    """
+def load_user_history(user_id, days=7):
     try:
-        # Use correct endpoint: /api/v1/record
-        api_url = os.getenv('API_URL', 'http://localhost:8080/api/v1/record/user') + f'/{user_id}/history'
+        from datetime import datetime, timedelta
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        api_url = (
+                os.getenv('API_URL', 'http://localhost:8080/api/v1/record/user') +
+                f'/{user_id}/history?startDate={start_date.strftime("%Y-%m-%dT%H:%M:%S")}&endDate={end_date.strftime("%Y-%m-%dT%H:%M:%S")}'
+        )
         print(f"Calling API: {api_url}")
         response = requests.get(api_url, timeout=10)
-        response.raise_for_status()  # Raise exception for non-200 status
+        response.raise_for_status()
 
         records = response.json()
         if not records:
-            print(f"Không có bản ghi lịch sử cho người dùng {user_id}")
+            print(f"Không có bản ghi lịch sử cho người dùng {user_id} trong {days} ngày")
             return None
 
         user_history = pd.DataFrame([{
@@ -376,7 +310,7 @@ def load_user_history(user_id):
             'heartRate': safe_get_numeric(record, 'heartRate', None, allow_none=True)
         } for record in records])
 
-        print(f"Đã tải {len(user_history)} bản ghi lịch sử của người dùng {user_id}")
+        print(f"Đã tải {len(user_history)} bản ghi lịch sử của người dùng {user_id} trong {days} ngày")
         return user_history
 
     except requests.RequestException as e:
@@ -385,8 +319,6 @@ def load_user_history(user_id):
     except Exception as e:
         print(f"Lỗi khi xử lý lịch sử người dùng: {e}")
         return None
-
-# Rest of the script (validate_record, fix_json_string, etc.) remains unchanged
 
 if __name__ == "__main__":
     try:
@@ -397,7 +329,6 @@ if __name__ == "__main__":
         is_file_path = False
         user_id = None
 
-        # Parse command line arguments
         args = sys.argv[1:]
         if "--file" in args:
             is_file_path = True

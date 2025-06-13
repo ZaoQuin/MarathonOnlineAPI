@@ -7,17 +7,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def prepare_marathon_data(marathon_df):
-    """
-    Chuẩn bị dữ liệu marathon, chỉ xử lý heartRate khi có giá trị hợp lệ.
 
-    Args:
-        marathon_df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
-
-    Returns:
-        pd.DataFrame: DataFrame đã được xử lý với các đặc trưng bổ sung.
-    """
-
-    # Tính tỷ lệ giữa quãng đường và số bước
     if all(col in marathon_df.columns for col in ['TotalDistance', 'TotalSteps']):
         marathon_df['DistancePerStep'] = np.where(
             marathon_df['TotalSteps'] > 0,
@@ -25,23 +15,19 @@ def prepare_marathon_data(marathon_df):
             0
         )
 
-    # Tính tốc độ trung bình từ TimeTaken nếu chưa có AvgSpeed
     if all(col in marathon_df.columns for col in ['TimeTaken', 'TotalDistance']) and 'AvgSpeed' not in marathon_df.columns:
         marathon_df['AvgSpeed'] = np.where(
             marathon_df['TimeTaken'] > 0,
-            marathon_df['TotalDistance'] / (marathon_df['TimeTaken'] / 60),  # km/h
+            marathon_df['TotalDistance'] / (marathon_df['TimeTaken'] / 60),
             0
         )
 
-    # Thêm cột VeryActiveMinutes và VeryActiveDistance
     if 'TimeTaken' in marathon_df.columns and 'VeryActiveMinutes' not in marathon_df.columns:
         marathon_df['VeryActiveMinutes'] = marathon_df['TimeTaken']
     if 'TotalDistance' in marathon_df.columns and 'VeryActiveDistance' not in marathon_df.columns:
         marathon_df['VeryActiveDistance'] = marathon_df['TotalDistance']
 
-    # Xử lý heartRate chỉ khi có giá trị hợp lệ
     if 'heartRate' in marathon_df.columns and marathon_df['heartRate'].notna().any():
-        # Tính đặc trưng bổ sung từ heartRate, chỉ cho các hàng có heartRate hợp lệ
         marathon_df['HeartRatePerStep'] = np.where(
             (marathon_df['TotalSteps'] > 0) & (marathon_df['heartRate'].notna()),
             marathon_df['heartRate'] / marathon_df['TotalSteps'],
@@ -53,43 +39,30 @@ def prepare_marathon_data(marathon_df):
             np.nan
         )
     else:
-        # Nếu không có heartRate hợp lệ, không thêm các cột liên quan
         if 'heartRate' in marathon_df.columns:
             marathon_df['heartRate'] = np.nan
 
     return marathon_df.copy()
 
 def analyze_per_user(df):
-    """
-    Phân tích dữ liệu theo từng người dùng, chỉ tính toán heartRate nếu có giá trị hợp lệ.
-
-    Args:
-        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
-
-    Returns:
-        tuple: (DataFrame đã phân tích, thống kê người dùng).
-    """
     user_stats = {}
     user_id_col = 'UserId' if 'UserId' in df.columns else 'Id'
     user_ids = df[user_id_col].unique()
 
     for user_id in user_ids:
         user_data = df[df[user_id_col] == user_id]
-        if len(user_data) >= 2:  # Chỉ phân tích người dùng có ít nhất 2 bản ghi
+        if len(user_data) >= 2:
             user_stats[user_id] = {}
-            # Tính thống kê cho các cột có sẵn
             for col in ['TotalSteps', 'TotalDistance', 'AvgSpeed', 'DistancePerStep']:
                 if col in user_data.columns:
                     user_stats[user_id][f'avg_{col.lower()}'] = user_data[col].mean()
                     user_stats[user_id][f'std_{col.lower()}'] = user_data[col].std()
-            # Chỉ tính thống kê heartRate nếu có giá trị hợp lệ
             if 'heartRate' in user_data.columns and user_data['heartRate'].notna().any():
                 valid_heart_rates = user_data['heartRate'][user_data['heartRate'].notna()]
                 user_stats[user_id]['avg_heartrate'] = valid_heart_rates.mean()
                 user_stats[user_id]['std_heartrate'] = valid_heart_rates.std()
             user_stats[user_id]['record_count'] = len(user_data)
 
-            # Tính tương quan giữa TotalSteps và các đặc trưng khác
             if len(user_data) >= 5:
                 correlations = user_data[['TotalSteps', 'TotalDistance', 'AvgSpeed', 'TimeTaken']].corr()['TotalSteps'].drop('TotalSteps')
                 user_stats[user_id]['step_correlations'] = correlations.to_dict()
@@ -99,7 +72,6 @@ def analyze_per_user(df):
                         heart_rate_corr = valid_data.corr().iloc[0, 1]
                         user_stats[user_id]['step_heart_rate_correlation'] = heart_rate_corr
 
-    # Xác định mức độ bất thường của từng bản ghi
     for col, prefix in zip(
             ['TotalSteps', 'AvgSpeed', 'DistancePerStep', 'heartRate'],
             ['StepDeviation', 'SpeedDeviation', 'DistPerStepDeviation', 'HeartRateDeviation']
@@ -117,21 +89,11 @@ def analyze_per_user(df):
     return df, user_stats
 
 def extract_features(df):
-    """
-    Trích xuất đặc trưng, chỉ sử dụng heartRate nếu có giá trị hợp lệ.
-
-    Args:
-        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
-
-    Returns:
-        tuple: (Dữ liệu đặc trưng đã chuẩn hóa, DataFrame đặc trưng gốc).
-    """
     available_basic_features = [col for col in [
         'TotalSteps', 'TotalDistance', 'VeryActiveDistance',
         'VeryActiveMinutes', 'AvgSpeed', 'DistancePerStep'
     ] if col in df.columns]
 
-    # Chỉ thêm các đặc trưng heartRate nếu có giá trị hợp lệ
     heart_rate_features = []
     if 'heartRate' in df.columns and df['heartRate'].notna().any():
         heart_rate_features = [col for col in ['heartRate', 'HeartRatePerStep', 'HeartRatePerSpeed'] if col in df.columns]
@@ -150,7 +112,7 @@ def extract_features(df):
         raise ValueError("Không có đặc trưng nào khả dụng để phân tích")
 
     features = df[all_available_features].copy()
-    features = features.fillna(0)  # Chỉ điền 0 cho các cột không phải heartRate
+    features = features.fillna(0)
 
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
@@ -173,15 +135,6 @@ def detect_anomalies_lof(features_scaled, contamination=0.05):
     return fraud_predictions, lof_scores
 
 def detailed_fraud_analysis(df):
-    """
-    Phân tích chi tiết các trường hợp gian lận, bỏ qua heartRate nếu không có.
-
-    Args:
-        df (pd.DataFrame): DataFrame chứa dữ liệu marathon với cột IsFraud.
-
-    Returns:
-        pd.DataFrame: DataFrame với cột FraudType được cập nhật.
-    """
     fraud_cases = df[df['IsFraud'] == 1]
     print(f"\n=== Phân tích chi tiết {len(fraud_cases)} trường hợp gian lận ===")
 
@@ -254,16 +207,6 @@ def detailed_fraud_analysis(df):
     return df
 
 def generate_final_report(df, fraud_cases):
-    """
-    Tạo báo cáo cuối cùng về gian lận.
-
-    Args:
-        df (pd.DataFrame): DataFrame chứa dữ liệu marathon.
-        fraud_cases (pd.DataFrame): DataFrame chứa các trường hợp gian lận.
-
-    Returns:
-        dict: Báo cáo rủi ro theo người dùng.
-    """
     total_records = len(df)
     user_id_col = 'UserId' if 'UserId' in df.columns else 'Id'
     total_users = len(df[user_id_col].unique())

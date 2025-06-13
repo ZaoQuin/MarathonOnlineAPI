@@ -46,8 +46,6 @@ class TrainingPlanServiceImpl(
             trainingWeeks = inputDTO.trainingWeeks
             user = currentUser
         }
-
-
         val savedInput = trainingPlanInputRepository.save(input)
 
         val plan = TrainingPlan(

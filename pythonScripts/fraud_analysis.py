@@ -6,8 +6,8 @@ import warnings
 warnings.filterwarnings('ignore')
 sys.stdout.reconfigure(encoding='utf-8')
 
-# Import các hàm từ file modal.py
-from modal import (
+# Import các hàm từ file module.py
+from module import (
     prepare_marathon_data, analyze_per_user, create_advanced_features,
     classify_marathon_phase, extract_features, detect_anomalies_isolation_forest,
     detect_anomalies_lof, detect_anomalies_kmeans, visualize_results,

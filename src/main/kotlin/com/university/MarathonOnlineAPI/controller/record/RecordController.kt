@@ -11,10 +11,12 @@ import com.university.MarathonOnlineAPI.service.RecordService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/v1/record")
@@ -164,22 +166,18 @@ class RecordController(
     }
 
     @GetMapping("/user/{userId}/history")
-    fun getUserHistory(@PathVariable userId: Long): ResponseEntity<List<RecordDTO>> {
+    fun getUserHistory(
+        @PathVariable userId: Long,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) startDate: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) endDate: LocalDateTime?
+    ): ResponseEntity<List<RecordDTO>> {
         return try {
-            val records = recordService.getRecordsByUserId(userId)
-                .filter {
-                    it.approval?.approvalStatus in listOf(
-                        ERecordApprovalStatus.PENDING,
-                        ERecordApprovalStatus.APPROVED
-                    )
-                }
-
-            logger.info("Đã lấy ${records.size} bản ghi lịch sử cho userId $userId")
+            val records = recordService.getRecordsByUserId(userId, startDate, endDate)
+            logger.info("Đã lấy ${records.size} bản ghi lịch sử cho userId $userId từ ${startDate ?: "không giới hạn"} đến ${endDate ?: "không giới hạn"}")
             ResponseEntity.ok(records)
         } catch (e: Exception) {
             logger.error("Lỗi khi lấy lịch sử bản ghi cho userId $userId: ${e.message}")
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(emptyList())
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(emptyList())
         }
     }
 

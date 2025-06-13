@@ -41,4 +41,11 @@ interface RecordRepository : JpaRepository<Record, Long> {
         startTime: LocalDateTime,
         endTime: LocalDateTime
     ): List<Record>
+
+    fun findByUserIdAndApprovalApprovalStatusInAndStartTimeBetweenOrderByStartTimeDesc(
+        userId: Long,
+        approvalStatus: List<ERecordApprovalStatus>,
+        startTimeStart: LocalDateTime,
+        startTimeEnd: LocalDateTime
+    ): List<Record>
 }
