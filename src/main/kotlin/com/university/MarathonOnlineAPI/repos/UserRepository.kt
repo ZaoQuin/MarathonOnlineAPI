@@ -17,4 +17,5 @@ interface UserRepository: JpaRepository<User, Long> {
     fun findByRole(@Param("role") role: ERole): List<User>
     @Query("SELECT u FROM User u WHERE u.username = :username")
     fun findByUsername(username: String): Optional<User>
+    fun findUserById(id: Long): Optional<User>
 }

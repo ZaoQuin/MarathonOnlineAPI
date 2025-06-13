@@ -1,8 +1,11 @@
 package com.university.MarathonOnlineAPI.controller.user
 
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
 import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.exception.ContestException
 import com.university.MarathonOnlineAPI.exception.UserException
+import com.university.MarathonOnlineAPI.repos.UserRepository
 import com.university.MarathonOnlineAPI.service.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -10,11 +13,14 @@ import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/user")
 class UserController(
-    private val userService: UserService
+    private val userService: UserService,
+    private val cloudinary: Cloudinary,
+    private val userRepository: UserRepository
 ) {
 
     private val logger = LoggerFactory.getLogger(UserController::class.java)
@@ -152,6 +158,50 @@ class UserController(
             ResponseEntity(UpdatePasswordResponse(true), HttpStatus.OK)
         } else {
             ResponseEntity(UpdatePasswordResponse(false, "Email not found"), HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @PostMapping("/{id}/avatar")
+    fun uploadAvatar(
+        @PathVariable id: Long,
+        @RequestParam("file") file: MultipartFile
+    ): ResponseEntity<String> {
+        return try {
+            if (file.isEmpty) {
+                return ResponseEntity.badRequest().body("File is empty")
+            }
+            val allowedTypes = listOf("image/jpeg", "image/png", "image/jpg", "image/gif")
+            if (!allowedTypes.contains(file.contentType)) {
+                return ResponseEntity.badRequest().body("Only image files are allowed")
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body("File size must be less than 5MB")
+            }
+
+            val uploadOptions = ObjectUtils.asMap(
+                "folder", "user_avatars",
+                "public_id", "user_${id}_avatar",
+                "overwrite", true,
+                "resource_type", "image"
+            )
+
+            val uploadResult = cloudinary.uploader().upload(file.bytes, uploadOptions)
+            val avatarUrl = uploadResult["secure_url"] as String
+
+            val user = userService.getById(id)
+            if (user != null) {
+                user.avatarUrl = avatarUrl
+                userService.updateUser(user)
+                ResponseEntity.ok(avatarUrl)
+            } else {
+                ResponseEntity.notFound().build()
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Upload failed: ${e.message}")
         }
     }
 }
