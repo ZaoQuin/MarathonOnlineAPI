@@ -170,10 +170,12 @@ class RecordServiceImpl @Autowired constructor(
         )
     }
 
-    override fun getRecordsByUserId(userId: Long): List<RecordDTO> {
-        return recordRepository.findByUserIdAndApprovalApprovalStatusInOrderByStartTimeDesc(
+    override fun getRecordsByUserId(userId: Long, startDate: LocalDateTime?, endDate: LocalDateTime?): List<RecordDTO> {
+        return recordRepository.findByUserIdAndApprovalApprovalStatusInAndStartTimeBetweenOrderByStartTimeDesc(
             userId,
-            listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
+            listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED),
+            startDate ?: LocalDateTime.MIN,
+            endDate ?: LocalDateTime.now()
         ).map { recordMapper.toDto(it) }
     }
 
