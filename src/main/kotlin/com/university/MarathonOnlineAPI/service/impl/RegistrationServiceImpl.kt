@@ -186,20 +186,30 @@ class RegistrationServiceImpl(
 
     override fun awardPrizes(contestDTO: ContestDTO): List<RegistrationDTO> {
         val contest = contestRepository.findById(contestDTO.id!!)
-            .orElseThrow { RegistrationException("Registration with ID $contestDTO.id not found") }
+            .orElseThrow { RegistrationException("Registration with ID ${contestDTO.id} not found") }
+
         val sortedRegistrations = contest.registrations
             ?.filter { it.status == ERegistrationStatus.COMPLETED }
             ?.sortedWith(
                 compareByDescending<Registration> { reg ->
                     reg.records?.sumOf { it.distance ?: 0.0 } ?: 0.0
                 }.thenBy { reg ->
+<<<<<<< HEAD
                     reg.records?.sumOf { Duration.between(it.startTime, it.endTime).seconds } ?: 0L
+=======
+                    reg.records?.sumOf { record ->
+                        if (record.startTime != null && record.endTime != null) {
+                            java.time.Duration.between(record.startTime, record.endTime).seconds
+                        } else 0L
+                    } ?: 0L
+>>>>>>> 232abb1 (md)
                 }.thenBy { reg ->
                     reg.records?.map { it.avgSpeed ?: 0.0 }?.average() ?: 0.0
                 }.thenBy { reg ->
                     reg.registrationDate
                 }
             ) ?: emptyList()
+
         val rewardsByRank = contest.rewards?.groupBy { it.rewardRank } ?: emptyMap()
 
         rewardsByRank.filterKeys { it!! > 0 }.forEach { (rank, rewards) ->
@@ -214,11 +224,9 @@ class RegistrationServiceImpl(
             assignRewardsToRegistration(registration, defaultRewards)
         }
 
-
         val registrations = registrationRepository.saveAll(sortedRegistrations)
         return registrations.map { registrationMapper.toDto(it) }
     }
-
 
     private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
         rewards.forEach {
