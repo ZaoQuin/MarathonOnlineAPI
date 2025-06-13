@@ -73,6 +73,7 @@ class UserServiceImpl(
             }
 
             user.fullName = userDTO.fullName
+            user.avatarUrl = userDTO.avatarUrl
             user.email = userDTO.email
             user.gender = userDTO.gender
             user.birthday = userDTO.birthday

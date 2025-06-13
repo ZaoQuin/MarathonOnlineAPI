@@ -18,5 +18,6 @@ data class CreateContestRequest(
     var fee: BigDecimal? = null,
     var maxMembers: Int? = null,
     var status: EContestStatus? = null,
-    var registrationDeadline: LocalDateTime? = null
+    var registrationDeadline: LocalDateTime? = null,
+    var imgUrl: String? = null,
 )

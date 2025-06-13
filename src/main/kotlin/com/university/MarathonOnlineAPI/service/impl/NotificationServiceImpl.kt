@@ -13,6 +13,7 @@ import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.mapper.NotificationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
+import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.FCMTokenRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
@@ -35,7 +36,8 @@ class NotificationServiceImpl(
     private val userRepository: UserRepository,
     private val tokenService: TokenService,
     private val userService: UserService,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
+    private val contestRepository: ContestRepository
 ) : NotificationService {
 
     private val logger = LoggerFactory.getLogger(NotificationServiceImpl::class.java)
@@ -379,6 +381,91 @@ class NotificationServiceImpl(
             }
         } catch (e: Exception) {
             logger.error("Error sending push notification to user: ${e.message}")
+        }
+    }
+
+    override fun sendNotificationToRunners(contestId: Long, title: String, content: String) {
+        val contest = contestRepository.findById(contestId)
+            .orElseThrow { IllegalArgumentException("Contest with ID $contestId not found") }
+        val runners = userRepository.findAllByRole(ERole.RUNNER)
+        val notifications = runners.map { runner ->
+            Notification(
+                receiver = runner,
+                objectId = contest.id,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.NEW_CONTEST
+            )
+        }
+
+
+        val savedNotifications = notificationRepository.saveAll(notifications)
+
+        savedNotifications.map {
+            sendPushNotification(notificationMapper.toDto(it))
+        }
+    }
+
+    override fun sendAcceptContestNotificationToRunners(contestId: Long, title: String, content: String) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val runners = userRepository.findAllByRole(ERole.RUNNER)
+            val notifications = runners.map { runner ->
+                Notification(
+                    receiver = runner,
+                    objectId = contest.id,
+                    title = title,
+                    content = content,
+                    createAt = LocalDateTime.now(),
+                    isRead = false,
+                    type = ENotificationType.NEW_CONTEST
+                )
+            }
+            val savedNotifications = notificationRepository.saveAll(notifications)
+
+            savedNotifications.map {
+                sendPushNotification(notificationMapper.toDto(it))
+            }
+        }
+    }
+
+    override fun sendAcceptContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val organizer = userRepository.findById(organizerId)
+                .orElseThrow { IllegalArgumentException("Organizer with ID $organizerId not found") }
+
+            val notification = Notification(
+                receiver = organizer,
+                objectId = contest.id,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.ACCEPT_CONTEST
+            )
+            val savedNotification = notificationRepository.save(notification)
+            sendPushNotification(notificationMapper.toDto(savedNotification))
+        }
+    }
+
+    override fun sendRejectContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long) {
+        contestRepository.findById(contestId).ifPresent { contest ->
+            val organizer = userRepository.findById(organizerId)
+                .orElseThrow { IllegalArgumentException("Organizer with ID $organizerId not found") }
+
+            val notification = Notification(
+                receiver = organizer,
+                objectId = contest.id,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.NOT_APPROVAL_CONTEST
+            )
+
+            val savedNotification = notificationRepository.save(notification)
+            sendPushNotification(notificationMapper.toDto(savedNotification))
         }
     }
 }

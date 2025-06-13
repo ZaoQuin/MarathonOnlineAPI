@@ -129,18 +129,27 @@ class RecordServiceImpl @Autowired constructor(
         }
     }
 
-    override fun getRecordsByToken(jwt: String): List<RecordDTO> {
+    override fun getRecordsByToken(jwt: String, startDate: LocalDateTime?, endDate: LocalDateTime?): List<RecordDTO> {
         try {
-            val userDTO =
-                tokenService.extractEmail(jwt)?.let { email ->
-                    userService.findByEmail(email)
-                } ?: throw AuthenticationException("Email not found in the token")
+            val userDTO = tokenService.extractEmail(jwt)?.let { email ->
+                userService.findByEmail(email)
+            } ?: throw AuthenticationException("Email not found in the token")
 
-            val races = userDTO.id?.let { recordRepository.findByUserIdAndApprovalApprovalStatusIn(
-                userDTO.id!!,
-                listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
-            ) }
-            return races?.map { recordMapper.toDto(it) }!!
+            val records = if (startDate != null && endDate != null) {
+                recordRepository.findByUserIdAndApprovalApprovalStatusInAndStartTimeBetween(
+                    userDTO.id!!,
+                    listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED),
+                    startDate,
+                    endDate
+                )
+            } else {
+                recordRepository.findByUserIdAndApprovalApprovalStatusIn(
+                    userDTO.id!!,
+                    listOf(ERecordApprovalStatus.PENDING, ERecordApprovalStatus.APPROVED)
+                )
+            }
+
+            return records.map { recordMapper.toDto(it) }
         } catch (e: DataAccessException) {
             logger.error("Error saving race: ${e.message}")
             throw RecordException("Database error occurred while saving race: ${e.message}")

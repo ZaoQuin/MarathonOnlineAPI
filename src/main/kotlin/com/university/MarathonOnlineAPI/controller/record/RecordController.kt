@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
@@ -63,7 +62,6 @@ class RecordController(
         }
     }
 
-    // Cập nhật thông tin một Race
     @PutMapping
     fun updateRace(@RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RecordDTO> {
         return try {
@@ -93,10 +91,12 @@ class RecordController(
     }
 
     @GetMapping("/runner")
-    fun getByRunnerToken(@RequestHeader("Authorization") token: String): ResponseEntity<List<RecordDTO>> {
+    fun getByRunnerToken(@RequestHeader("Authorization") token: String,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) startDate: LocalDateTime?,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) endDate: LocalDateTime?): ResponseEntity<List<RecordDTO>> {
         return try {
             val jwt = token.replace("Bearer ", "")
-            val records = recordService.getRecordsByToken(jwt)
+            val records = recordService.getRecordsByToken(jwt, startDate, endDate)
             ResponseEntity(records, HttpStatus.OK)
         } catch (e: Exception) {
             logger.error("Error in getRaces: ${e.message}")
@@ -138,9 +138,6 @@ class RecordController(
         }
     }
 
-    /**
-     * Endpoint để cập nhật trạng thái phê duyệt cho bản ghi đang ở trạng thái PENDING
-     */
     @PutMapping("/{recordId}/approval")
     fun updateApprovalStatus(
         @PathVariable recordId: Long,

@@ -1,5 +1,7 @@
 package com.university.MarathonOnlineAPI.controller.contest
 
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
 import com.university.MarathonOnlineAPI.controller.StringResponse
 import com.university.MarathonOnlineAPI.controller.user.CheckEmailResponse
 import com.university.MarathonOnlineAPI.dto.ContestDTO
@@ -10,11 +12,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/contest")
-@CrossOrigin("https://login-admin-page.onrender.com/")
-class ContestController(private val contestService: ContestService) {
+@CrossOrigin("http://localhost:3000/")
+class ContestController(private val contestService: ContestService, private val cloudinary: Cloudinary) {
 
     private val logger = LoggerFactory.getLogger(ContestController::class.java)
 
@@ -124,7 +127,7 @@ class ContestController(private val contestService: ContestService) {
 
 
     @GetMapping
-    @CrossOrigin(origins = ["https://login-admin-page.onrender.com/"])
+    @CrossOrigin(origins = ["http://localhost:3000/"])
     fun getContests(): ResponseEntity<*> {
         return try {
             val contests = contestService.getContests()
@@ -235,6 +238,50 @@ class ContestController(private val contestService: ContestService) {
         } catch (e: Exception) {
             logger.error("Error getting contest by ID $id: ${e.message}")
             ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @PostMapping("/{id}/img")
+    fun uploadAvatar(
+        @PathVariable id: Long,
+        @RequestParam("file") file: MultipartFile
+    ): ResponseEntity<String> {
+        return try {
+            if (file.isEmpty) {
+                return ResponseEntity.badRequest().body("File is empty")
+            }
+            val allowedTypes = listOf("image/jpeg", "image/png", "image/jpg", "image/gif")
+            if (!allowedTypes.contains(file.contentType)) {
+                return ResponseEntity.badRequest().body("Only image files are allowed")
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body("File size must be less than 5MB")
+            }
+
+            val uploadOptions = ObjectUtils.asMap(
+                "folder", "contest_imgs",
+                "public_id", "contest_${id}_img",
+                "overwrite", true,
+                "resource_type", "image"
+            )
+
+            val uploadResult = cloudinary.uploader().upload(file.bytes, uploadOptions)
+            val imgUrl = uploadResult["secure_url"] as String
+
+            val contest = contestService.getById(id)
+            if (contest != null) {
+                contest.imgUrl = imgUrl
+                contestService.updateContest(contest)
+                ResponseEntity.ok(imgUrl)
+            } else {
+                ResponseEntity.notFound().build()
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Upload failed: ${e.message}")
         }
     }
 }

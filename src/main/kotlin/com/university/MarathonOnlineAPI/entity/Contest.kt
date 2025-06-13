@@ -11,6 +11,7 @@ data class Contest(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
+    var imgUrl: String? = null,
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "organizer_id")
     var organizer: User? = null,

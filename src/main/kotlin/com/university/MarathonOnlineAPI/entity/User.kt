@@ -9,6 +9,7 @@ data class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
+    var avatarUrl: String? = null,
     var fullName: String? = null,
     var email: String? = null,
     var phoneNumber: String? = null,

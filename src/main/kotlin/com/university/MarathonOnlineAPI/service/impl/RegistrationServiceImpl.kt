@@ -45,7 +45,6 @@ class RegistrationServiceImpl(
 
             val userId = userDTO.id!!
 
-            // Kiểm tra xem đã tồn tại đăng ký chưa
             val existingRegistration = registrationRepository
                 .findByRunnerIdAndContestId(userId, contest.id!!)
 
@@ -186,7 +185,8 @@ class RegistrationServiceImpl(
 
     override fun awardPrizes(contestDTO: ContestDTO): List<RegistrationDTO> {
         val contest = contestRepository.findById(contestDTO.id!!)
-            .orElseThrow { RegistrationException("Registration with ID $contestDTO.id not found") }
+            .orElseThrow { RegistrationException("Registration with ID ${contestDTO.id} not found") }
+
         val sortedRegistrations = contest.registrations
             ?.filter { it.status == ERegistrationStatus.COMPLETED }
             ?.sortedWith(
@@ -200,6 +200,7 @@ class RegistrationServiceImpl(
                     reg.registrationDate
                 }
             ) ?: emptyList()
+
         val rewardsByRank = contest.rewards?.groupBy { it.rewardRank } ?: emptyMap()
 
         rewardsByRank.filterKeys { it!! > 0 }.forEach { (rank, rewards) ->
@@ -214,11 +215,9 @@ class RegistrationServiceImpl(
             assignRewardsToRegistration(registration, defaultRewards)
         }
 
-
         val registrations = registrationRepository.saveAll(sortedRegistrations)
         return registrations.map { registrationMapper.toDto(it) }
     }
-
 
     private fun assignRewardsToRegistration(registration: Registration, rewards: List<Reward>) {
         rewards.forEach {

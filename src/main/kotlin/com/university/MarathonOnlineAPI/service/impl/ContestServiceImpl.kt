@@ -47,6 +47,7 @@ class ContestServiceImpl(
             val rewards = request.rewards?.map { rewardMapper.toEntity(it) } ?: emptyList()
 
             val contest = Contest(
+                imgUrl = request.imgUrl,
                 organizer = userMapper.toEntity(userDTO),
                 name = request.name,
                 description = request.description,

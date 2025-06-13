@@ -23,4 +23,8 @@ interface NotificationService {
     fun sendPushNotificationToUser(userId: Long, title: String, content: String)
     fun getAllNotifications(): List<NotificationDTO>
     fun getNotificationById(id: Long): NotificationDTO
+    fun sendNotificationToRunners(contestId: Long, title: String, content: String)
+    fun sendAcceptContestNotificationToRunners(contestId: Long, title: String, content: String)
+    fun sendAcceptContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long)
+    fun sendRejectContestNotificationToOrganizer(contestId: Long, title: String, content: String, organizerId: Long)
 }

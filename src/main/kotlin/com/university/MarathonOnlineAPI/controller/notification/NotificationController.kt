@@ -87,6 +87,40 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
+    @PostMapping("/notifications/send")
+    fun sendNotificationToRole(@RequestBody request: NotificationRequest) {
+        if (request.targetRole == "RUNNER") {
+            notificationService.sendNotificationToRunners(request.contestId, request.title, request.content)
+        }
+    }
+
+    @PostMapping("/send/users")
+    fun sendAcceptContestNotificationToUser(@RequestBody request: NotificationRequest) {
+        if (request.targetRole == "RUNNER") {
+            notificationService.sendAcceptContestNotificationToRunners(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content
+            )
+        }
+        if (request.type == "NOT_APPROVAL_CONTEST") {
+            notificationService.sendRejectContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+        }
+        if (request.type == "ACCEPT_CONTEST") {
+            notificationService.sendAcceptContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+        }
+    }
+
     @DeleteMapping("/{id}")
     fun deleteNotification(@PathVariable id: Long): ResponseEntity<String> {
         return try {
@@ -182,9 +216,6 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-    /**
-     * API để đánh dấu tất cả thông báo là đã đọc
-     */
     @PutMapping("/mark-all-read")
     fun markAllAsRead(@RequestHeader("Authorization") token: String): ResponseEntity<List<NotificationDTO>> {
         return try {
@@ -201,9 +232,6 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
-    /**
-     * API để lấy số lượng thông báo chưa đọc
-     */
     @GetMapping("/unread-count")
     fun getUnreadCount(@RequestHeader("Authorization") token: String): ResponseEntity<Int> {
         return try {

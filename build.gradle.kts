@@ -27,6 +27,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
@@ -67,6 +68,9 @@ dependencies {
 
 	//	Firebase Admin Sdk
 	implementation("com.google.firebase:firebase-admin:9.2.0")
+
+	//Cloudnary
+	implementation("com.cloudinary:cloudinary-http44:1.37.0")
 }
 
 kotlin {
