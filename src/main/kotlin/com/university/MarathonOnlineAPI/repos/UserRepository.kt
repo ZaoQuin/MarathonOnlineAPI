@@ -18,4 +18,6 @@ interface UserRepository: JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.username = :username")
     fun findByUsername(username: String): Optional<User>
     fun findUserById(id: Long): Optional<User>
+    @Query("SELECT u FROM User u WHERE u.phoneNumber = :phoneNumber")
+    fun findByPhoneNumber(phoneNumber: String): Optional<User>
 }

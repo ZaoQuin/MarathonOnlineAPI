@@ -2,7 +2,6 @@ package com.university.MarathonOnlineAPI.service
 
 import com.university.MarathonOnlineAPI.dto.UserDTO
 import com.university.MarathonOnlineAPI.controller.user.CreateUserRequest
-import com.university.MarathonOnlineAPI.entity.User
 
 interface UserService {
     fun addUser(newUser: CreateUserRequest): UserDTO
@@ -17,4 +16,5 @@ interface UserService {
     fun blockUser(id: Long)
     fun unblockUser(id: Long)
     fun checkUsernameExists(username: String): Boolean
+    fun checkPhoneNumberExists(phoneNumber: String): Boolean
 }

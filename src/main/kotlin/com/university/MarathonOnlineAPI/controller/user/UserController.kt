@@ -141,6 +141,16 @@ class UserController(
         }
     }
 
+    @PostMapping("/check-phoneNumber")
+    fun checkPhoneNumber(@RequestBody request: CheckPhoneNumberRequest): ResponseEntity<CheckPhoneNumberRespone> {
+        val phoneNumberExists = userService.checkPhoneNumberExists(request.phoneNumber)
+        return if (phoneNumberExists) {
+            ResponseEntity(CheckPhoneNumberRespone(true), HttpStatus.OK)
+        } else {
+            ResponseEntity(CheckPhoneNumberRespone(false, "Phone number not found"), HttpStatus.OK)
+        }
+    }
+
     @PostMapping("/check-username")
     fun checkUsername(@RequestBody request: CheckUsernameRequest): ResponseEntity<CheckUsernameResponse> {
         val emailExists = userService.checkUsernameExists(request.username.trim())

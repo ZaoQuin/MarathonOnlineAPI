@@ -1,6 +1,6 @@
 package com.university.MarathonOnlineAPI.controller.user
 
-data class CheckEmailResponse(
+data class CheckPhoneNumberRespone (
     var exists: Boolean,
     var message: String? = null
 )

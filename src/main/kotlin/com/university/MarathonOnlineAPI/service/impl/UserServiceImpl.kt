@@ -153,6 +153,15 @@ class UserServiceImpl(
         }
     }
 
+    override fun checkPhoneNumberExists(phoneNumber: String): Boolean {
+        return try {
+            !userRepos.findByPhoneNumber(phoneNumber).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking phone: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
+    }
+
     override fun findByEmail(email: String): UserDTO {
         return try {
             val user = userRepos.findByEmail(email)
