@@ -93,10 +93,39 @@ class NotificationController(private val notificationService: NotificationServic
         }
     }
 
+<<<<<<< HEAD
     @PostMapping("/notifications/send")
     fun sendNotificationToRole(@RequestBody request: NotificationRequest) {
         if (request.targetRole == "RUNNER") {
             notificationService.sendNotificationToRunners(request.contestId, request.title, request.content)
+=======
+    @PostMapping("/send/users")
+    fun sendAcceptContestNotificationToUser(@RequestBody request: NotificationRequest) {
+        if (request.targetRole == "RUNNER") {
+            notificationService.sendAcceptContestNotificationToRunners(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content
+            )
+        }
+        if(request.type == "NOT_APPROVAL_CONTEST")
+        {
+            notificationService.sendRejectContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+        }
+        if (request.type == "ACCEPT_CONTEST")
+        {
+            notificationService.sendAcceptContestNotificationToOrganizer(
+                contestId = request.contestId,
+                title = request.title,
+                content = request.content,
+                organizerId = request.userId
+            )
+>>>>>>> 252b016 (Done send to runner, organizer)
         }
     }
 
