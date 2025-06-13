@@ -63,7 +63,6 @@ class RecordController(
         }
     }
 
-    // Cập nhật thông tin một Race
     @PutMapping
     fun updateRace(@RequestBody @Valid recordDTO: RecordDTO): ResponseEntity<RecordDTO> {
         return try {

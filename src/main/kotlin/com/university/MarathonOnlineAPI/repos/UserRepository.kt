@@ -11,6 +11,7 @@ import java.util.*
 @Repository
 interface UserRepository: JpaRepository<User, Long> {
     fun findByEmail(email: String): Optional<User>
+    fun findAllByRole(role: ERole): List<User>
     fun findByTokenRefresh(token: String): Optional<User>
     @Query("SELECT u FROM User u WHERE u.role = :role")
     fun findByRole(@Param("role") role: ERole): List<User>

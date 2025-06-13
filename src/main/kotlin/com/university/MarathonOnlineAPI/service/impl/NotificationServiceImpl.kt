@@ -13,6 +13,7 @@ import com.university.MarathonOnlineAPI.exception.AuthenticationException
 import com.university.MarathonOnlineAPI.exception.NotificationException
 import com.university.MarathonOnlineAPI.mapper.NotificationMapper
 import com.university.MarathonOnlineAPI.mapper.UserMapper
+import com.university.MarathonOnlineAPI.repos.ContestRepository
 import com.university.MarathonOnlineAPI.repos.FCMTokenRepository
 import com.university.MarathonOnlineAPI.repos.NotificationRepository
 import com.university.MarathonOnlineAPI.repos.UserRepository
@@ -35,7 +36,8 @@ class NotificationServiceImpl(
     private val userRepository: UserRepository,
     private val tokenService: TokenService,
     private val userService: UserService,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
+    private val contestRepository: ContestRepository
 ) : NotificationService {
 
     private val logger = LoggerFactory.getLogger(NotificationServiceImpl::class.java)
@@ -379,6 +381,30 @@ class NotificationServiceImpl(
             }
         } catch (e: Exception) {
             logger.error("Error sending push notification to user: ${e.message}")
+        }
+    }
+
+    override fun sendNotificationToRunners(contestId: Long, title: String, content: String) {
+        val contest = contestRepository.findById(contestId)
+            .orElseThrow { IllegalArgumentException("Contest with ID $contestId not found") }
+        val runners = userRepository.findAllByRole(ERole.RUNNER)
+        val notifications = runners.map { runner ->
+            Notification(
+                receiver = runner,
+                objectId = contest.id,
+                title = title,
+                content = content,
+                createAt = LocalDateTime.now(),
+                isRead = false,
+                type = ENotificationType.NEW_CONTEST
+            )
+        }
+
+
+        val savedNotifications = notificationRepository.saveAll(notifications)
+
+        savedNotifications.map {
+            sendPushNotification(notificationMapper.toDto(it))
         }
     }
 }
