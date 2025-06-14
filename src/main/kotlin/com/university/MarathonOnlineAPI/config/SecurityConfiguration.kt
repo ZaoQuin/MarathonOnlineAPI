@@ -28,7 +28,7 @@ class SecurityConfiguration(
             .authorizeHttpRequests {
                 it
                     .requestMatchers("/api/v1/auth", "/api/v1/auth/refresh",
-                        "/api/v1/user/check-email", "/api/v1/user/check-username",
+                        "/api/v1/user/check-email", "/api/v1/user/check-username", "/api/v1/user/check-phoneNumber",
                         "/api/v1/user/update-password", "/api/v1/record/user/*/history",
                         "/api/v1/payment/vnpay-return", "/error")
                     .permitAll()

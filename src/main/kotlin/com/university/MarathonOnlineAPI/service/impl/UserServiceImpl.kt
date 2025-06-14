@@ -153,6 +153,32 @@ class UserServiceImpl(
         }
     }
 
+    override fun checkPhoneNumberExists(phoneNumber: String): Boolean {
+        return try {
+            !userRepos.findByPhoneNumber(phoneNumber).isEmpty
+        } catch (e: Exception) {
+            logger.error("Unexpected error checking phone: ${e.message}")
+            throw UserException("Unexpected error: ${e.message}")
+        }
+    }
+
+    override fun updateAvatar(userId: Long, avatarUrl: String): UserDTO {
+        try {
+            val user = userRepos.findById(userId)
+                .orElseThrow { throw UserException("User not found with ID: $userId") }
+
+            user.avatarUrl = avatarUrl
+
+            return userMapper.toDto(userRepos.save(user))
+        } catch (e: UserException) {
+            logger.error("Error updating user: ${e.message}", e)
+            throw UserException("Error updating user: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error: ${e.message}", e)
+            throw RuntimeException("Unexpected error occurred while updating user: ${e.message}")
+        }
+    }
+
     override fun findByEmail(email: String): UserDTO {
         return try {
             val user = userRepos.findByEmail(email)
