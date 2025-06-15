@@ -151,11 +151,11 @@ class PaymentController(private val paymentService: PaymentService,
             if (fieldValue.isNotEmpty()) {
                 hashData.append(fieldName)
                 hashData.append('=')
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()))
 
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString()))
                 query.append('=')
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()))
 
                 if (iterator.hasNext()) {
                     query.append('&')
@@ -185,11 +185,11 @@ class PaymentController(private val paymentService: PaymentService,
     }
 
     fun hmacSHA512(key: String, data: String): String {
-        val hmacSHA512 = Mac.getInstance("HmacSHA512")
-        val secretKeySpec = SecretKeySpec(key.toByteArray(), "HmacSHA512")
-        hmacSHA512.init(secretKeySpec)
-        val hashBytes = hmacSHA512.doFinal(data.toByteArray())
-        return hashBytes.joinToString("") { "%02x".format(it) }
+        val hmacKey = SecretKeySpec(key.toByteArray(), "HmacSHA512")
+        val mac = Mac.getInstance("HmacSHA512")
+        mac.init(hmacKey)
+        val bytes = mac.doFinal(data.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     @GetMapping("/vnpay-return")
@@ -211,7 +211,7 @@ class PaymentController(private val paymentService: PaymentService,
             if (fieldValue.isNotEmpty()) {
                 hashData.append(fieldName)
                 hashData.append('=')
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()))
 
                 if (iterator.hasNext()) {
                     hashData.append('&')
@@ -250,4 +250,31 @@ class PaymentController(private val paymentService: PaymentService,
 
         return ResponseEntity.ok(dto)
     }
+
+    @GetMapping("/vnpay-ipn")
+    fun handleIpn(@RequestParam allParams: Map<String, String>): ResponseEntity<Map<String, String>> {
+        val vnpSecureHash = allParams["vnp_SecureHash"]
+        val inputData = allParams
+            .filterKeys { it != "vnp_SecureHash" && it != "vnp_SecureHashType" }
+            .toSortedMap()
+
+        val hashData = inputData.entries.joinToString("&") {
+            "${it.key}=${URLEncoder.encode(it.value, StandardCharsets.UTF_8)}"
+        }
+
+        val myChecksum = hmacSHA512("RVCFEBZICS6AJS8AAHM3RNYIN72WM4OT", hashData)
+
+        if (myChecksum != vnpSecureHash) {
+            return ResponseEntity.badRequest().body(mapOf(
+                "RspCode" to "97",
+                "Message" to "Invalid signature"
+            ))
+        }
+
+        return ResponseEntity.ok(mapOf(
+            "RspCode" to "00",
+            "Message" to "Confirm Success"
+        ))
+    }
+
 }
