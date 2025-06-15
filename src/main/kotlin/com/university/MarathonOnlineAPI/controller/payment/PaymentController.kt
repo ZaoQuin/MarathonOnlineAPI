@@ -25,7 +25,6 @@ import javax.crypto.spec.SecretKeySpec
 
 @RestController
 @RequestMapping("/api/v1/payment")
-@CrossOrigin(origins = ["*"], allowedHeaders = ["*"])
 class PaymentController(private val paymentService: PaymentService,
                         private val vnPayProperties: VnPayProperties) {
 
