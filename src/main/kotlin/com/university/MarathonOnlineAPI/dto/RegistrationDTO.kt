@@ -10,7 +10,7 @@ data class RegistrationDTO (
     var registrationDate: LocalDateTime? = null,
     var completedDate: LocalDateTime? = null,
     var registrationRank: Int? = null,
-    var races: List<RecordDTO>? = null,
+    var records: List<RecordDTO>? = null,
     var rewards: List<RewardDTO>? = null,
     var status: ERegistrationStatus? = null
 )
