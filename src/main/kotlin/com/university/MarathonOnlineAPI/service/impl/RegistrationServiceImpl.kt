@@ -17,6 +17,7 @@ import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
 import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationJob
 import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -73,17 +74,28 @@ class RegistrationServiceImpl(
         }
     }
 
+    @Transactional
     override fun deleteRegistrationById(id: Long) {
-        return try {
-            if (registrationRepository.existsById(id)) {
-                registrationRepository.deleteById(id)
-                logger.info("Registration with ID $id deleted successfully")
-            } else {
-                throw RegistrationException("Registration with ID $id not found")
+        try {
+            val registration = registrationRepository.findById(id)
+                .orElseThrow { RegistrationException("Registration with ID $id not found") }
+
+            registration.contest?.registrations?.let { registrations ->
+                if (registrations.contains(registration)) {
+                    (registrations as MutableList).remove(registration)
+                    logger.info("Removed registration ID $id from contest.registrations")
+                }
             }
+
+            registrationRepository.delete(registration)
+            logger.info("Registration with ID $id deleted successfully")
+
         } catch (e: DataAccessException) {
-            logger.error("Error deleting registration with ID $id: ${e.message}")
+            logger.error("Error deleting registration with ID $id: ${e.message}", e)
             throw RegistrationException("Database error occurred while deleting registration: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error deleting registration with ID $id: ${e.message}", e)
+            throw RegistrationException("Unexpected error occurred while deleting registration: ${e.message}")
         }
     }
 

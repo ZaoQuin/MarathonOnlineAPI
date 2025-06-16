@@ -47,7 +47,7 @@ data class Registration(
     @JsonBackReference
     var contest: Contest? = null,
 
-    @OneToMany(mappedBy = "registration", cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "registration", cascade = [CascadeType.REMOVE], orphanRemoval = true)
     var feedbacks: List<Feedback> = mutableListOf()
 )
 

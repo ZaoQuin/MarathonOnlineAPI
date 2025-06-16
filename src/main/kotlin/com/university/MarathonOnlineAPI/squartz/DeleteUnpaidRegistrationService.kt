@@ -20,14 +20,11 @@ class DeleteUnpaidRegistrationService(
         val contestStartTime = registration.contest?.startDate ?: return
 
         val now = LocalDateTime.now()
-//        val deleteAt = if (registrationTime.plusHours(24).isBefore(contestStartTime)) {
-//            registrationTime.plusHours(24)
-//        } else {
-//            contestStartTime.minusMinutes(1)
-//        }
-//
-
-        val deleteAt = now.plusMinutes(2)
+        val deleteAt = if (registrationTime.plusHours(24).isBefore(contestStartTime)) {
+            registrationTime.plusHours(24)
+        } else {
+            contestStartTime.minusMinutes(1)
+        }
 
         val deleteAtDate = Date.from(deleteAt.atZone(ZoneId.systemDefault()).toInstant())
 

@@ -44,10 +44,11 @@ class PaymentServiceImpl(
                 .orElseThrow { IllegalArgumentException("Registration not found") }
 
             registration.payment = payment
-            if(payment.status == EPaymentStatus.SUCCESS)
+            if(payment.status == EPaymentStatus.SUCCESS) {
                 registration.status = ERegistrationStatus.ACTIVE
+                deleteUnpaidRegistrationService.cancelScheduledOrderUpdate(registration.id!!)
+            }
             val savedRegistration = registrationRepository.save(registration)
-            deleteUnpaidRegistrationService.cancelScheduledOrderUpdate(savedRegistration.id!!)
             return paymentMapper.toDto(savedRegistration.payment!!)
         } catch (e: Exception){
             throw PaymentException("Error adding payment: ${e.message}")
