@@ -157,12 +157,12 @@ class PaymentController(private val paymentService: PaymentService,
                 // Build hash data - encode theo US_ASCII
                 hashData.append(fieldName)
                 hashData.append('=')
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()).replace("+", "%20"))
 
                 // Build query string - encode theo US_ASCII
                 query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
                 query.append('=')
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()).replace("+", "%20"))
 
                 if (iterator.hasNext()) {
                     query.append('&')
@@ -202,37 +202,30 @@ class PaymentController(private val paymentService: PaymentService,
 
     @GetMapping("/vnpay-return")
     fun vnPayReturn(@RequestParam allParams: Map<String, String>): ResponseEntity<CreatePaymentRequest> {
-        val secureHash = allParams["vnp_SecureHash"]
+        logger.info("VNPay Return Params: $allParams")
+        val secureHash = allParams["vnp_SecureHash"] ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
 
-        // Lọc và sắp xếp parameters (loại bỏ vnp_SecureHash và vnp_SecureHashType)
+        // Lọc và sắp xếp parameters
         val filteredParams = allParams.filterKeys {
             it != "vnp_SecureHash" && it != "vnp_SecureHashType"
         }.toSortedMap()
 
-        // Build hash data để verify - phải giống như lúc tạo payment URL
-        val hashData = StringBuilder()
-        val iterator = filteredParams.entries.iterator()
-
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            val fieldName = entry.key
-            val fieldValue = entry.value
-
-            if (fieldValue.isNotEmpty()) {
-                // Build hash data - encode theo US_ASCII giống như lúc tạo
-                hashData.append(fieldName)
-                hashData.append('=')
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
-
-                if (iterator.hasNext()) {
-                    hashData.append('&')
-                }
+        // Build hash data
+        val hashData = filteredParams.entries.joinToString("&") { (key, value) ->
+            if (value.isNotEmpty()) {
+                "$key=${URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()).replace("+", "%20")}"
+            } else {
+                ""
             }
-        }
+        }.trim('&')
 
-        val generatedHash = hmacSHA512(vnPayProperties.hashSecret, hashData.toString())
+        logger.info("HashData: $hashData")
+        val generatedHash = hmacSHA512(vnPayProperties.hashSecret, hashData)
+        logger.info("Received SecureHash: $secureHash")
+        logger.info("Generated SecureHash: $generatedHash")
 
         if (secureHash != generatedHash) {
+            logger.error("Invalid signature: expected $secureHash, got $generatedHash")
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
 
@@ -253,13 +246,13 @@ class PaymentController(private val paymentService: PaymentService,
                     LocalDateTime.now()
                 }
             } catch (e: Exception) {
+                logger.error("Error parsing payment date: ${e.message}")
                 LocalDateTime.now()
             },
             status = if (responseCode == "00") EPaymentStatus.SUCCESS else EPaymentStatus.FAILED,
-            registrationId = orderInfo.toLong()
+            registrationId = orderInfo.toLongOrNull() ?: -1L
         )
 
-//        val addedPayment = paymentService.addPayment(dto)
         return ResponseEntity.ok(dto)
     }
 }
