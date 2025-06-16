@@ -15,7 +15,8 @@ data class Registration(
     @ManyToOne(fetch = FetchType.LAZY)
     var runner: User? = null,
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JoinColumn(name = "payment_id")
     @JsonManagedReference
     var payment: Payment? = null,
 
@@ -46,7 +47,7 @@ data class Registration(
     @JsonBackReference
     var contest: Contest? = null,
 
-    @OneToMany(mappedBy = "registration", cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "registration", cascade = [CascadeType.REMOVE], orphanRemoval = true)
     var feedbacks: List<Feedback> = mutableListOf()
 )
 

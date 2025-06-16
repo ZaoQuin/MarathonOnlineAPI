@@ -15,6 +15,9 @@ import com.university.MarathonOnlineAPI.repos.RegistrationRepository
 import com.university.MarathonOnlineAPI.service.RegistrationService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
+import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationJob
+import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationService
+import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -30,6 +33,7 @@ class RegistrationServiceImpl(
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
     private val userService: UserService,
+    private val deleteUnpaidRegistrationService: DeleteUnpaidRegistrationService
 ) : RegistrationService {
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)
@@ -53,7 +57,6 @@ class RegistrationServiceImpl(
                 return registrationMapper.toDto(existingRegistration)
             }
 
-            // Tạo mới nếu chưa có
             val registration = Registration(
                 runner = userMapper.toEntity(userDTO),
                 contest = contest,
@@ -62,26 +65,37 @@ class RegistrationServiceImpl(
                 status = ERegistrationStatus.PENDING
             )
 
-            registrationRepository.save(registration)
-            registrationMapper.toDto(registration)
-
+            val savedRegistration = registrationRepository.save(registration)
+            deleteUnpaidRegistrationService.scheduleDeleteIfUnpaid(savedRegistration)
+            registrationMapper.toDto(savedRegistration)
         } catch (e: DataAccessException) {
             logger.error("Error saving registration: ${e.message}")
             throw RegistrationException("Database error occurred while saving registration: ${e.message}")
         }
     }
 
+    @Transactional
     override fun deleteRegistrationById(id: Long) {
-        return try {
-            if (registrationRepository.existsById(id)) {
-                registrationRepository.deleteById(id)
-                logger.info("Registration with ID $id deleted successfully")
-            } else {
-                throw RegistrationException("Registration with ID $id not found")
+        try {
+            val registration = registrationRepository.findById(id)
+                .orElseThrow { RegistrationException("Registration with ID $id not found") }
+
+            registration.contest?.registrations?.let { registrations ->
+                if (registrations.contains(registration)) {
+                    (registrations as MutableList).remove(registration)
+                    logger.info("Removed registration ID $id from contest.registrations")
+                }
             }
+
+            registrationRepository.delete(registration)
+            logger.info("Registration with ID $id deleted successfully")
+
         } catch (e: DataAccessException) {
-            logger.error("Error deleting registration with ID $id: ${e.message}")
+            logger.error("Error deleting registration with ID $id: ${e.message}", e)
             throw RegistrationException("Database error occurred while deleting registration: ${e.message}")
+        } catch (e: Exception) {
+            logger.error("Unexpected error deleting registration with ID $id: ${e.message}", e)
+            throw RegistrationException("Unexpected error occurred while deleting registration: ${e.message}")
         }
     }
 
