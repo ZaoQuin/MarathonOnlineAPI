@@ -259,11 +259,11 @@ class FeedbackServiceImpl(
             } else {
                 val title = "Phản hồi từ cuộc thi ${registration.contest!!.name}"
                 val content = "${sender.fullName} đã gửi phản hồi: ${feedback.message?.take(100)}"
-                val admins = userRepository.findByRole(ERole.ADMIN)
+                val organizer = registration.contest!!.organizer
 
-                admins.forEach { admin ->
+                organizer?.let { userMapper.toDto(it) }?.let {
                     createNotificationAndSendPush(
-                        receiver = userMapper.toDto(admin),
+                        receiver = it,
                         title = title,
                         content = content,
                         objectId = registration.id,
