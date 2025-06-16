@@ -113,17 +113,12 @@ class PaymentController(private val paymentService: PaymentService,
         val vnp_Command = "pay"
         val vnp_TxnRef = UUID.randomUUID().toString().substring(0, 8)
         val vnp_OrderInfo = registrationId.toString()
-        val vnp_Amount = (amount * 100).toString() // VNPay yêu cầu nhân với 100
+        val vnp_Amount = (amount * 100).toString()
 
-        // Lấy IP thực tế của client
         val vnp_IpAddr = getClientIpAddress(request)
-
-        // Tạo thời gian theo timezone GMT+7 như code mẫu
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"))
         val formatter = SimpleDateFormat("yyyyMMddHHmmss")
         val vnp_CreateDate = formatter.format(calendar.time)
-
-        // Thêm thời gian hết hạn (15 phút)
         calendar.add(Calendar.MINUTE, 15)
         val vnp_ExpireDate = formatter.format(calendar.time)
 
@@ -135,69 +130,29 @@ class PaymentController(private val paymentService: PaymentService,
         vnp_Params["vnp_CurrCode"] = "VND"
         vnp_Params["vnp_TxnRef"] = vnp_TxnRef
         vnp_Params["vnp_OrderInfo"] = vnp_OrderInfo
-        vnp_Params["vnp_OrderType"] = "other" // Thêm OrderType
+        vnp_Params["vnp_OrderType"] = "other"
         vnp_Params["vnp_Locale"] = "vn"
         vnp_Params["vnp_ReturnUrl"] = vnPayProperties.returnUrl
         vnp_Params["vnp_CreateDate"] = vnp_CreateDate
-        vnp_Params["vnp_ExpireDate"] = vnp_ExpireDate // Thêm ExpireDate
+        vnp_Params["vnp_ExpireDate"] = vnp_ExpireDate
         vnp_Params["vnp_IpAddr"] = vnp_IpAddr
 
-        // Build hash data và query string theo đúng cách của VNPay
-        val hashData = StringBuilder()
-        val query = StringBuilder()
-
-        // Duyệt qua các field đã được sort
-        val iterator = vnp_Params.entries.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            val fieldName = entry.key
-            val fieldValue = entry.value
-
-            if (fieldValue.isNotEmpty()) {
-                // Build hash data - encode theo US_ASCII
-                hashData.append(fieldName)
-                hashData.append('=')
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()).replace("+", "%20"))
-
-                // Build query string - encode theo US_ASCII
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
-                query.append('=')
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()).replace("+", "%20"))
-
-                if (iterator.hasNext()) {
-                    query.append('&')
-                    hashData.append('&')
-                }
+        val hashData = vnp_Params.entries.joinToString("&") { (key, value) ->
+            if (value.isNotEmpty()) {
+                "$key=${URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()).replace("+", "%20")}"
+            } else {
+                ""
             }
-        }
+        }.trim('&')
 
-        val secureHash = hmacSHA512(vnPayProperties.hashSecret, hashData.toString())
-        val paymentUrl = "${vnPayProperties.payUrl}?${query}&vnp_SecureHash=$secureHash"
+        logger.info("HashData for createVnPayUrl: $hashData")
+        val secureHash = hmacSHA512(vnPayProperties.hashSecret, hashData)
+        logger.info("Generated SecureHash: $secureHash")
+
+        val paymentUrl = "${vnPayProperties.payUrl}?$hashData&vnp_SecureHash=$secureHash"
+        logger.info("Payment URL: $paymentUrl")
 
         return ResponseEntity.ok(StringResponse(paymentUrl))
-    }
-
-    // Hàm lấy IP client thực tế
-    private fun getClientIpAddress(request: HttpServletRequest): String {
-        val xForwardedFor = request.getHeader("X-Forwarded-For")
-        if (!xForwardedFor.isNullOrEmpty()) {
-            return xForwardedFor.split(",")[0].trim()
-        }
-
-        val xRealIp = request.getHeader("X-Real-IP")
-        if (!xRealIp.isNullOrEmpty()) {
-            return xRealIp
-        }
-
-        return request.remoteAddr ?: "127.0.0.1"
-    }
-
-    fun hmacSHA512(key: String, data: String): String {
-        val hmacSHA512 = Mac.getInstance("HmacSHA512")
-        val secretKeySpec = SecretKeySpec(key.toByteArray(), "HmacSHA512")
-        hmacSHA512.init(secretKeySpec)
-        val hashBytes = hmacSHA512.doFinal(data.toByteArray())
-        return hashBytes.joinToString("") { "%02x".format(it) }
     }
 
     @GetMapping("/vnpay-return")
@@ -205,12 +160,10 @@ class PaymentController(private val paymentService: PaymentService,
         logger.info("VNPay Return Params: $allParams")
         val secureHash = allParams["vnp_SecureHash"] ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
 
-        // Lọc và sắp xếp parameters
         val filteredParams = allParams.filterKeys {
             it != "vnp_SecureHash" && it != "vnp_SecureHashType"
         }.toSortedMap()
 
-        // Build hash data
         val hashData = filteredParams.entries.joinToString("&") { (key, value) ->
             if (value.isNotEmpty()) {
                 "$key=${URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()).replace("+", "%20")}"
@@ -219,10 +172,10 @@ class PaymentController(private val paymentService: PaymentService,
             }
         }.trim('&')
 
-        logger.info("HashData: $hashData")
+        logger.info("HashData for vnPayReturn: $hashData")
         val generatedHash = hmacSHA512(vnPayProperties.hashSecret, hashData)
-        logger.info("Received SecureHash: $secureHash")
         logger.info("Generated SecureHash: $generatedHash")
+        logger.info("Received SecureHash: $secureHash")
 
         if (secureHash != generatedHash) {
             logger.error("Invalid signature: expected $secureHash, got $generatedHash")
@@ -254,5 +207,28 @@ class PaymentController(private val paymentService: PaymentService,
         )
 
         return ResponseEntity.ok(dto)
+    }
+
+    // Hàm lấy IP client thực tế
+    private fun getClientIpAddress(request: HttpServletRequest): String {
+        val xForwardedFor = request.getHeader("X-Forwarded-For")
+        if (!xForwardedFor.isNullOrEmpty()) {
+            return xForwardedFor.split(",")[0].trim()
+        }
+
+        val xRealIp = request.getHeader("X-Real-IP")
+        if (!xRealIp.isNullOrEmpty()) {
+            return xRealIp
+        }
+
+        return request.remoteAddr ?: "127.0.0.1"
+    }
+
+    fun hmacSHA512(key: String, data: String): String {
+        val hmacSHA512 = Mac.getInstance("HmacSHA512")
+        val secretKeySpec = SecretKeySpec(key.toByteArray(), "HmacSHA512")
+        hmacSHA512.init(secretKeySpec)
+        val hashBytes = hmacSHA512.doFinal(data.toByteArray())
+        return hashBytes.joinToString("") { "%02x".format(it) }
     }
 }
