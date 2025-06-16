@@ -14,14 +14,12 @@ import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
+import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
 @RestController
 @RequestMapping("/api/v1/payment")
@@ -115,7 +113,7 @@ class PaymentController(private val paymentService: PaymentService,
         val vnpCurrCode = "VND"
         val vnpLocale = "vn"
 
-        val vnpTxnRef = System.currentTimeMillis().toString() + Random.nextInt(1000, 9999)
+        val vnpTxnRef = System.currentTimeMillis().toString();
         val vnpOrderInfo = "Thanh toan dang ky giai chay #$registrationId"
         val vnpOrderType = "other"
         val vnpAmount = amount * 100 // Đơn vị là xu
