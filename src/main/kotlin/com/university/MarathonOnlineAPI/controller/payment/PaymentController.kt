@@ -113,17 +113,14 @@ class PaymentController(private val paymentService: PaymentService,
         val vnp_Command = "pay"
         val vnp_TxnRef = UUID.randomUUID().toString().substring(0, 8)
         val vnp_OrderInfo = registrationId.toString()
-        val vnp_Amount = (amount * 100).toString() // VNPay yêu cầu nhân với 100
+        val vnp_Amount = (amount * 100).toString()
 
-        // Lấy IP thực tế của client
         val vnp_IpAddr = getClientIpAddress(request)
 
-        // Tạo thời gian theo timezone GMT+7 như code mẫu
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"))
         val formatter = SimpleDateFormat("yyyyMMddHHmmss")
         val vnp_CreateDate = formatter.format(calendar.time)
 
-        // Thêm thời gian hết hạn (15 phút)
         calendar.add(Calendar.MINUTE, 15)
         val vnp_ExpireDate = formatter.format(calendar.time)
 
@@ -135,18 +132,16 @@ class PaymentController(private val paymentService: PaymentService,
         vnp_Params["vnp_CurrCode"] = "VND"
         vnp_Params["vnp_TxnRef"] = vnp_TxnRef
         vnp_Params["vnp_OrderInfo"] = vnp_OrderInfo
-        vnp_Params["vnp_OrderType"] = "other" // Thêm OrderType
+        vnp_Params["vnp_OrderType"] = "other"
         vnp_Params["vnp_Locale"] = "vn"
         vnp_Params["vnp_ReturnUrl"] = vnPayProperties.returnUrl
         vnp_Params["vnp_CreateDate"] = vnp_CreateDate
-        vnp_Params["vnp_ExpireDate"] = vnp_ExpireDate // Thêm ExpireDate
+        vnp_Params["vnp_ExpireDate"] = vnp_ExpireDate
         vnp_Params["vnp_IpAddr"] = vnp_IpAddr
 
-        // Build hash data và query string theo đúng cách của VNPay
         val hashData = StringBuilder()
         val query = StringBuilder()
 
-        // Duyệt qua các field đã được sort
         val iterator = vnp_Params.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
@@ -154,12 +149,10 @@ class PaymentController(private val paymentService: PaymentService,
             val fieldValue = entry.value
 
             if (fieldValue.isNotEmpty()) {
-                // Build hash data - encode theo US_ASCII
                 hashData.append(fieldName)
                 hashData.append('=')
                 hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
 
-                // Build query string - encode theo US_ASCII
                 query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
                 query.append('=')
                 query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
@@ -177,7 +170,7 @@ class PaymentController(private val paymentService: PaymentService,
         return ResponseEntity.ok(StringResponse(paymentUrl))
     }
 
-    // Hàm lấy IP client thực tế
+
     private fun getClientIpAddress(request: HttpServletRequest): String {
         val xForwardedFor = request.getHeader("X-Forwarded-For")
         if (!xForwardedFor.isNullOrEmpty()) {
@@ -204,12 +197,10 @@ class PaymentController(private val paymentService: PaymentService,
     fun vnPayReturn(@RequestParam allParams: Map<String, String>): ResponseEntity<CreatePaymentRequest> {
         val secureHash = allParams["vnp_SecureHash"]
 
-        // Lọc và sắp xếp parameters (loại bỏ vnp_SecureHash và vnp_SecureHashType)
         val filteredParams = allParams.filterKeys {
             it != "vnp_SecureHash" && it != "vnp_SecureHashType"
         }.toSortedMap()
 
-        // Build hash data để verify - phải giống như lúc tạo payment URL
         val hashData = StringBuilder()
         val iterator = filteredParams.entries.iterator()
 
@@ -219,7 +210,6 @@ class PaymentController(private val paymentService: PaymentService,
             val fieldValue = entry.value
 
             if (fieldValue.isNotEmpty()) {
-                // Build hash data - encode theo US_ASCII giống như lúc tạo
                 hashData.append(fieldName)
                 hashData.append('=')
                 hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
@@ -259,7 +249,6 @@ class PaymentController(private val paymentService: PaymentService,
             registrationId = orderInfo.toLong()
         )
 
-//        val addedPayment = paymentService.addPayment(dto)
         return ResponseEntity.ok(dto)
     }
 }
