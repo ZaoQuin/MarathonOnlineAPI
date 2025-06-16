@@ -17,7 +17,7 @@ class DeleteUnpaidRegistrationService(
     fun scheduleDeleteIfUnpaid(registration: Registration) {
         val registrationId = registration.id ?: return
         val registrationTime = registration.registrationDate ?: return
-        val contestStartTime = registration.contest?.startDate ?: return
+        val contestStartTime = registration.contest?.registrationDeadline ?: return
 
         val now = LocalDateTime.now()
         val deleteAt = if (registrationTime.plusHours(24).isBefore(contestStartTime)) {
@@ -27,6 +27,8 @@ class DeleteUnpaidRegistrationService(
         }
 
         val deleteAtDate = Date.from(deleteAt.atZone(ZoneId.systemDefault()).toInstant())
+
+        println("Thời gian xóa: $deleteAtDate")
 
         if (deleteAtDate.before(Date())) {
             println("❌ Không schedule job vì thời điểm xoá đã qua. ID: $registrationId")
