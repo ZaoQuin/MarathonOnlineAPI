@@ -21,6 +21,8 @@ import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @Service
 @Transactional
@@ -72,7 +74,7 @@ class FeedbackServiceImpl(
             val feedback = Feedback(
                 sender = sender,
                 message = message,
-                sentAt = LocalDateTime.now(),
+                sentAt = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime(),
                 approval = approval
             )
 
@@ -102,7 +104,7 @@ class FeedbackServiceImpl(
             val feedback = Feedback(
                 sender = sender,
                 message = message,
-                sentAt = LocalDateTime.now(),
+                sentAt = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime(),
                 registration = registration
             )
 
