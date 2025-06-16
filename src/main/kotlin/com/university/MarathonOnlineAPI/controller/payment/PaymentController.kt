@@ -109,126 +109,71 @@ class PaymentController(private val paymentService: PaymentService,
         @RequestParam registrationId: Long,
         request: HttpServletRequest
     ): ResponseEntity<StringResponse> {
-        val vnp_Version = "2.1.0"
-        val vnp_Command = "pay"
-        val vnp_TxnRef = UUID.randomUUID().toString().substring(0, 8)
-        val vnp_OrderInfo = registrationId.toString()
-        val vnp_Amount = (amount * 100).toString()
+        val vnpVersion = "2.1.0"
+        val vnpCommand = "pay"
+        val vnpTmnCode = vnPayProperties.tmnCode
+        val vnpCurrCode = "VND"
+        val vnpLocale = "vn"
 
-        val vnp_IpAddr = getClientIpAddress(request)
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"))
-        val formatter = SimpleDateFormat("yyyyMMddHHmmss")
-        val vnp_CreateDate = formatter.format(calendar.time)
-        calendar.add(Calendar.MINUTE, 15)
-        val vnp_ExpireDate = formatter.format(calendar.time)
+        val vnpTxnRef = System.currentTimeMillis().toString() + Random.nextInt(1000, 9999)
+        val vnpOrderInfo = "Thanh toan dang ky giai chay #$registrationId"
+        val vnpOrderType = "other"
+        val vnpAmount = amount * 100 // Đơn vị là xu
 
-        val vnp_Params = TreeMap<String, String>()
-        vnp_Params["vnp_Version"] = vnp_Version
-        vnp_Params["vnp_Command"] = vnp_Command
-        vnp_Params["vnp_TmnCode"] = vnPayProperties.tmnCode
-        vnp_Params["vnp_Amount"] = vnp_Amount
-        vnp_Params["vnp_CurrCode"] = "VND"
-        vnp_Params["vnp_TxnRef"] = vnp_TxnRef
-        vnp_Params["vnp_OrderInfo"] = vnp_OrderInfo
-        vnp_Params["vnp_OrderType"] = "other"
-        vnp_Params["vnp_Locale"] = "vn"
-        vnp_Params["vnp_ReturnUrl"] = vnPayProperties.returnUrl
-        vnp_Params["vnp_CreateDate"] = vnp_CreateDate
-        vnp_Params["vnp_ExpireDate"] = vnp_ExpireDate
-        vnp_Params["vnp_IpAddr"] = vnp_IpAddr
+        val vnpReturnUrl = vnPayProperties.returnUrl
+        val vnpIpAddr = request.remoteAddr
+        val vnpCreateDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
 
-        val hashData = vnp_Params.entries.joinToString("&") { (key, value) ->
-            if (value.isNotEmpty()) {
-                "$key=${URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()).replace("+", "%20")}"
-            } else {
-                ""
-            }
-        }.trim('&')
+        // Bước 1: Tạo param
+        val params = sortedMapOf(
+            "vnp_Version" to vnpVersion,
+            "vnp_Command" to vnpCommand,
+            "vnp_TmnCode" to vnpTmnCode,
+            "vnp_Amount" to vnpAmount.toString(),
+            "vnp_CurrCode" to vnpCurrCode,
+            "vnp_TxnRef" to vnpTxnRef,
+            "vnp_OrderInfo" to vnpOrderInfo,
+            "vnp_OrderType" to vnpOrderType,
+            "vnp_Locale" to vnpLocale,
+            "vnp_ReturnUrl" to vnpReturnUrl,
+            "vnp_IpAddr" to vnpIpAddr,
+            "vnp_CreateDate" to vnpCreateDate
+        )
 
-        logger.info("HashData for createVnPayUrl: $hashData")
+        // Bước 2: Tạo chuỗi dữ liệu để hash
+        val hashData = params.map { "${it.key}=${it.value}" }.joinToString("&")
         val secureHash = hmacSHA512(vnPayProperties.hashSecret, hashData)
-        logger.info("Generated SecureHash: $secureHash")
 
-        val paymentUrl = "${vnPayProperties.payUrl}?$hashData&vnp_SecureHash=$secureHash"
-        logger.info("Payment URL: $paymentUrl")
+        // Bước 3: Tạo URL thanh toán
+        val queryUrl = params.map { "${it.key}=${URLEncoder.encode(it.value, "UTF-8")}" }.joinToString("&")
+        val paymentUrl = "${vnPayProperties.payUrl}?$queryUrl&vnp_SecureHash=$secureHash"
 
         return ResponseEntity.ok(StringResponse(paymentUrl))
     }
 
     @GetMapping("/vnpay-return")
     fun vnPayReturn(@RequestParam allParams: Map<String, String>): ResponseEntity<CreatePaymentRequest> {
-        logger.info("VNPay Return Params: $allParams")
-        val secureHash = allParams["vnp_SecureHash"] ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        val responseCode = allParams["vnp_ResponseCode"]
+        val amountStr = allParams["vnp_Amount"]
+        val txnRef = allParams["vnp_TxnRef"]
+        val bankCode = allParams["vnp_BankCode"]
 
-        val filteredParams = allParams.filterKeys {
-            it != "vnp_SecureHash" && it != "vnp_SecureHashType"
-        }.toSortedMap()
-
-        val hashData = filteredParams.entries.joinToString("&") { (key, value) ->
-            if (value.isNotEmpty()) {
-                "$key=${URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()).replace("+", "%20")}"
-            } else {
-                ""
-            }
-        }.trim('&')
-
-        logger.info("HashData for vnPayReturn: $hashData")
-        val generatedHash = hmacSHA512(vnPayProperties.hashSecret, hashData)
-        logger.info("Generated SecureHash: $generatedHash")
-        logger.info("Received SecureHash: $secureHash")
-
-        if (secureHash != generatedHash) {
-            logger.error("Invalid signature: expected $secureHash, got $generatedHash")
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        }
-
-        val orderInfo = allParams["vnp_OrderInfo"] ?: "unknown"
-        val responseCode = allParams["vnp_ResponseCode"] ?: "99"
-
-        val dto = CreatePaymentRequest(
-            amount = (allParams["vnp_Amount"]?.toInt()?.div(100) ?: 0).toBigDecimal(),
-            transactionRef = allParams["vnp_TxnRef"] ?: "unknown",
+        val payment = CreatePaymentRequest(
+            amount = amountStr?.toBigDecimal()?.divide(BigDecimal(100)),
+            paymentDate = LocalDateTime.now(),
+            transactionRef = txnRef,
             responseCode = responseCode,
-            bankCode = allParams["vnp_BankCode"],
-            paymentDate = try {
-                val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
-                val payDateStr = allParams["vnp_PayDate"]
-                if (!payDateStr.isNullOrBlank()) {
-                    LocalDateTime.parse(payDateStr, formatter)
-                } else {
-                    LocalDateTime.now()
-                }
-            } catch (e: Exception) {
-                logger.error("Error parsing payment date: ${e.message}")
-                LocalDateTime.now()
-            },
+            bankCode = bankCode,
             status = if (responseCode == "00") EPaymentStatus.SUCCESS else EPaymentStatus.FAILED,
-            registrationId = orderInfo.toLongOrNull() ?: -1L
+            registrationId = allParams["vnp_OrderInfo"]?.toLongOrNull()
         )
 
-        return ResponseEntity.ok(dto)
+        return ResponseEntity.ok(payment)
     }
 
-    // Hàm lấy IP client thực tế
-    private fun getClientIpAddress(request: HttpServletRequest): String {
-        val xForwardedFor = request.getHeader("X-Forwarded-For")
-        if (!xForwardedFor.isNullOrEmpty()) {
-            return xForwardedFor.split(",")[0].trim()
-        }
-
-        val xRealIp = request.getHeader("X-Real-IP")
-        if (!xRealIp.isNullOrEmpty()) {
-            return xRealIp
-        }
-
-        return request.remoteAddr ?: "127.0.0.1"
-    }
-
-    fun hmacSHA512(key: String, data: String): String {
-        val hmacSHA512 = Mac.getInstance("HmacSHA512")
-        val secretKeySpec = SecretKeySpec(key.toByteArray(), "HmacSHA512")
-        hmacSHA512.init(secretKeySpec)
-        val hashBytes = hmacSHA512.doFinal(data.toByteArray())
-        return hashBytes.joinToString("") { "%02x".format(it) }
+    private fun hmacSHA512(secretKey: String, data: String): String {
+        val hmac = MessageDigest.getInstance("SHA-512")
+        hmac.update(secretKey.toByteArray(Charsets.UTF_8))
+        return hmac.digest(data.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     }
 }
