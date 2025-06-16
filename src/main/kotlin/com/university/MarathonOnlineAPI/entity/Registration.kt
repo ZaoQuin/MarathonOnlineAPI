@@ -15,7 +15,8 @@ data class Registration(
     @ManyToOne(fetch = FetchType.LAZY)
     var runner: User? = null,
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JoinColumn(name = "payment_id")
     @JsonManagedReference
     var payment: Payment? = null,
 

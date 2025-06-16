@@ -10,6 +10,7 @@ import com.university.MarathonOnlineAPI.mapper.PaymentMapper
 import com.university.MarathonOnlineAPI.repos.PaymentRepository
 import com.university.MarathonOnlineAPI.repos.RegistrationRepository
 import com.university.MarathonOnlineAPI.service.PaymentService
+import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -19,7 +20,8 @@ import org.springframework.stereotype.Service
 class PaymentServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val paymentMapper: PaymentMapper,
-    private val registrationRepository: RegistrationRepository
+    private val registrationRepository: RegistrationRepository,
+    private val deleteUnpaidRegistrationService: DeleteUnpaidRegistrationService
 ) : PaymentService {
 
     private val logger = LoggerFactory.getLogger(PaymentServiceImpl::class.java)
@@ -45,7 +47,7 @@ class PaymentServiceImpl(
             if(payment.status == EPaymentStatus.SUCCESS)
                 registration.status = ERegistrationStatus.ACTIVE
             val savedRegistration = registrationRepository.save(registration)
-
+            deleteUnpaidRegistrationService.cancelScheduledOrderUpdate(savedRegistration.id!!)
             return paymentMapper.toDto(savedRegistration.payment!!)
         } catch (e: Exception){
             throw PaymentException("Error adding payment: ${e.message}")

@@ -71,6 +71,10 @@ dependencies {
 
 	//Cloudnary
 	implementation("com.cloudinary:cloudinary-http44:1.37.0")
+
+	//Quartz
+	implementation("org.springframework.boot:spring-boot-starter-quartz")
+
 }
 
 kotlin {

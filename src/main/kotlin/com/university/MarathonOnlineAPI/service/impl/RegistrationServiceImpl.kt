@@ -15,6 +15,8 @@ import com.university.MarathonOnlineAPI.repos.RegistrationRepository
 import com.university.MarathonOnlineAPI.service.RegistrationService
 import com.university.MarathonOnlineAPI.service.TokenService
 import com.university.MarathonOnlineAPI.service.UserService
+import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationJob
+import com.university.MarathonOnlineAPI.squartz.DeleteUnpaidRegistrationService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -30,6 +32,7 @@ class RegistrationServiceImpl(
     private val tokenService: TokenService,
     private val userMapper: UserMapper,
     private val userService: UserService,
+    private val deleteUnpaidRegistrationService: DeleteUnpaidRegistrationService
 ) : RegistrationService {
 
     private val logger = LoggerFactory.getLogger(RegistrationServiceImpl::class.java)
@@ -53,7 +56,6 @@ class RegistrationServiceImpl(
                 return registrationMapper.toDto(existingRegistration)
             }
 
-            // Tạo mới nếu chưa có
             val registration = Registration(
                 runner = userMapper.toEntity(userDTO),
                 contest = contest,
@@ -62,9 +64,9 @@ class RegistrationServiceImpl(
                 status = ERegistrationStatus.PENDING
             )
 
-            registrationRepository.save(registration)
-            registrationMapper.toDto(registration)
-
+            val savedRegistration = registrationRepository.save(registration)
+            deleteUnpaidRegistrationService.scheduleDeleteIfUnpaid(savedRegistration)
+            registrationMapper.toDto(savedRegistration)
         } catch (e: DataAccessException) {
             logger.error("Error saving registration: ${e.message}")
             throw RegistrationException("Database error occurred while saving registration: ${e.message}")
