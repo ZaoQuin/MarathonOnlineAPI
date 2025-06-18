@@ -82,4 +82,9 @@ interface TrainingPlanRepository : JpaRepository<TrainingPlan, Long> {
         startDate: LocalDateTime,
         endDate: LocalDateTime
     ): List<TrainingPlan>
+
+    fun findByStatusAndEndDateBefore(
+        status: ETrainingPlanStatus,
+        dateTime: LocalDateTime
+    ): List<TrainingPlan>
 }

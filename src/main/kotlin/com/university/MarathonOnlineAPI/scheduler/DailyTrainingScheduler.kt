@@ -17,6 +17,23 @@ class DailyTrainingScheduler(
     private val trainingPlanRepository: TrainingPlanRepository,
     private val trainingDayRepository: TrainingDayRepository
 ) {
+    @Scheduled(cron = "0 30 0 * * *")
+    @Transactional
+    fun markExpiredPlansAsCompleted() {
+        val todayStart = LocalDateTime.now().toLocalDate().atStartOfDay()
+
+        val expiredPlans = trainingPlanRepository.findByStatusAndEndDateBefore(
+            ETrainingPlanStatus.ACTIVE,
+            todayStart
+        )
+
+        expiredPlans.forEach { plan ->
+            plan.status = ETrainingPlanStatus.COMPLETED
+            trainingPlanRepository.save(plan)
+            println("[PlanStatusScheduler] Đã chuyển TrainingPlan ${plan.id} sang COMPLETED vì quá hạn.")
+        }
+    }
+
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     fun generateDailyTraining() {
