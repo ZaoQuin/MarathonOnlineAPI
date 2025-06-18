@@ -56,7 +56,6 @@ class AITrainingPlanServiceImpl(
         val avgDistance = recordData.mapNotNull { it.distance }.average().let { if (it.isNaN()) 0.0 else it }
         val avgPace = recordData.mapNotNull { it.avgSpeed }.average().let { if (it.isNaN()) 0.0 else it }
 
-        // Lấy thông tin chuẩn từ Hal Higdon dựa trên mục tiêu và trình độ
         val trainingStandards = getHalHigdonStandards(input.goal!!, input.level!!)
 
         return """
@@ -83,59 +82,21 @@ class AITrainingPlanServiceImpl(
         • Khoảng cách trung bình: ${avgDistance.round(2)} km
         • Tốc độ trung bình: ${avgPace.round(2)} phút/km
         
-        NGUYÊN TẮC HUẤN LUYỆN HAL HIGDON:
-        • Tuần điển hình: ${trainingStandards.weeklyStructure}
-        • LONG_RUN: Chủ nhật, tăng dần theo chu kỳ 3 tuần tăng + 1 tuần giảm
-        • SPEED_WORK: ${getSpeedWorkGuidance(input.level!!, input.goal!!)}
-        • RECOVERY_RUN: Pace chậm hơn mục tiêu 60-90 giây/km
-        • Nếu feedback báo TIRED/EXHAUSTED hoặc độ khó HARD/VERY_HARD, áp dụng nguyên tắc deload
+        QUAN TRỌNG: Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm text nào khác:
         
-        PHÂN BỐ TUẦN THEO HAL HIGDON:
-        ${getWeeklyDistribution(input.level!!, input.goal!!, dayOfWeek)}
-        
-        GIỚI HẠN PACE THEO LOẠI BUỔI TẬP VÀ TRÌNH ĐỘ:
-        • RECOVERY_RUN:
-          ◦ Beginner: 7:30 – 9:00 phút/km
-          ◦ Intermediate: 6:30 – 8:00 phút/km
-          ◦ Advanced: 5:30 – 7:00 phút/km
-        • LONG_RUN:
-          ◦ Beginner: 7:00 – 8:30 phút/km
-          ◦ Intermediate: 6:00 – 7:30 phút/km
-          ◦ Advanced: 5:00 – 6:30 phút/km
-        • SPEED_WORK:
-          ◦ Beginner: 6:00 – 7:30 phút/km
-          ◦ Intermediate: 5:00 – 6:30 phút/km
-          ◦ Advanced: 4:00 – 5:30 phút/km
-        
-        ĐIỀU CHỈNH THEO TIẾN ĐỘ TRAINING:
-        • Tuần 1-4: Base building phase (60-70% easy pace)
-        • Tuần 5-12: Build phase (Tăng SPEED_WORK và LONG_RUN)
-        • Tuần 13-16: Peak phase (Highest volume)
-        • Tuần 17-18: Taper phase (Giảm volume, duy trì intensity)
-        
-        YÊU CẦU ĐẦU RA:
-        Trả về CHÍNH XÁC một đối tượng JSON cho ngày tập luyện theo chuẩn Hal Higdon:
         {
           "week": $week,
           "dayOfWeek": $dayOfWeek,
           "session": {
-            "name": "[tên buổi tập theo Hal Higdon, ví dụ: 'Long Run', 'Tempo Run', 'Easy Run']",
-            "type": "[LONG_RUN | RECOVERY_RUN | SPEED_WORK | REST]",
-            "distance": [số km, theo progression Hal Higdon],
-            "pace": [phút/km, dựa trên training zones],
-            "notes": "[hướng dẫn chi tiết theo phương pháp Hal Higdon]"
+            "name": "tên buổi tập theo Hal Higdon",
+            "type": "LONG_RUN hoặc RECOVERY_RUN hoặc SPEED_WORK hoặc REST",
+            "distance": số_km_dạng_số,
+            "pace": số_phút_per_km_dạng_số,
+            "notes": "hướng dẫn chi tiết"
           }
         }
-
-        ĐIỀU CHỈNH THEO TRÌNH ĐỘ HAL HIGDON:
-        ${getTrainingAdjustmentByLevel(input.level!!, input.goal!!)}
-
-        QUAN TRỌNG:
-        • Tuân thủ nghiêm ngặt cấu trúc tuần của Hal Higdon
-        • Chỉ trả về một đối tượng JSON cho ngày ${date.toLocalDate()}
-        • Sử dụng tiếng Việt
-        • Đảm bảo JSON hợp lệ
-        • Dựa trên feedback để điều chỉnh nhẹ nhưng không vi phạm nguyên tắc Hal Higdon
+        
+        Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
     """.trimIndent()
     }
 
@@ -245,122 +206,81 @@ class AITrainingPlanServiceImpl(
         }
     }
 
-    private fun getSpeedWorkGuidance(level: ETrainingPlanInputLevel, goal: ETrainingPlanInputGoal): String {
-        return when (level) {
-            ETrainingPlanInputLevel.BEGINNER -> "Tempo runs 1x/tuần, không quá 20% tổng volume"
-            ETrainingPlanInputLevel.INTERMEDIATE -> "Tempo + Intervals, 2x/tuần, khoảng 25% tổng volume"
-            ETrainingPlanInputLevel.ADVANCED -> "Variety speed work, 2-3x/tuần, có thể lên đến 30% tổng volume"
-        }
-    }
-
-    private fun getWeeklyDistribution(level: ETrainingPlanInputLevel, goal: ETrainingPlanInputGoal, dayOfWeek: Int): String {
-        val marathonDistribution = when (level) {
-            ETrainingPlanInputLevel.BEGINNER -> """
-        • Thứ 2: REST
-        • Thứ 3: Easy Run (5-8km)
-        • Thứ 4: Cross Training hoặc REST
-        • Thứ 5: Easy Run (5-8km)
-        • Thứ 6: REST
-        • Thứ 7: Easy Run (8-13km)
-        • Chủ nhật: Long Run (16-32km)
-        """
-            ETrainingPlanInputLevel.INTERMEDIATE -> """
-        • Thứ 2: Easy Run (6-10km)
-        • Thứ 3: Tempo/Speed Work
-        • Thứ 4: Easy Run (6-10km)
-        • Thứ 5: Tempo/Speed Work
-        • Thứ 6: REST hoặc Cross Training
-        • Thứ 7: Medium Run (10-16km)
-        • Chủ nhật: Long Run (19-32km)
-        """
-            ETrainingPlanInputLevel.ADVANCED -> """
-        • Thứ 2: Easy Run (8-13km)
-        • Thứ 3: Speed Work/Intervals
-        • Thứ 4: Easy Run (8-13km)
-        • Thứ 5: Tempo Run
-        • Thứ 6: Easy Run (6-10km)
-        • Thứ 7: Medium Long Run (16-24km)
-        • Chủ nhật: Long Run (24-32km)
-        """
-        }
-
-        return when (goal) {
-            ETrainingPlanInputGoal.MARATHON_FINISH, ETrainingPlanInputGoal.MARATHON_TIME -> marathonDistribution
-            else -> "Điều chỉnh theo mục tiêu cụ thể với volume thấp hơn"
-        }
-    }
-
-    private fun getTrainingAdjustmentByLevel(level: ETrainingPlanInputLevel, goal: ETrainingPlanInputGoal): String {
-        return when (level) {
-            ETrainingPlanInputLevel.BEGINNER -> """
-        • Ưu tiên hoàn thành khoảng cách hơn tốc độ
-        • Long run tăng không quá 1.6km mỗi tuần
-        • Chỉ 1 buổi speed work/tuần
-        • Nhiều ngày nghỉ để phục hồi
-        """
-            ETrainingPlanInputLevel.INTERMEDIATE -> """
-        • Cân bằng volume và intensity
-        • 2 buổi quality runs/tuần (Tempo + Speed)
-        • Long run có thể kết hợp pace changes
-        • 1 ngày nghỉ hoàn toàn/tuần
-        """
-            ETrainingPlanInputLevel.ADVANCED -> """
-        • High volume với multiple quality sessions
-        • 2-3 buổi speed work/tuần
-        • Long runs với marathon pace segments
-        • Có thể double runs trong ngày
-        """
-        }
-    }
-
-
     private fun parseDailyAIResponse(aiResponse: String, plan: TrainingPlan, date: LocalDateTime): TrainingDay {
-        try {
-            val jsonPattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL)
-            val matcher = jsonPattern.matcher(aiResponse)
+        return try {
+            // Clean the response to remove any markdown formatting or extra text
+            val cleanedResponse = aiResponse.trim()
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
 
-            if (matcher.find()) {
-                val dayJson = JSONObject(matcher.group())
-                val sessionJson = dayJson.getJSONObject("session")
-                val week = dayJson.getInt("week")
-                val dayOfWeek = dayJson.getInt("dayOfWeek")
+            // Try to find JSON pattern
+            val jsonPattern = Pattern.compile("\\{[^{}]*\\{[^{}]*\\}[^{}]*\\}", Pattern.DOTALL)
+            val matcher = jsonPattern.matcher(cleanedResponse)
 
-                val session = TrainingSession(
-                    name = sessionJson.getString("name"),
-                    type = ETrainingSessionType.valueOf(sessionJson.getString("type")),
-                    distance = sessionJson.getDouble("distance"),
-                    pace = sessionJson.getDouble("pace"),
-                    notes = if (sessionJson.has("notes")) sessionJson.getString("notes") else null
-                )
-
-                val savedSession = trainingSessionRepository.save(session)
-
-                val trainingDay = TrainingDay().apply {
-                    this.plan = plan
-                    this.session = savedSession
-                    this.week = week
-                    this.dayOfWeek = dayOfWeek
-                    this.record = null
-                    this.status = ETrainingDayStatus.ACTIVE
-                    this.dateTime = date
-                }
-
-                savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
-                    add(trainingDay)
-                }
-
-                return trainingDay
+            val jsonString = if (matcher.find()) {
+                matcher.group()
             } else {
-                return createDefaultTrainingDay(plan, date)
+                // If no nested JSON found, try to find any JSON object
+                val simpleJsonPattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL)
+                val simpleMatcher = simpleJsonPattern.matcher(cleanedResponse)
+                if (simpleMatcher.find()) {
+                    simpleMatcher.group()
+                } else {
+                    cleanedResponse
+                }
             }
+
+            println("Attempting to parse JSON: $jsonString")
+
+            val dayJson = JSONObject(jsonString)
+            val sessionJson = dayJson.getJSONObject("session")
+            val week = dayJson.getInt("week")
+            val dayOfWeek = dayJson.getInt("dayOfWeek")
+
+            // Safely parse session type
+            val sessionType = try {
+                ETrainingSessionType.valueOf(sessionJson.getString("type"))
+            } catch (e: IllegalArgumentException) {
+                println("Invalid session type: ${sessionJson.getString("type")}, defaulting to RECOVERY_RUN")
+                ETrainingSessionType.RECOVERY_RUN
+            }
+
+            val session = TrainingSession(
+                name = sessionJson.getString("name"),
+                type = sessionType,
+                distance = sessionJson.getDouble("distance"),
+                pace = sessionJson.getDouble("pace"),
+                notes = sessionJson.optString("notes", "")
+            )
+
+            val savedSession = trainingSessionRepository.save(session)
+
+            val trainingDay = TrainingDay().apply {
+                this.plan = plan
+                this.session = savedSession
+                this.week = week
+                this.dayOfWeek = dayOfWeek
+                this.record = null
+                this.status = ETrainingDayStatus.ACTIVE
+                this.dateTime = date
+            }
+
+            savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
+                add(trainingDay)
+            }
+
+            trainingDay
+
         } catch (e: Exception) {
             println("Error parsing AI response for daily training: ${e.message}")
-            return createDefaultTrainingDay(plan, date)
+            println("AI Response was: $aiResponse")
+            createDefaultTrainingDay(plan, date)
         }
     }
 
     private fun createDefaultTrainingDay(plan: TrainingPlan, date: LocalDateTime): TrainingDay {
-        val week = java.time.temporal.ChronoUnit.DAYS.between(plan.startDate, date).div(7) + 1
+        val week = ChronoUnit.DAYS.between(plan.startDate, date).div(7) + 1
         val dayOfWeek = date.dayOfWeek.value
 
         val restSession = TrainingSession(
@@ -394,7 +314,8 @@ class AITrainingPlanServiceImpl(
         val jsonBody = JSONObject()
             .put("model", GROQ_MODEL)
             .put("messages", JSONArray().put(messageObj))
-            .put("temperature", 0.7)
+            .put("temperature", 0.3) // Lower temperature for more consistent JSON output
+            .put("max_tokens", 500) // Limit tokens to ensure focused response
 
         val request = Request.Builder()
             .url("https://api.groq.com/openai/v1/chat/completions")
@@ -403,19 +324,41 @@ class AITrainingPlanServiceImpl(
             .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    println("API call failed with code: ${response.code}")
+                    throw IOException("Unexpected code $response")
+                }
 
-            val responseBody = response.body?.string() ?: ""
-            val jsonResponse = JSONObject(responseBody)
-            return jsonResponse.getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content")
+                val responseBody = response.body?.string() ?: ""
+                val jsonResponse = JSONObject(responseBody)
+                val content = jsonResponse.getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+
+                println("AI API Response: $content")
+                content
+            }
+        } catch (e: Exception) {
+            println("Error calling AI API: ${e.message}")
+            // Return a default JSON response
+            """
+            {
+              "week": 1,
+              "dayOfWeek": 1,
+              "session": {
+                "name": "Easy Run",
+                "type": "RECOVERY_RUN",
+                "distance": 5.0,
+                "pace": 7.0,
+                "notes": "Chạy nhẹ nhàng để khởi động"
+              }
+            }
+            """.trimIndent()
         }
     }
-
-
 
     // Extension function để làm tròn số thập phân
     private fun Double.round(decimals: Int): Double {
@@ -424,9 +367,7 @@ class AITrainingPlanServiceImpl(
         return kotlin.math.round(this * multiplier) / multiplier
     }
 
-
     fun calculateDateTimeForTrainingDay(planStartDate: LocalDateTime, week: Int, dayOfWeek: Int): LocalDateTime {
-        // (week - 1) * 7 + (dayOfWeek - 1) để tính tổng số ngày từ planStartDate
         val daysToAdd = (week - 1) * 7 + (dayOfWeek - 1)
         return planStartDate.plusDays(daysToAdd.toLong())
     }
