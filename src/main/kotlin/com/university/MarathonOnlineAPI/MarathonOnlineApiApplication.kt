@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.scheduling.annotation.EnableScheduling
+import java.util.*
 
 @SpringBootApplication
 @EnableConfigurationProperties(value = [JwtProperties::class, VnPayProperties::class])
@@ -13,5 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 class MarathonOnlineApiApplication
 
 fun main(args: Array<String>) {
+	TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"))
+	println("Current timezone: ${TimeZone.getDefault().id}")
 	runApplication<MarathonOnlineApiApplication>(*args)
 }
