@@ -13,6 +13,7 @@ import org.json.JSONObject
 import org.springframework.stereotype.Service
 import java.io.IOException
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.regex.Pattern
 
 @Service
@@ -25,12 +26,10 @@ class AITrainingPlanServiceImpl(
     private val GROQ_MODEL = "llama3-70b-8192"
 
     override fun generateTrainingDayForDate(input: TrainingPlanInput, plan: TrainingPlan, date: LocalDateTime): TrainingDay {
-        // Lấy dữ liệu feedback và record từ các ngày trước
         val previousDays = trainingDayRepository.findByPlanIdAndDateTimeBefore(plan.id!!, date)
         val feedbackData = previousDays.mapNotNull { it.trainingFeedback }
         val recordData: List<Record> = previousDays.mapNotNull { it.record }
 
-        // Tạo prompt AI với thông tin từ feedback và record
         val prompt = createPromptForDailyTraining(input, plan, date, feedbackData, recordData)
         val aiResponse = callAIApi(prompt)
         val trainingDay = parseDailyAIResponse(aiResponse, plan, date)
@@ -45,7 +44,7 @@ class AITrainingPlanServiceImpl(
         feedbackData: List<TrainingFeedback>,
         recordData: List<Record>
     ): String {
-        val daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(plan.startDate, date)
+        val daysSinceStart = ChronoUnit.DAYS.between(plan.startDate, date)
         val week = (daysSinceStart / 7 + 1).toInt()
         val dayOfWeek = date.dayOfWeek.value
 
@@ -58,81 +57,82 @@ class AITrainingPlanServiceImpl(
         val avgPace = recordData.mapNotNull { it.avgSpeed }.average().let { if (it.isNaN()) 0.0 else it }
 
         return """
-    Tạo một ngày tập luyện marathon được cá nhân hóa cho ngày ${date.toLocalDate()} dựa trên thông tin sau:
-
-    THÔNG TIN RUNNER:
-    • Trình độ: ${input.level}
-    • Mục tiêu: ${input.goal}
-    • Khoảng cách dài nhất từng chạy: ${input.maxDistance ?: 10.0} km
-    • Tốc độ trung bình: ${input.averagePace ?: 6.0} phút/km
-    • Số tuần luyện tập: ${input.trainingWeeks ?: 4}
-    • Tuần hiện tại: $week
-    • Ngày trong tuần: $dayOfWeek (1=Thứ Hai, 7=Chủ Nhật)
-
-    DỮ LIỆU TỪ CÁC BUỔI TẬP TRƯỚC:
-    • Độ khó trung bình: $difficultySummary
-    • Cảm giác trung bình: $feelingSummary
-    • Khoảng cách trung bình: ${avgDistance.round(2)} km
-    • Tốc độ trung bình: ${avgPace.round(2)} phút/km
-
-    NGUYÊN TẮC HUẤN LUYỆN:
-    • Mỗi tuần có 4-5 ngày tập, ưu tiên phân bố đều
-    • LONG_RUN: Thường vào cuối tuần, tăng dần qua các tuần
-    • SPEED_WORK: 1-2 buổi/tuần, không liên tiếp với LONG_RUN
-    • RECOVERY_RUN: Pace chậm hơn trung bình 1-2 phút/km
-    • Nếu feedback báo TIRED/EXHAUSTED hoặc độ khó HARD/VERY_HARD, giảm khối lượng hoặc chuyển sang RECOVERY_RUN
-
-    GIỚI HẠN PACE THEO LOẠI BUỔI TẬP VÀ TRÌNH ĐỘ:
-    • RECOVERY_RUN:
-      ◦ Beginner: 9.0 – 12.0 phút/km
-      ◦ Intermediate: 8.0 – 10.5 phút/km
-      ◦ Advanced: 7.0 – 9.0 phút/km
-    • LONG_RUN:
-      ◦ Beginner: 8.0 – 10.5 phút/km
-      ◦ Intermediate: 6.5 – 9.0 phút/km
-      ◦ Advanced: 5.5 – 8.0 phút/km
-    • SPEED_WORK:
-      ◦ Beginner: 6.5 – 8.5 phút/km
-      ◦ Intermediate: 5.0 – 7.5 phút/km
-      ◦ Advanced: 4.0 – 6.5 phút/km
-
-    YÊU CẦU ĐẦU RA:
-    Trả về CHÍNH XÁC một đối tượng JSON cho ngày tập luyện:
-    {
-      "week": $week,
-      "dayOfWeek": $dayOfWeek,
-      "session": {
-        "name": "[tên buổi tập, ví dụ: 'Tempo Run Tuần $week']",
-        "type": "[LONG_RUN | RECOVERY_RUN | SPEED_WORK | REST]",
-        "distance": [số km, làm tròn 1 chữ số thập phân],
-        "pace": [phút/km, làm tròn 1 chữ số thập phân],
-        "notes": "[hướng dẫn chi tiết cho buổi tập]"
-      }
-    }
-
-    ĐIỀU CHỈNH THEO TRÌNH ĐỘ:
-    ${
-            when (input.level) {
-                ETrainingPlanInputLevel.BEGINNER -> "Ưu tiên sức bền, LONG_RUN không quá 50% maxDistance"
-                ETrainingPlanInputLevel.INTERMEDIATE -> "Cân bằng SPEED_WORK và RECOVERY_RUN"
-                else -> "Tăng cường SPEED_WORK đa dạng"
+            Tạo một ngày tập luyện marathon được cá nhân hóa cho ngày ${date.toLocalDate()} dựa trên thông tin sau:
+            
+            THÔNG TIN RUNNER:
+            • Trình độ: ${input.level}
+            • Mục tiêu: ${input.goal}
+            • Khoảng cách dài nhất từng chạy: ${input.maxDistance ?: 10.0} km
+            • Tốc độ trung bình: ${input.averagePace ?: 6.0} phút/km
+            • Số tuần luyện tập: ${input.trainingWeeks ?: 4}
+            • Tuần hiện tại: $week
+            • Ngày trong tuần: $dayOfWeek (1=Thứ Hai, 7=Chủ Nhật)
+            
+            DỮ LIỆU TỪ CÁC BUỔI TẬP TRƯỚC:
+            • Độ khó trung bình: $difficultySummary
+            • Cảm giác trung bình: $feelingSummary
+            • Khoảng cách trung bình: ${avgDistance.round(2)} km
+            • Tốc độ trung bình: ${avgPace.round(2)} phút/km
+            
+            NGUYÊN TẮC HUẤN LUYỆN:
+            • Mỗi tuần có 4-5 ngày tập, ưu tiên phân bố đều
+            • LONG_RUN: Thường vào cuối tuần (ngày 6 hoặc 7), tăng dần 10-15% qua các tuần
+            • SPEED_WORK: 1-2 buổi/tuần (ngày 2 hoặc 4), không liên tiếp với LONG_RUN
+            • RECOVERY_RUN: Pace chậm hơn mục tiêu 30-60 giây/km
+            • Nếu feedback báo TIRED/EXHAUSTED hoặc độ khó HARD/VERY_HARD, giảm khoảng cách 20% hoặc chuyển sang RECOVERY_RUN
+            
+            GIỚI HẠN PACE THEO LOẠI BUỔI TẬP VÀ TRÌNH ĐỘ (NGUỒN: Runna):
+            • RECOVERY_RUN:
+              ◦ Beginner: 7:30 – 9:00 phút/km
+              ◦ Intermediate: 6:30 – 8:00 phút/km
+              ◦ Advanced: 5:30 – 7:00 phút/km
+            • LONG_RUN:
+              ◦ Beginner: 7:00 – 8:30 phút/km
+              ◦ Intermediate: 6:00 – 7:30 phút/km
+              ◦ Advanced: 5:00 – 6:30 phút/km
+            • SPEED_WORK:
+              ◦ Beginner: 6:00 – 7:30 phút/km
+              ◦ Intermediate: 5:00 – 6:30 phút/km
+              ◦ Advanced: 4:00 – 5:30 phút/km
+            
+            YÊU CẦU ĐẦU RA:
+            Trả về CHÍNH XÁC một đối tượng JSON cho ngày tập luyện:
+            {
+              "week": $week,
+              "dayOfWeek": $dayOfWeek,
+              "session": {
+                "name": "[tên buổi tập, ví dụ: 'Tempo Run Tuần $week']",
+                "type": "[LONG_RUN | RECOVERY_RUN | SPEED_WORK | REST]",
+                "distance": [số km, làm tròn 1 chữ số thập phân],
+                "pace": [phút/km, làm tròn 1 chữ số thập phân],
+                "notes": "[hướng dẫn chi tiết cho buổi tập, ví dụ: 'Chạy đều, duy trì nhịp thở ổn định. Uống nước mỗi 5km.' hoặc 'Chạy 4x800m ở pace mục tiêu với 2 phút nghỉ giữa các lần.' for SPEED_WORK]"
+              }
             }
-        }
 
-    ĐIỀU CHỈNH THEO MỤC TIÊU:
-    ${
-            when (input.goal) {
-                ETrainingPlanInputGoal.MARATHON_FINISH -> "Tập trung LONG_RUN và sức bền"
-                ETrainingPlanInputGoal.MARATHON_TIME -> "Tăng SPEED_WORK với Tempo"
-                else -> "Cân bằng sức bền và tốc độ"
+            ĐIỀU CHỈNH THEO TRÌNH ĐỘ:
+            ${
+                when (input.level) {
+                    ETrainingPlanInputLevel.BEGINNER -> "Ưu tiên sức bền, LONG_RUN không quá 50% maxDistance, pace gần giới hạn trên"
+                    ETrainingPlanInputLevel.INTERMEDIATE -> "Cân bằng SPEED_WORK (10-15% khối lượng tuần) và RECOVERY_RUN"
+                    else -> "Tăng cường SPEED_WORK (15-20% khối lượng tuần) với Tempo và Yasso 800s"
+                }
             }
-        }
-
-    QUAN TRỌNG:
-    • Chỉ trả về một đối tượng JSON cho ngày ${date.toLocalDate()}
-    • Sử dụng tiếng Việt
-    • Đảm bảo JSON hợp lệ
-    """.trimIndent()
+    
+            ĐIỀU CHỈNH THEO MỤC TIÊU:
+            ${
+                when (input.goal) {
+                    ETrainingPlanInputGoal.MARATHON_FINISH -> "Tập trung LONG_RUN (50-65% khối lượng tuần) và sức bền"
+                    ETrainingPlanInputGoal.MARATHON_TIME -> "Tăng SPEED_WORK (15-20% khối lượng tuần) với Tempo và Yasso 800s"
+                    else -> "Cân bằng sức bền (LONG_RUN 40-50% tuần) và tốc độ (SPEED_WORK 10-15% tuần)"
+                }
+            }
+    
+        QUAN TRỌNG:
+        • Chỉ trả về một đối tượng JSON cho ngày ${date.toLocalDate()}
+        • Sử dụng tiếng Việt
+        • Đảm bảo JSON hợp lệ
+        • Dựa trên dữ liệu lịch sử, điều chỉnh pace/distance nếu cần để tránh quá tải
+        """.trimIndent()
     }
 
 
