@@ -96,7 +96,8 @@ class AITrainingPlanServiceImpl(
           }
         }
         
-        Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
+        Lưu ý: Toàn bộ nội dung phải bằng tiếng Việt, bao gồm cả tên buổi tập, loại buổi tập (LONG_RUN, RECOVERY_RUN, SPEED_WORK, REST), và phần ghi chú (notes). KHÔNG được dịch sang tiếng Anh.
+Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
     """.trimIndent()
     }
 
