@@ -82,7 +82,7 @@ class AITrainingPlanServiceImpl(
         • Khoảng cách trung bình: ${avgDistance.round(2)} km
         • Tốc độ trung bình: ${avgPace.round(2)} phút/km
         
-        QUAN TRỌNG: Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm text nào khác:
+        QUAN TRỌNG: Trả lời hoàn toàn bằng TIẾNG VIỆT. Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm văn bản hay định dạng nào khác:
         
         {
           "week": $week,
