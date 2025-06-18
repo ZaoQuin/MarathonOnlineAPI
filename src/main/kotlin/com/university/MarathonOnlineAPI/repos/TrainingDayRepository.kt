@@ -40,4 +40,5 @@ interface TrainingDayRepository : JpaRepository<TrainingDay, Long> {
 
     @Query("SELECT td FROM TrainingDay td WHERE td.record.id = :recordId")
     fun findByRecordId(recordId: Long): List<TrainingDay>
+    fun findByPlanId(id: Long): List<TrainingDay>
 }

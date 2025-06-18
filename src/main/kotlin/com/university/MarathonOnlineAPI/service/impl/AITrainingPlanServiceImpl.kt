@@ -25,6 +25,15 @@ class AITrainingPlanServiceImpl(
     val apiKey = aiTrainingProperties.api
     private val GROQ_MODEL = "llama3-70b-8192"
 
+    data class PaceConstraints(
+        val recoveryRunMin: Double,
+        val recoveryRunMax: Double,
+        val longRunMin: Double,
+        val longRunMax: Double,
+        val speedWorkMin: Double,
+        val speedWorkMax: Double
+    )
+
     override fun generateTrainingDayForDate(input: TrainingPlanInput, plan: TrainingPlan, date: LocalDateTime): TrainingDay {
         val previousDays = trainingDayRepository.findByPlanIdAndDateTimeBefore(plan.id!!, date)
         val feedbackData = previousDays.mapNotNull { it.trainingFeedback }
@@ -32,9 +41,50 @@ class AITrainingPlanServiceImpl(
 
         val prompt = createPromptForDailyTraining(input, plan, date, feedbackData, recordData)
         val aiResponse = callAIApi(prompt)
-        val trainingDay = parseDailyAIResponse(aiResponse, plan, date)
+        val trainingDay = parseDailyAIResponse(aiResponse, plan, date, input.level!!)
 
         return trainingDayRepository.save(trainingDay)
+    }
+
+    private fun getPaceConstraints(level: ETrainingPlanInputLevel): PaceConstraints {
+        return when (level) {
+            ETrainingPlanInputLevel.BEGINNER -> PaceConstraints(
+                recoveryRunMin = 7.5, recoveryRunMax = 9.0,
+                longRunMin = 7.0, longRunMax = 8.5,
+                speedWorkMin = 6.0, speedWorkMax = 7.5
+            )
+            ETrainingPlanInputLevel.INTERMEDIATE -> PaceConstraints(
+                recoveryRunMin = 6.5, recoveryRunMax = 8.0,
+                longRunMin = 6.0, longRunMax = 7.5,
+                speedWorkMin = 5.0, speedWorkMax = 6.5
+            )
+            ETrainingPlanInputLevel.ADVANCED -> PaceConstraints(
+                recoveryRunMin = 5.5, recoveryRunMax = 7.0,
+                longRunMin = 5.0, longRunMax = 6.5,
+                speedWorkMin = 4.0, speedWorkMax = 5.5
+            )
+        }
+    }
+
+    private fun validateAndAdjustPace(
+        sessionType: ETrainingSessionType,
+        proposedPace: Double,
+        level: ETrainingPlanInputLevel
+    ): Double {
+        val constraints = getPaceConstraints(level)
+
+        return when (sessionType) {
+            ETrainingSessionType.RECOVERY_RUN -> {
+                proposedPace.coerceIn(constraints.recoveryRunMin, constraints.recoveryRunMax)
+            }
+            ETrainingSessionType.LONG_RUN -> {
+                proposedPace.coerceIn(constraints.longRunMin, constraints.longRunMax)
+            }
+            ETrainingSessionType.SPEED_WORK -> {
+                proposedPace.coerceIn(constraints.speedWorkMin, constraints.speedWorkMax)
+            }
+            ETrainingSessionType.REST -> 0.0
+        }
     }
 
     private fun createPromptForDailyTraining(
@@ -48,15 +98,23 @@ class AITrainingPlanServiceImpl(
         val week = (daysSinceStart / 7 + 1).toInt()
         val dayOfWeek = date.dayOfWeek.value
 
-        val avgDifficulty = feedbackData.map { it.difficultyRating }.groupingBy { it }.eachCount()
-        val avgFeeling = feedbackData.map { it.feelingRating }.groupingBy { it }.eachCount()
+        val recentRecords = recordData.takeLast(5)
+        val recentFeedbacks = feedbackData.takeLast(5)
+        val performanceTrend = analyzePerformanceTrend(recentRecords, recentFeedbacks)
+        val complianceRate = calculateComplianceRate(trainingDayRepository.findByPlanId(plan.id!!))
+        val missedSessions = trainingDayRepository.findByPlanId(plan.id!!).count { it.status == ETrainingDayStatus.MISSED }
+
+        val avgHeartRate = recentRecords.mapNotNull { it.heartRate }.average().let { if (it.isNaN()) 0.0 else it.round(2) }
+        val feedbackNotesSummary = recentFeedbacks.mapNotNull { it.notes }.joinToString("; ") { it.take(100) }
+        val avgDifficulty = recentFeedbacks.map { it.difficultyRating }.groupingBy { it }.eachCount()
+        val avgFeeling = recentFeedbacks.map { it.feelingRating }.groupingBy { it }.eachCount()
         val difficultySummary = avgDifficulty.entries.joinToString { "${it.key}: ${it.value}" }
         val feelingSummary = avgFeeling.entries.joinToString { "${it.key}: ${it.value}" }
-
-        val avgDistance = recordData.mapNotNull { it.distance }.average().let { if (it.isNaN()) 0.0 else it }
-        val avgPace = recordData.mapNotNull { it.avgSpeed }.average().let { if (it.isNaN()) 0.0 else it }
+        val avgDistance = recentRecords.mapNotNull { it.distance }.average().let { if (it.isNaN()) 0.0 else it.round(2) }
+        val avgPace = recentRecords.mapNotNull { it.avgSpeed }.average().let { if (it.isNaN()) 0.0 else it.round(2) }
 
         val trainingStandards = getHalHigdonStandards(input.goal!!, input.level!!)
+        val paceConstraints = getPaceConstraints(input.level!!)
 
         return """
         Tạo một ngày tập luyện marathon được cá nhân hóa cho ngày ${date.toLocalDate()} dựa trên phương pháp Hal Higdon và thông tin sau:
@@ -70,18 +128,38 @@ class AITrainingPlanServiceImpl(
         • Tuần hiện tại: $week/${trainingStandards.totalWeeks}
         • Ngày trong tuần: $dayOfWeek (1=Thứ Hai, 7=Chủ Nhật)
         
+        RÀNG BUỘC PACE THEO TRÌNH ĐỘ ${input.level}:
+        • Recovery Run: ${paceConstraints.recoveryRunMin} - ${paceConstraints.recoveryRunMax} phút/km
+        • Long Run: ${paceConstraints.longRunMin} - ${paceConstraints.longRunMax} phút/km
+        • Speed Work: ${paceConstraints.speedWorkMin} - ${paceConstraints.speedWorkMax} phút/km
+        
         CHUẨN HAL HIGDON CHO ${input.goal} - ${input.level}:
         • Tổng thời gian: ${trainingStandards.totalWeeks} tuần
         • Tuần điển hình: ${trainingStandards.weeklyStructure}
         • Longest Workout: ${trainingStandards.longestWorkout}
         • Số ngày chạy/tuần: ${trainingStandards.runDaysPerWeek}
         
-        DỮ LIỆU TỪ CÁC BUỔI TẬP TRƯỚC:
+        DỮ LIỆU TỪ 5 BUỔI TẬP GẦN NHẤT:
         • Độ khó trung bình: $difficultySummary
         • Cảm giác trung bình: $feelingSummary
-        • Khoảng cách trung bình: ${avgDistance.round(2)} km
-        • Tốc độ trung bình: ${avgPace.round(2)} phút/km
+        • Khoảng cách trung bình: $avgDistance km
+        • Tốc độ trung bình: $avgPace phút/km
+        • Nhịp tim trung bình: $avgHeartRate bpm
+        • Xu hướng hiệu suất: $performanceTrend
+        • Tỷ lệ tuân thủ: $complianceRate%
+        • Số buổi bị bỏ lỡ: $missedSessions
+        • Ghi chú từ feedback: $feedbackNotesSummary
         
+        HƯỚNG DẪN ĐIỀU CHỈNH:
+        • **BẮT BUỘC tuân thủ ràng buộc pace theo trình độ ở trên**
+        • Nếu có buổi MISSED (>= 2 buổi trong 5 buổi gần nhất) hoặc tỷ lệ tuân thủ <70%,
+          hãy chọn pace ở mức cao hơn trong phạm vi cho phép và ưu tiên RECOVERY_RUN hoặc REST.
+        • Nếu cảm giác TIRED hoặc EXHAUSTED chiếm >50% hoặc xu hướng hiệu suất là "Giảm sút",
+          chọn pace ở mức trung bình cao trong phạm vi cho phép
+        • Nếu ghi chú nhắc đến thời tiết xấu hoặc chấn thương,
+          **bắt buộc chọn RECOVERY_RUN hoặc REST** với pace ở mức cao nhất trong phạm vi cho phép.
+        • **Tuyệt đối không được tạo pace nằm ngoài phạm vi quy định cho từng loại buổi tập.**
+
         QUAN TRỌNG: Trả lời hoàn toàn bằng TIẾNG VIỆT. Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm văn bản hay định dạng nào khác:
         
         {
@@ -91,13 +169,10 @@ class AITrainingPlanServiceImpl(
             "name": "tên buổi tập theo Hal Higdon",
             "type": "LONG_RUN hoặc RECOVERY_RUN hoặc SPEED_WORK hoặc REST",
             "distance": số_km_dạng_số,
-            "pace": số_phút_per_km_dạng_số,
-            "notes": "hướng dẫn chi tiết"
+            "pace": số_phút_per_km_dạng_số_trong_phạm_vi_cho_phép,
+            "notes": "hướng dẫn chi tiết bao gồm giải thích về pace được chọn"
           }
         }
-        
-        Lưu ý: Toàn bộ nội dung phải bằng tiếng Việt, bao gồm cả tên buổi tập, loại buổi tập (LONG_RUN, RECOVERY_RUN, SPEED_WORK, REST), và phần ghi chú (notes). KHÔNG được dịch sang tiếng Anh.
-Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
     """.trimIndent()
     }
 
@@ -207,22 +282,19 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
         }
     }
 
-    private fun parseDailyAIResponse(aiResponse: String, plan: TrainingPlan, date: LocalDateTime): TrainingDay {
-        return try {
-            // Clean the response to remove any markdown formatting or extra text
+    private fun parseDailyAIResponse(aiResponse: String, plan: TrainingPlan, date: LocalDateTime, level: ETrainingPlanInputLevel): TrainingDay {
+        try {
             val cleanedResponse = aiResponse.trim()
                 .replace("```json", "")
                 .replace("```", "")
                 .trim()
 
-            // Try to find JSON pattern
             val jsonPattern = Pattern.compile("\\{[^{}]*\\{[^{}]*\\}[^{}]*\\}", Pattern.DOTALL)
             val matcher = jsonPattern.matcher(cleanedResponse)
 
             val jsonString = if (matcher.find()) {
                 matcher.group()
             } else {
-                // If no nested JSON found, try to find any JSON object
                 val simpleJsonPattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL)
                 val simpleMatcher = simpleJsonPattern.matcher(cleanedResponse)
                 if (simpleMatcher.find()) {
@@ -232,14 +304,11 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
                 }
             }
 
-            println("Attempting to parse JSON: $jsonString")
-
             val dayJson = JSONObject(jsonString)
             val sessionJson = dayJson.getJSONObject("session")
             val week = dayJson.getInt("week")
             val dayOfWeek = dayJson.getInt("dayOfWeek")
 
-            // Safely parse session type
             val sessionType = try {
                 ETrainingSessionType.valueOf(sessionJson.getString("type"))
             } catch (e: IllegalArgumentException) {
@@ -247,12 +316,22 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
                 ETrainingSessionType.RECOVERY_RUN
             }
 
+            // Validate and adjust pace according to constraints
+            val aiPace = sessionJson.getDouble("pace")
+            val validatedPace = validateAndAdjustPace(sessionType, aiPace, level)
+
+            // Log pace adjustment if needed
+            if (aiPace != validatedPace) {
+                println("Pace adjusted from $aiPace to $validatedPace for session type $sessionType and level $level")
+            }
+
             val session = TrainingSession(
                 name = sessionJson.getString("name"),
                 type = sessionType,
                 distance = sessionJson.getDouble("distance"),
-                pace = sessionJson.getDouble("pace"),
-                notes = sessionJson.optString("notes", "")
+                pace = validatedPace, // Use validated pace
+                notes = sessionJson.optString("notes", "") +
+                        if (aiPace != validatedPace) " (Pace đã được điều chỉnh theo quy định: $validatedPace phút/km)" else ""
             )
 
             val savedSession = trainingSessionRepository.save(session)
@@ -265,31 +344,32 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
                 this.record = null
                 this.status = ETrainingDayStatus.ACTIVE
                 this.dateTime = date
+                this.completionPercentage = 0.0 // Sẽ được cập nhật sau khi có Record
             }
 
             savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
                 add(trainingDay)
             }
 
-            trainingDay
-
+            return trainingDay
         } catch (e: Exception) {
             println("Error parsing AI response for daily training: ${e.message}")
             println("AI Response was: $aiResponse")
-            createDefaultTrainingDay(plan, date)
+            return createDefaultTrainingDay(plan, date, level)
         }
     }
 
-    private fun createDefaultTrainingDay(plan: TrainingPlan, date: LocalDateTime): TrainingDay {
+    private fun createDefaultTrainingDay(plan: TrainingPlan, date: LocalDateTime, level: ETrainingPlanInputLevel): TrainingDay {
         val week = ChronoUnit.DAYS.between(plan.startDate, date).div(7) + 1
         val dayOfWeek = date.dayOfWeek.value
+        val paceConstraints = getPaceConstraints(level)
 
         val restSession = TrainingSession(
             name = "Nghỉ ngơi",
             type = ETrainingSessionType.REST,
             distance = 0.0,
             pace = 0.0,
-            notes = "Ngày nghỉ phục hồi"
+            notes = "Ngày nghỉ phục hồi - Pace constraints được áp dụng: Recovery ${paceConstraints.recoveryRunMin}-${paceConstraints.recoveryRunMax}, Long ${paceConstraints.longRunMin}-${paceConstraints.longRunMax}, Speed ${paceConstraints.speedWorkMin}-${paceConstraints.speedWorkMax} phút/km"
         )
 
         val savedRestSession = trainingSessionRepository.save(restSession)
@@ -344,7 +424,6 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
             }
         } catch (e: Exception) {
             println("Error calling AI API: ${e.message}")
-            // Return a default JSON response
             """
             {
               "week": 1,
@@ -361,15 +440,54 @@ Chỉ trả về JSON, không có markdown, không có text giải thích thêm.
         }
     }
 
-    // Extension function để làm tròn số thập phân
     private fun Double.round(decimals: Int): Double {
         var multiplier = 1.0
         repeat(decimals) { multiplier *= 10 }
         return kotlin.math.round(this * multiplier) / multiplier
     }
 
-    fun calculateDateTimeForTrainingDay(planStartDate: LocalDateTime, week: Int, dayOfWeek: Int): LocalDateTime {
-        val daysToAdd = (week - 1) * 7 + (dayOfWeek - 1)
-        return planStartDate.plusDays(daysToAdd.toLong())
+    private fun analyzePerformanceTrend(records: List<Record>, feedbacks: List<TrainingFeedback>): String {
+        if (records.isEmpty()) return "Không đủ dữ liệu"
+
+        val distances = records.mapNotNull { it.distance }
+        val paces = records.mapNotNull { it.avgSpeed }
+        val difficulties = feedbacks.map { it.difficultyRating }
+
+        val distanceTrend = if (distances.size >= 2) {
+            val recentAvg = distances.takeLast(3).average()
+            val olderAvg = distances.take(3).average()
+            when {
+                recentAvg > olderAvg * 1.1 -> "Cải thiện"
+                recentAvg < olderAvg * 0.9 -> "Giảm sút"
+                else -> "Ổn định"
+            }
+        } else "Không đủ dữ liệu"
+
+        val paceTrend = if (paces.size >= 2) {
+            val recentAvg = paces.takeLast(3).average()
+            val olderAvg = paces.take(3).average()
+            when {
+                recentAvg < olderAvg * 0.9 -> "Cải thiện"
+                recentAvg > olderAvg * 1.1 -> "Giảm sút"
+                else -> "Ổn định"
+            }
+        } else "Không đủ dữ liệu"
+
+        val difficultyTrend = if (difficulties.size >= 2) {
+            val hardCount = difficulties.count { it in listOf(EDifficultyRating.HARD, EDifficultyRating.VERY_HARD) }
+            when {
+                hardCount > difficulties.size / 2 -> "Quá sức"
+                hardCount < difficulties.size / 4 -> "Dễ dàng"
+                else -> "Phù hợp"
+            }
+        } else "Không đủ dữ liệu"
+
+        return "Khoảng cách: $distanceTrend, Tốc độ: $paceTrend, Độ khó: $difficultyTrend"
+    }
+
+    private fun calculateComplianceRate(trainingDays: List<TrainingDay>): Double {
+        if (trainingDays.isEmpty()) return 100.0
+        val completedDays = trainingDays.count { it.status in listOf(ETrainingDayStatus.COMPLETED, ETrainingDayStatus.PARTIALLY_COMPLETED) }
+        return (completedDays.toDouble() / trainingDays.size * 100).round(2)
     }
 }

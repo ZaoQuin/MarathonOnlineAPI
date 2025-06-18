@@ -71,6 +71,7 @@ class DailyTrainingScheduler(
         previousDays.forEach { day ->
             if (day.session!!.type == ETrainingSessionType.REST) {
                 day.status = ETrainingDayStatus.COMPLETED
+                day.completionPercentage = 100.0
                 trainingDayRepository.save(day)
             } else if (day.status == ETrainingDayStatus.ACTIVE && day.trainingFeedback == null && day.record == null) {
                 day.status = ETrainingDayStatus.MISSED
