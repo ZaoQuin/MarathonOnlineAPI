@@ -22,7 +22,8 @@ class AITrainingPlanServiceImpl(
     private val trainingDayRepository: TrainingDayRepository,
     private val aiTrainingProperties: AITrainingProperties
 ) : AITrainingPlanService {
-    val apiKey = aiTrainingProperties.api
+
+    private val apiKey = aiTrainingProperties.api
     private val GROQ_MODEL = "llama3-70b-8192"
 
     data class PaceConstraints(
@@ -173,7 +174,7 @@ class AITrainingPlanServiceImpl(
             "notes": "hướng dẫn chi tiết bao gồm giải thích về pace được chọn"
           }
         }
-    """.trimIndent()
+        """.trimIndent()
     }
 
     data class TrainingStandards(
@@ -283,41 +284,45 @@ class AITrainingPlanServiceImpl(
     }
 
     private fun parseDailyAIResponse(aiResponse: String, plan: TrainingPlan, date: LocalDateTime, level: ETrainingPlanInputLevel): TrainingDay {
-        try {
+        return try {
             val cleanedResponse = aiResponse.trim()
                 .replace("```json", "")
                 .replace("```", "")
                 .trim()
 
-            val jsonPattern = Pattern.compile("\\{[^{}]*\\{[^{}]*\\}[^{}]*\\}", Pattern.DOTALL)
+            // More robust JSON extraction
+            val jsonPattern = Pattern.compile("\\{.*?\"session\".*?\\{.*?\\}.*?\\}", Pattern.DOTALL)
             val matcher = jsonPattern.matcher(cleanedResponse)
 
             val jsonString = if (matcher.find()) {
                 matcher.group()
             } else {
-                val simpleJsonPattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL)
-                val simpleMatcher = simpleJsonPattern.matcher(cleanedResponse)
-                if (simpleMatcher.find()) {
-                    simpleMatcher.group()
+                // Fallback to simple extraction
+                val startIndex = cleanedResponse.indexOf('{')
+                val endIndex = cleanedResponse.lastIndexOf('}')
+                if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+                    cleanedResponse.substring(startIndex, endIndex + 1)
                 } else {
-                    cleanedResponse
+                    throw IllegalArgumentException("No valid JSON found in response")
                 }
             }
 
+            println("Attempting to parse JSON: $jsonString")
+
             val dayJson = JSONObject(jsonString)
             val sessionJson = dayJson.getJSONObject("session")
-            val week = dayJson.getInt("week")
-            val dayOfWeek = dayJson.getInt("dayOfWeek")
+            val week = dayJson.optInt("week", 1)
+            val dayOfWeek = dayJson.optInt("dayOfWeek", 1)
 
             val sessionType = try {
                 ETrainingSessionType.valueOf(sessionJson.getString("type"))
             } catch (e: IllegalArgumentException) {
-                println("Invalid session type: ${sessionJson.getString("type")}, defaulting to RECOVERY_RUN")
+                println("Invalid session type: ${sessionJson.optString("type", "UNKNOWN")}, defaulting to RECOVERY_RUN")
                 ETrainingSessionType.RECOVERY_RUN
             }
 
             // Validate and adjust pace according to constraints
-            val aiPace = sessionJson.getDouble("pace")
+            val aiPace = sessionJson.optDouble("pace", 7.0)
             val validatedPace = validateAndAdjustPace(sessionType, aiPace, level)
 
             // Log pace adjustment if needed
@@ -326,10 +331,10 @@ class AITrainingPlanServiceImpl(
             }
 
             val session = TrainingSession(
-                name = sessionJson.getString("name"),
+                name = sessionJson.optString("name", "Training Session"),
                 type = sessionType,
-                distance = sessionJson.getDouble("distance"),
-                pace = validatedPace, // Use validated pace
+                distance = sessionJson.optDouble("distance", 5.0),
+                pace = validatedPace,
                 notes = sessionJson.optString("notes", "") +
                         if (aiPace != validatedPace) " (Pace đã được điều chỉnh theo quy định: $validatedPace phút/km)" else ""
             )
@@ -344,18 +349,19 @@ class AITrainingPlanServiceImpl(
                 this.record = null
                 this.status = ETrainingDayStatus.ACTIVE
                 this.dateTime = date
-                this.completionPercentage = 0.0 // Sẽ được cập nhật sau khi có Record
+                this.completionPercentage = 0.0
             }
 
             savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
                 add(trainingDay)
             }
 
-            return trainingDay
+            trainingDay
         } catch (e: Exception) {
             println("Error parsing AI response for daily training: ${e.message}")
             println("AI Response was: $aiResponse")
-            return createDefaultTrainingDay(plan, date, level)
+            e.printStackTrace()
+            createDefaultTrainingDay(plan, date, level)
         }
     }
 
@@ -382,6 +388,7 @@ class AITrainingPlanServiceImpl(
             this.record = null
             this.status = ETrainingDayStatus.ACTIVE
             this.dateTime = date
+            this.completionPercentage = 0.0
         }
     }
 
@@ -395,8 +402,9 @@ class AITrainingPlanServiceImpl(
         val jsonBody = JSONObject()
             .put("model", GROQ_MODEL)
             .put("messages", JSONArray().put(messageObj))
-            .put("temperature", 0.3) // Lower temperature for more consistent JSON output
-            .put("max_tokens", 500) // Limit tokens to ensure focused response
+            .put("temperature", 0.1) // Even lower temperature for more consistent JSON
+            .put("max_tokens", 300) // Reduced tokens for focused response
+            .put("response_format", JSONObject().put("type", "json_object")) // Request JSON format
 
         val request = Request.Builder()
             .url("https://api.groq.com/openai/v1/chat/completions")
@@ -409,21 +417,26 @@ class AITrainingPlanServiceImpl(
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     println("API call failed with code: ${response.code}")
+                    println("Response body: ${response.body?.string()}")
                     throw IOException("Unexpected code $response")
                 }
 
                 val responseBody = response.body?.string() ?: ""
+                println("Raw API Response: $responseBody")
+
                 val jsonResponse = JSONObject(responseBody)
                 val content = jsonResponse.getJSONArray("choices")
                     .getJSONObject(0)
                     .getJSONObject("message")
                     .getString("content")
 
-                println("AI API Response: $content")
+                println("AI API Response Content: $content")
                 content
             }
         } catch (e: Exception) {
             println("Error calling AI API: ${e.message}")
+            e.printStackTrace()
+            // Return a valid JSON fallback
             """
             {
               "week": 1,
@@ -432,7 +445,7 @@ class AITrainingPlanServiceImpl(
                 "name": "Easy Run",
                 "type": "RECOVERY_RUN",
                 "distance": 5.0,
-                "pace": 7.0,
+                "pace": 7.5,
                 "notes": "Chạy nhẹ nhàng để khởi động"
               }
             }
