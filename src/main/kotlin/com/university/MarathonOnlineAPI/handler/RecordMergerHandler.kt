@@ -40,14 +40,12 @@ class RecordMergerHandler(
                 user = user
             )
 
-            // Tìm tất cả records có overlap về thời gian
             val overlappingRecords = findOverlappingRecords(user.id!!, newRecord.startTime!!, newRecord.endTime!!)
 
             if (overlappingRecords.isNotEmpty()) {
                 logger.info("Found ${overlappingRecords.size} overlapping records")
                 val mergedRecord = createMergedRecord(overlappingRecords, recordDTO)
 
-                // Xóa tất cả records cũ có overlap
                 recordRepository.deleteAll(overlappingRecords)
                 logger.info("Deleted ${overlappingRecords.size} overlapping records")
 
