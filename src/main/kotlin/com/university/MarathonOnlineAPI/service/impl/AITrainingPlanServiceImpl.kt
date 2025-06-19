@@ -174,7 +174,7 @@ class AITrainingPlanServiceImpl(
         "type": "LONG_RUN hoặc RECOVERY_RUN hoặc SPEED_WORK hoặc REST",
         "distance": số_km_dạng_số,
         "pace": số_phút_per_km_dạng_số_trong_phạm_vi_cho_phép,
-        "notes": "hướng dẫn chi tiết bao gồm giải thích về pace được chọn"
+        "notes": "hướng dẫn chi tiết cho người chạy"
       }
     }
     """.trimIndent()
