@@ -40,12 +40,17 @@ class AITrainingPlanServiceImpl(
         val feedbackData = previousDays.mapNotNull { it.trainingFeedback }
         val recordData: List<Record> = previousDays.mapNotNull { it.record }
 
-        val prompt = createPromptForDailyTraining(input, plan, date, feedbackData, recordData)
+        val daysSinceStart = ChronoUnit.DAYS.between(plan.startDate!!.toLocalDate(), date.toLocalDate())
+        val week = (daysSinceStart / 7 + 1).toInt()
+        val dayOfWeek = (daysSinceStart % 7 + 1).toInt()
+
+        val prompt = createPromptForDailyTraining(input, plan, date, feedbackData, recordData, week, dayOfWeek)
         val aiResponse = callAIApi(prompt)
-        val trainingDay = parseDailyAIResponse(aiResponse, plan, date, input.level!!)
+        val trainingDay = parseDailyAIResponse(aiResponse, plan, date, input.level!!, week, dayOfWeek)
 
         return trainingDayRepository.save(trainingDay)
     }
+
 
     private fun getPaceConstraints(level: ETrainingPlanInputLevel): PaceConstraints {
         return when (level) {
@@ -93,12 +98,10 @@ class AITrainingPlanServiceImpl(
         plan: TrainingPlan,
         date: LocalDateTime,
         feedbackData: List<TrainingFeedback>,
-        recordData: List<Record>
+        recordData: List<Record>,
+        week: Int,
+        dayOfWeek: Int
     ): String {
-        val daysSinceStart = ChronoUnit.DAYS.between(plan.startDate, date)
-        val week = (daysSinceStart / 7 + 1).toInt()
-        val dayOfWeek = date.dayOfWeek.value
-
         val recentRecords = recordData.takeLast(5)
         val recentFeedbacks = feedbackData.takeLast(5)
         val performanceTrend = analyzePerformanceTrend(recentRecords, recentFeedbacks)
@@ -118,63 +121,63 @@ class AITrainingPlanServiceImpl(
         val paceConstraints = getPaceConstraints(input.level!!)
 
         return """
-        Tạo một ngày tập luyện marathon được cá nhân hóa cho ngày ${date.toLocalDate()} dựa trên phương pháp Hal Higdon và thông tin sau:
-        
-        THÔNG TIN RUNNER:
-        • Trình độ: ${input.level}
-        • Mục tiêu: ${input.goal}
-        • Khoảng cách dài nhất từng chạy: ${input.maxDistance ?: 10.0} km
-        • Tốc độ trung bình: ${input.averagePace ?: 6.0} phút/km
-        • Số tuần luyện tập: ${input.trainingWeeks ?: trainingStandards.totalWeeks}
-        • Tuần hiện tại: $week/${trainingStandards.totalWeeks}
-        • Ngày trong tuần: $dayOfWeek (1=Thứ Hai, 7=Chủ Nhật)
-        
-        RÀNG BUỘC PACE THEO TRÌNH ĐỘ ${input.level}:
-        • Recovery Run: ${paceConstraints.recoveryRunMin} - ${paceConstraints.recoveryRunMax} phút/km
-        • Long Run: ${paceConstraints.longRunMin} - ${paceConstraints.longRunMax} phút/km
-        • Speed Work: ${paceConstraints.speedWorkMin} - ${paceConstraints.speedWorkMax} phút/km
-        
-        CHUẨN HAL HIGDON CHO ${input.goal} - ${input.level}:
-        • Tổng thời gian: ${trainingStandards.totalWeeks} tuần
-        • Tuần điển hình: ${trainingStandards.weeklyStructure}
-        • Longest Workout: ${trainingStandards.longestWorkout}
-        • Số ngày chạy/tuần: ${trainingStandards.runDaysPerWeek}
-        
-        DỮ LIỆU TỪ 5 BUỔI TẬP GẦN NHẤT:
-        • Độ khó trung bình: $difficultySummary
-        • Cảm giác trung bình: $feelingSummary
-        • Khoảng cách trung bình: $avgDistance km
-        • Tốc độ trung bình: $avgPace phút/km
-        • Nhịp tim trung bình: $avgHeartRate bpm
-        • Xu hướng hiệu suất: $performanceTrend
-        • Tỷ lệ tuân thủ: $complianceRate%
-        • Số buổi bị bỏ lỡ: $missedSessions
-        • Ghi chú từ feedback: $feedbackNotesSummary
-        
-        HƯỚNG DẪN ĐIỀU CHỈNH:
-        • **BẮT BUỘC tuân thủ ràng buộc pace theo trình độ ở trên**
-        • Nếu có buổi MISSED (>= 2 buổi trong 5 buổi gần nhất) hoặc tỷ lệ tuân thủ <70%,
-          hãy chọn pace ở mức cao hơn trong phạm vi cho phép và ưu tiên RECOVERY_RUN hoặc REST.
-        • Nếu cảm giác TIRED hoặc EXHAUSTED chiếm >50% hoặc xu hướng hiệu suất là "Giảm sút",
-          chọn pace ở mức trung bình cao trong phạm vi cho phép
-        • Nếu ghi chú nhắc đến thời tiết xấu hoặc chấn thương,
-          **bắt buộc chọn RECOVERY_RUN hoặc REST** với pace ở mức cao nhất trong phạm vi cho phép.
-        • **Tuyệt đối không được tạo pace nằm ngoài phạm vi quy định cho từng loại buổi tập.**
+    Tạo một ngày tập luyện marathon được cá nhân hóa cho ngày ${date.toLocalDate()} dựa trên phương pháp Hal Higdon và thông tin sau:
+    
+    THÔNG TIN RUNNER:
+    • Trình độ: ${input.level}
+    • Mục tiêu: ${input.goal}
+    • Khoảng cách dài nhất từng chạy: ${input.maxDistance ?: 10.0} km
+    • Tốc độ trung bình: ${input.averagePace ?: 6.0} phút/km
+    • Số tuần luyện tập: ${input.trainingWeeks ?: trainingStandards.totalWeeks}
+    • Tuần hiện tại: $week/${trainingStandards.totalWeeks}
+    • Ngày trong tuần tập luyện: $dayOfWeek/7 (ngày $dayOfWeek của tuần $week)
+    
+    RÀNG BUỘC PACE THEO TRÌNH ĐỘ ${input.level}:
+    • Recovery Run: ${paceConstraints.recoveryRunMin} - ${paceConstraints.recoveryRunMax} phút/km
+    • Long Run: ${paceConstraints.longRunMin} - ${paceConstraints.longRunMax} phút/km
+    • Speed Work: ${paceConstraints.speedWorkMin} - ${paceConstraints.speedWorkMax} phút/km
+    
+    CHUẨN HAL HIGDON CHO ${input.goal} - ${input.level}:
+    • Tổng thời gian: ${trainingStandards.totalWeeks} tuần
+    • Tuần điển hình: ${trainingStandards.weeklyStructure}
+    • Longest Workout: ${trainingStandards.longestWorkout}
+    • Số ngày chạy/tuần: ${trainingStandards.runDaysPerWeek}
+    
+    DỮ LIỆU TỪ 5 BUỔI TẬP GẦN NHẤT:
+    • Độ khó trung bình: $difficultySummary
+    • Cảm giác trung bình: $feelingSummary
+    • Khoảng cách trung bình: $avgDistance km
+    • Tốc độ trung bình: $avgPace phút/km
+    • Nhịp tim trung bình: $avgHeartRate bpm
+    • Xu hướng hiệu suất: $performanceTrend
+    • Tỷ lệ tuân thủ: $complianceRate%
+    • Số buổi bị bỏ lỡ: $missedSessions
+    • Ghi chú từ feedback: $feedbackNotesSummary
+    
+    HƯỚNG DẪN ĐIỀU CHỈNH:
+    • **BẮT BUỘC tuân thủ ràng buộc pace theo trình độ ở trên**
+    • Nếu có buổi MISSED (>= 2 buổi trong 5 buổi gần nhất) hoặc tỷ lệ tuân thủ <70%,
+      hãy chọn pace ở mức cao hơn trong phạm vi cho phép và ưu tiên RECOVERY_RUN hoặc REST.
+    • Nếu cảm giác TIRED hoặc EXHAUSTED chiếm >50% hoặc xu hướng hiệu suất là "Giảm sút",
+      chọn pace ở mức trung bình cao trong phạm vi cho phép
+    • Nếu ghi chú nhắc đến thời tiết xấu hoặc chấn thương,
+      **bắt buộc chọn RECOVERY_RUN hoặc REST** với pace ở mức cao nhất trong phạm vi cho phép.
+    • **Tuyệt đối không được tạo pace nằm ngoài phạm vi quy định cho từng loại buổi tập.**
 
-        QUAN TRỌNG: Trả lời hoàn toàn bằng TIẾNG VIỆT. Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm văn bản hay định dạng nào khác:
-        
-        {
-          "week": $week,
-          "dayOfWeek": $dayOfWeek,
-          "session": {
-            "name": "tên buổi tập theo Hal Higdon",
-            "type": "LONG_RUN hoặc RECOVERY_RUN hoặc SPEED_WORK hoặc REST",
-            "distance": số_km_dạng_số,
-            "pace": số_phút_per_km_dạng_số_trong_phạm_vi_cho_phép,
-            "notes": "hướng dẫn chi tiết bao gồm giải thích về pace được chọn"
-          }
-        }
-        """.trimIndent()
+    QUAN TRỌNG: Trả lời hoàn toàn bằng TIẾNG VIỆT. Trả về CHÍNH XÁC một đối tượng JSON hợp lệ sau đây, không có thêm văn bản hay định dạng nào khác:
+    
+    {
+      "week": $week,
+      "dayOfWeek": $dayOfWeek,
+      "session": {
+        "name": "tên buổi tập theo Hal Higdon",
+        "type": "LONG_RUN hoặc RECOVERY_RUN hoặc SPEED_WORK hoặc REST",
+        "distance": số_km_dạng_số,
+        "pace": số_phút_per_km_dạng_số_trong_phạm_vi_cho_phép,
+        "notes": "hướng dẫn chi tiết bao gồm giải thích về pace được chọn"
+      }
+    }
+    """.trimIndent()
     }
 
     data class TrainingStandards(
@@ -283,7 +286,14 @@ class AITrainingPlanServiceImpl(
         }
     }
 
-    private fun parseDailyAIResponse(aiResponse: String, plan: TrainingPlan, date: LocalDateTime, level: ETrainingPlanInputLevel): TrainingDay {
+    private fun parseDailyAIResponse(
+        aiResponse: String,
+        plan: TrainingPlan,
+        date: LocalDateTime,
+        level: ETrainingPlanInputLevel,
+        calculatedWeek: Int,
+        calculatedDayOfWeek: Int
+    ): TrainingDay {
         return try {
             val cleanedResponse = aiResponse.trim()
                 .replace("```json", "")
@@ -311,8 +321,10 @@ class AITrainingPlanServiceImpl(
 
             val dayJson = JSONObject(jsonString)
             val sessionJson = dayJson.getJSONObject("session")
-            val week = dayJson.optInt("week", 1)
-            val dayOfWeek = dayJson.optInt("dayOfWeek", 1)
+
+            // Use calculated values instead of AI response values to ensure consistency
+            val week = calculatedWeek
+            val dayOfWeek = calculatedDayOfWeek
 
             val sessionType = try {
                 ETrainingSessionType.valueOf(sessionJson.getString("type"))
@@ -361,13 +373,17 @@ class AITrainingPlanServiceImpl(
             println("Error parsing AI response for daily training: ${e.message}")
             println("AI Response was: $aiResponse")
             e.printStackTrace()
-            createDefaultTrainingDay(plan, date, level)
+            createDefaultTrainingDay(plan, date, level, calculatedWeek, calculatedDayOfWeek)
         }
     }
 
-    private fun createDefaultTrainingDay(plan: TrainingPlan, date: LocalDateTime, level: ETrainingPlanInputLevel): TrainingDay {
-        val week = ChronoUnit.DAYS.between(plan.startDate, date).div(7) + 1
-        val dayOfWeek = date.dayOfWeek.value
+    private fun createDefaultTrainingDay(
+        plan: TrainingPlan,
+        date: LocalDateTime,
+        level: ETrainingPlanInputLevel,
+        week: Int,
+        dayOfWeek: Int
+    ): TrainingDay {
         val paceConstraints = getPaceConstraints(level)
 
         val restSession = TrainingSession(
@@ -375,7 +391,7 @@ class AITrainingPlanServiceImpl(
             type = ETrainingSessionType.REST,
             distance = 0.0,
             pace = 0.0,
-            notes = "Ngày nghỉ phục hồi - Pace constraints được áp dụng: Recovery ${paceConstraints.recoveryRunMin}-${paceConstraints.recoveryRunMax}, Long ${paceConstraints.longRunMin}-${paceConstraints.longRunMax}, Speed ${paceConstraints.speedWorkMin}-${paceConstraints.speedWorkMax} phút/km"
+            notes = "Ngày nghỉ phục hồi - Tuần $week, Ngày $dayOfWeek - Pace constraints được áp dụng: Recovery ${paceConstraints.recoveryRunMin}-${paceConstraints.recoveryRunMax}, Long ${paceConstraints.longRunMin}-${paceConstraints.longRunMax}, Speed ${paceConstraints.speedWorkMin}-${paceConstraints.speedWorkMax} phút/km"
         )
 
         val savedRestSession = trainingSessionRepository.save(restSession)
@@ -383,7 +399,7 @@ class AITrainingPlanServiceImpl(
         return TrainingDay().apply {
             this.plan = plan
             this.session = savedRestSession
-            this.week = week.toInt()
+            this.week = week
             this.dayOfWeek = dayOfWeek
             this.record = null
             this.status = ETrainingDayStatus.ACTIVE
