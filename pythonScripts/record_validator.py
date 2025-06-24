@@ -267,20 +267,6 @@ def validate_with_user_history(analysis_df, new_record_index, user_stats):
         "reviewNote": review_note
     }
 
-import pandas as pd
-import json
-import sys
-import os
-import warnings
-import requests
-warnings.filterwarnings('ignore')
-sys.stdout.reconfigure(encoding='utf-8')
-
-from module import (
-    prepare_marathon_data, analyze_per_user, extract_features,
-    detect_anomalies_isolation_forest, detect_anomalies_lof
-)
-
 def load_user_history(user_id, days=7):
     try:
         from datetime import datetime, timedelta

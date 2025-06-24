@@ -14,7 +14,7 @@ data class TrainingDay(
     @JoinColumn(name = "plan_id", nullable = false)
     var plan: TrainingPlan? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     var session: TrainingSession? = null,
 

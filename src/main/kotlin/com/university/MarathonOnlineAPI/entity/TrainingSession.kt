@@ -25,8 +25,8 @@ data class TrainingSession(
     @Column(nullable = true)
     var notes: String? = null,
 
-    @OneToMany(mappedBy = "session", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    var trainingDays: MutableList<TrainingDay> = mutableListOf()
+    @OneToOne(mappedBy = "session", cascade = [CascadeType.ALL], fetch = FetchType.LAZY, optional = false)
+    var trainingDay: TrainingDay? = null
 )
 
 enum class ETrainingSessionType(val maxRestMinutes: Long) {

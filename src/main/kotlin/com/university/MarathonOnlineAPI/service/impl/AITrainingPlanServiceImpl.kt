@@ -362,10 +362,7 @@ class AITrainingPlanServiceImpl(
                 this.status = ETrainingDayStatus.ACTIVE
                 this.dateTime = date
                 this.completionPercentage = 0.0
-            }
-
-            savedSession.trainingDays = savedSession.trainingDays.toMutableList().apply {
-                add(trainingDay)
+                this.session = savedSession
             }
 
             trainingDay
